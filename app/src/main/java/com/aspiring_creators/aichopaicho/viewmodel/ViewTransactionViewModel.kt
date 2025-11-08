@@ -1,12 +1,15 @@
 // ViewTransactionViewModel.kt
 package com.aspiring_creators.aichopaicho.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.*
 import com.aspiring_creators.aichopaicho.data.repository.*
 import com.aspiring_creators.aichopaicho.viewmodel.data.ViewTransactionViewModelUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -15,6 +18,7 @@ import kotlin.collections.get
 
 @HiltViewModel
 class ViewTransactionViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val recordRepository: RecordRepository,
     private val userRecordSummaryRepository: UserRecordSummaryRepository,
     private val contactRepository: ContactRepository,
@@ -39,7 +43,7 @@ class ViewTransactionViewModel @Inject constructor(
                 launch { loadRecords() }
                 launch { loadTypes() }
             } catch (e: Exception) {
-                setErrorMessage(e.message ?: "Unknown error occurred")
+                setErrorMessage(e.message ?: context.getString(R.string.unknown_error_occurred))
             } finally {
                 setLoading(false)
             }
@@ -49,7 +53,10 @@ class ViewTransactionViewModel @Inject constructor(
     private suspend fun loadRecords() {
         val (startDate, endDate) = _uiState.value.dateRange
         recordRepository.getRecordsByDateRange(startDate, endDate)
-            .catch { e -> setErrorMessage("Failed to load records: ${e.message}") }
+            .catch { e -> setErrorMessage(context.getString(
+                R.string.failed_to_load_records,
+                e.message
+            )) }
             .collect { records ->
                 _uiState.value = _uiState.value.copy(
                     records = records,
@@ -61,7 +68,10 @@ class ViewTransactionViewModel @Inject constructor(
 
     private suspend fun loadContacts() {
         contactRepository.getAllContacts()
-            .catch { e -> setErrorMessage("Failed to load contacts: ${e.message}") }
+            .catch { e -> setErrorMessage(context.getString(
+                R.string.failed_to_load_contacts,
+                e.message
+            )) }
             .collect { contacts ->
                 val contactMap = contacts.associateBy { it.id }
                 _uiState.value = _uiState.value.copy(contacts = contactMap)
@@ -70,7 +80,10 @@ class ViewTransactionViewModel @Inject constructor(
 
     private suspend fun loadTypes() {
         typeRepository.getAllTypes()
-            .catch { e -> setErrorMessage("Failed to load types: ${e.message}") }
+            .catch { e -> setErrorMessage(context.getString(
+                R.string.failed_to_load_types,
+                e.message
+            )) }
             .collect { types ->
                 val typeMap = types.associateBy { it.id }
                 _uiState.value = _uiState.value.copy(types = typeMap)
@@ -148,7 +161,10 @@ class ViewTransactionViewModel @Inject constructor(
                     recordRepository.updateRecord(updatedRecord)
                 }
             } catch (e: Exception) {
-                setErrorMessage("Failed to update record: ${e.message}")
+                setErrorMessage(context.getString(
+                    R.string.failed_to_update_record,
+                    e.message
+                ))
             }
         }
     }
@@ -158,7 +174,10 @@ class ViewTransactionViewModel @Inject constructor(
             try {
                 recordRepository.deleteRecord(recordId)
             } catch (e: Exception) {
-                setErrorMessage("Failed to delete record: ${e.message}")
+                setErrorMessage(context.getString(
+                    R.string.failed_to_delete_record,
+                    e.message
+                ))
             }
         }
     }

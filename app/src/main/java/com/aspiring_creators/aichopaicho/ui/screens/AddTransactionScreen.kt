@@ -49,6 +49,9 @@ import androidx.compose.material3.IconButton // Added for back button
 import androidx.compose.material3.OutlinedButton // Added for Cancel button
 import androidx.compose.material3.ButtonDefaults // Added for Cancel button theming
 import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.ui.component.SegmentedLentBorrowedToggle
 
 
@@ -57,6 +60,7 @@ fun AddTransactionScreen(
     onNavigateBack: (() -> Unit)? = null,
     addTransactionViewModel: AddTransactionViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by addTransactionViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -70,7 +74,7 @@ fun AddTransactionScreen(
     LaunchedEffect(uiState.submissionSuccessful) {
         if (uiState.submissionSuccessful) {
             addTransactionViewModel.clearSubmissionSuccessFlag()
-            snackbarHostState.showSnackbar("Transaction added successfully")
+            snackbarHostState.showSnackbar(context.getString(R.string.transaction_added_successfully))
         }
     }
 
@@ -109,7 +113,7 @@ fun AddTransactionScreen(
                     }
 
                     TextComponent(
-                        value = "Add New Transaction",
+                        value = stringResource(R.string.add_new_transaction),
                         textSize = 24.sp,
 
                     )
@@ -119,7 +123,7 @@ fun AddTransactionScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    LabelComponent(text = "Type")
+                    LabelComponent(text = stringResource(R.string.type))
                     Spacer(modifier = Modifier.size(16.dp)) // Consistent spacing
                     SegmentedLentBorrowedToggle(
                         onToggle = { type ->
@@ -141,10 +145,10 @@ fun AddTransactionScreen(
 
                 // Name
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    LabelComponent(text = "Name")
+                    LabelComponent(text = stringResource(R.string.name))
                     Spacer(modifier = Modifier.size(16.dp))
                     ContactPickerField(
-                        label = "Contact Name", // Placeholder for OutlinedTextField
+                        label = stringResource(R.string.contact_name), // Placeholder for OutlinedTextField
                         selectedContact = uiState.contact,
                         onContactSelected = { contact ->
                             addTransactionViewModel.onEvent(
@@ -157,10 +161,10 @@ fun AddTransactionScreen(
 
                 // Amount
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    LabelComponent(text = "Amount")
+                    LabelComponent(text = stringResource(R.string.amount))
                     Spacer(modifier = Modifier.size(16.dp))
                     AmountInputField(
-                        label = "Amount", // Placeholder
+                        label = stringResource(R.string.amount), // Placeholder
                         value = uiState.amount?.toString() ?: "",
                         onAmountTextChange = { amountStr ->
                             addTransactionViewModel.onEvent(
@@ -175,10 +179,10 @@ fun AddTransactionScreen(
 
                 // Date
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    LabelComponent(text = "Date")
+                    LabelComponent(text = stringResource(R.string.date))
                     Spacer(modifier = Modifier.size(16.dp))
                     DateInputField(
-                        label = "Date", // Placeholder
+                        label = stringResource(R.string.date), // Placeholder
                         selectedDate = uiState.date,
                         onDateSelected = { date ->
                             addTransactionViewModel.onEvent(
@@ -192,10 +196,10 @@ fun AddTransactionScreen(
 
                 // Description
                 Row(verticalAlignment = Alignment.Top) { // Align label to top for multiline
-                    LabelComponent(text = "Description")
+                    LabelComponent(text = stringResource(R.string.description))
                     Spacer(modifier = Modifier.size(16.dp))
                     MultiLineTextInputField(
-                        label = "Description (Optional)", // Placeholder
+                        label = stringResource(R.string.description_optional), // Placeholder
                         value = uiState.description ?: "",
                         onValueChange = { description ->
                             addTransactionViewModel.onEvent(
@@ -217,7 +221,7 @@ fun AddTransactionScreen(
                     }
                 } else {
                     QuickActionButton(
-                        text = "Save Transaction",
+                        text = stringResource(R.string.save_transaction),
                         onClick = {
                             addTransactionViewModel.onEvent(AddTransactionUiEvents.Submit)
                         },
@@ -237,7 +241,7 @@ fun AddTransactionScreen(
                         enabled = !uiState.isLoading,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary) //Themed
                     ) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                 }
             }

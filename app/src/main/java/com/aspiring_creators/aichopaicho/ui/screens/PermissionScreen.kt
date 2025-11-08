@@ -78,13 +78,13 @@ fun PermissionScreen(
         contactsPermissionGranted = isGranted
         scope.launch {
             if (isGranted) {
-                snackbarHostState.showSnackbar("Contacts permission granted!")
+                snackbarHostState.showSnackbar(context.getString(R.string.contacts_permission_granted))
                 val result = permissionViewModel.grantPermissionAndProceed()
                 if (result.isSuccess) {
                     onNavigateToDashboard()
                 }
             } else {
-                snackbarHostState.showSnackbar("Permission denied. You can still use the app without contact access.")
+                snackbarHostState.showSnackbar(context.getString(R.string.contact_permission_denied))
             }
         }
     }
@@ -146,12 +146,14 @@ fun PermissionScreen(
 
                 ButtonComponent(
                     logo = R.drawable.logo_contacts, // Icon for contacts
-                    text = if (contactsPermissionGranted) "Permission Granted" else "Grant Contact Access",
+                    text = if (contactsPermissionGranted) stringResource(R.string.permission_granted) else stringResource(
+                        R.string.grant_contact_access
+                    ),
                     onClick = {
                         when {
                             contactsPermissionGranted -> {
                                 scope.launch {
-                                    snackbarHostState.showSnackbar("Contacts permission already granted!")
+                                    snackbarHostState.showSnackbar(context.getString(R.string.contacts_permission_already_granted))
                                     val result = permissionViewModel.grantPermissionAndProceed()
                                     if (result.isSuccess) {
                                         onNavigateToDashboard()
@@ -171,10 +173,10 @@ fun PermissionScreen(
 
                 ButtonComponent(
                     logo = R.drawable.logo_skip, // Icon for skip
-                    text = "Skip for Now",
+                    text = stringResource(R.string.skip_for_now),
                     onClick = {
                         scope.launch {
-                            snackbarHostState.showSnackbar("You can grant permission later in settings.")
+                            snackbarHostState.showSnackbar(context.getString(R.string.grant_permission_later))
                             val result = permissionViewModel.skipPermissionAndProceed()
                             if (result.isSuccess) {
                                 onNavigateToDashboard()

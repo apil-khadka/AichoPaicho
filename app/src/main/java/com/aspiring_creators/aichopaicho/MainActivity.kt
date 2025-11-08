@@ -19,6 +19,7 @@
 
 package com.aspiring_creators.aichopaicho
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -50,14 +51,17 @@ class MainActivity : ComponentActivity() {
                 darkScrim = ContextCompat.getColor(applicationContext, R.color.darkStatusBarColor)
             )
         )
-
-
         BackgroundSyncWorker.schedulePeriodicSync(applicationContext)
         setContent {
             AichoPaichoTheme {
                 AichoPaicho()
             }
         }
+    }
+    override fun attachBaseContext(base: Context) {
+        val lang = AppPreferenceUtils.getLanguageCode(base)
+        val ctx = AppLocaleManager.setAppLocale(base, lang)
+        super.attachBaseContext(ctx)
     }
 }
 

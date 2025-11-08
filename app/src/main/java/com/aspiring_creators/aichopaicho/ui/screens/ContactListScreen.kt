@@ -48,6 +48,7 @@ import androidx.compose.runtime.remember // Added
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 // import androidx.compose.ui.graphics.Color // To be removed
 // import androidx.compose.ui.res.colorResource // To be removed
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.aspiring_creators.aichopaicho.R
 // import androidx.compose.ui.unit.sp // Replaced by MaterialTheme.typography
 // import com.aspiring_creators.aichopaicho.R // To be removed
 import com.aspiring_creators.aichopaicho.data.entity.Contact
@@ -92,9 +94,9 @@ fun ContactListScreen(
                 title = {
                     Text(
                         text = when (type.lowercase()) {
-                            TypeConstants.TYPE_LENT.lowercase() -> "Contacts You Lent To"
-                            TypeConstants.TYPE_BORROWED.lowercase() -> "Contacts You Borrowed From"
-                            else -> "All Contacts"
+                            TypeConstants.TYPE_LENT.lowercase() -> stringResource(R.string.contacts_you_lent_to)
+                            TypeConstants.TYPE_BORROWED.lowercase() -> stringResource(R.string.contacts_you_borrowed_from)
+                            else -> stringResource(R.string.all_contacts)
                         },
                         style = MaterialTheme.typography.titleLarge
                     )
@@ -129,7 +131,7 @@ fun ContactListScreen(
                 OutlinedTextField(
                     value = uiState.searchQuery,
                     onValueChange = contactListViewModel::searchContacts,
-                    label = { Text("Search contacts") },
+                    label = { Text(stringResource(R.string.search_contacts)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -157,7 +159,9 @@ fun ContactListScreen(
                         }
                     } else if (uiState.contacts.isEmpty()) { // Check the main contacts list from UiState
                         Box(
-                            modifier = Modifier.fillMaxSize().padding(16.dp),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -172,8 +176,11 @@ fun ContactListScreen(
                                 )
                                 Text(
                                     text = if (uiState.searchQuery.isNotBlank())
-                                        "No contacts found for \"${uiState.searchQuery}\""
-                                    else "No contacts available for this category.",
+                                        stringResource(
+                                            R.string.no_contacts_found_for,
+                                            uiState.searchQuery
+                                        )
+                                    else stringResource(R.string.no_contacts_available_for_this_category),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center

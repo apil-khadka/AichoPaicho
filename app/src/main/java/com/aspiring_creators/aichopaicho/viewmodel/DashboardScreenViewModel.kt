@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.repository.UserRecordSummaryRepository
 import com.aspiring_creators.aichopaicho.data.repository.UserRepository
 import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState
@@ -19,10 +20,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DashboardScreenViewModel @Inject constructor(
+    @ApplicationContext val context: Context,
     private val userRepository: UserRepository,
     private val firebaseAuth: FirebaseAuth,
     private val userRecordSummaryRepository: UserRecordSummaryRepository,
-    @ApplicationContext private val applicationContext: Context // Keep if needed for other things
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardScreenUiState(isLoading = true))
@@ -78,7 +79,9 @@ class DashboardScreenViewModel @Inject constructor(
                             user = null, // Or localUser if you want to show some details despite mismatch
                             isSignedIn = false,
                             isLoading = false,
-                            errorMessage = if (localUser.id.isNotEmpty() && localUser.id != firebaseUser.uid) "Account mismatch. Please sign out and sign in again." else null
+                            errorMessage = if (localUser.id.isNotEmpty() && localUser.id != firebaseUser.uid) context.getString(
+                                R.string.account_mismatch
+                            ) else null
                         )
                     }
                 } else {
@@ -96,7 +99,7 @@ class DashboardScreenViewModel @Inject constructor(
                     user = null,
                     isSignedIn = false,
                     isLoading = false,
-                    errorMessage = "Failed to load user data: ${e.message}"
+                    errorMessage = context.getString(R.string.failed_to_load_user_data, e.message)
                 )
             }
         }
@@ -107,7 +110,10 @@ class DashboardScreenViewModel @Inject constructor(
             userRecordSummaryRepository.getCurrentUserSummary()
                 .catch { e ->
                     Log.e("DashboardViewModel", "Error loading summary", e)
-                    _uiState.value = _uiState.value.copy(errorMessage = "Failed to load summary: ${e.message}")
+                    _uiState.value = _uiState.value.copy(errorMessage = context.getString(
+                        R.string.failed_to_load_summary,
+                        e.message
+                    ))
                 }
                 .collect { summary ->
                     _uiState.value = _uiState.value.copy(recordSummary = summary)

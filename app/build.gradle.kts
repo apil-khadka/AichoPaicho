@@ -100,7 +100,6 @@ dependencies {
     implementation(libs.coil.network.okhttp)
 
     // for List String to String conversion
-
     implementation(libs.gson)
 
 }

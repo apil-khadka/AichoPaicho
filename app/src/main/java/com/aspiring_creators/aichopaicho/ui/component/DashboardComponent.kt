@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -62,7 +63,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.error
 import coil3.request.placeholder
-import com.aspiring_creators.aichopaicho.CurrencyUtils
+import com.aspiring_creators.aichopaicho.AppPreferenceUtils
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.*
 import com.aspiring_creators.aichopaicho.data.entity.User
@@ -89,7 +90,10 @@ fun UserProfileImage( // No changes from previous plan, looks good
                 .placeholder(R.drawable.placeholder_user_profile)
                 .error(R.drawable.placeholder_user_profile_error)
                 .build(),
-            contentDescription = "Profile photo of ${userName ?: "user"}",
+            contentDescription = stringResource(
+                R.string.profile_photo_of,
+                userName ?: stringResource(R.string.user)
+            ),
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
@@ -134,7 +138,7 @@ fun ErrorContent( // Uses TextComponent and ButtonComponent from AppComponent.kt
             verticalArrangement = Arrangement.Center
         ) {
             TextComponent( // Using TextComponent from AppComponent.kt
-                value = "Error: $errorMessage",
+                value = stringResource(R.string.error_detail, errorMessage),
                 // textSize = 18.sp, // TextComponent default is 12.sp, use its default or pass explicit M3 typography based size
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center
@@ -142,7 +146,7 @@ fun ErrorContent( // Uses TextComponent and ButtonComponent from AppComponent.kt
             Spacer(modifier = Modifier.height(16.dp))
             ButtonComponent( // Using ButtonComponent from AppComponent.kt
                 vectorLogo = Icons.Default.Refresh,
-                text = "Retry",
+                text = stringResource(R.string.retry),
                 onClick = onRetry,
                 modifier = Modifier.fillMaxWidth(0.6f)
             )
@@ -185,12 +189,12 @@ fun UserDashboardToast(uiState: DashboardScreenUiState) { // User Welcome Card
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text( // Standard Text for consistency within this card
-                    text = "Welcome back!",
+                    text = stringResource(R.string.welcome_back),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text( // Standard Text
-                    text = uiState.user?.name ?: "User",
+                    text = uiState.user?.name ?: stringResource(R.string.user_uc),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -238,7 +242,7 @@ fun DashboardContent( // Uses QuickActionButton from AppComponent.kt
         UserDashboardToast(uiState)
         Spacer(modifier = Modifier.height(24.dp))
         Text( // Standard Text for section header
-            text = "Quick Actions",
+            text = stringResource(R.string.quick_actions),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(bottom = 12.dp, start = 8.dp, end = 8.dp)
         )
@@ -252,25 +256,25 @@ fun DashboardContent( // Uses QuickActionButton from AppComponent.kt
         ) {
             onNavigateToAddTransaction?.let { navigate ->
                 QuickActionButton( // Using QuickActionButton from AppComponent.kt
-                    text = "New Txn",
+                    text = stringResource(R.string.new_txn),
                     onClick = navigate,
-                    contentDescription = "Add new Transaction",
+                    contentDescription = stringResource(R.string.add_new_transaction),
                     modifier = Modifier.weight(1f)
                 )
             }
             onNavigateToViewTransactions?.let { navigate ->
                 QuickActionButton( // Using QuickActionButton from AppComponent.kt
-                    text = "View Txns",
+                    text = stringResource(R.string.view_txns),
                     onClick = navigate,
-                    contentDescription = "View Transactions",
+                    contentDescription = stringResource(R.string.view_transactions),
                     modifier = Modifier.weight(1f)
                 )
             }
             onNavigateToSettings?.let { navigate ->
                 QuickActionButton( // Using QuickActionButton from AppComponent.kt
-                    text = "Settings",
+                    text = stringResource(R.string.settings),
                     onClick = navigate,
-                    contentDescription = "Open Settings",
+                    contentDescription = stringResource(R.string.open_settings),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -330,12 +334,12 @@ fun NetBalanceCard(
             ) {
                 Column {
                     Text(
-                        "Net Balance",
+                        stringResource(R.string.net_balance),
                         style = MaterialTheme.typography.titleMedium
                         // Color from Card's contentColor
                     )
                     Text(
-                        "${CurrencyUtils.getCurrencyCode(context)} ${summary.netTotal.toInt()}",
+                        "${AppPreferenceUtils.getCurrencyCode(context)} ${summary.netTotal.toInt()}",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (summary.netTotal >= 0) {
@@ -347,9 +351,9 @@ fun NetBalanceCard(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    BalanceMiniItem("Lent", summary.totalLent, true)
+                    BalanceMiniItem(stringResource(R.string.lent), summary.totalLent, true)
                     Spacer(modifier = Modifier.width(12.dp))
-                    BalanceMiniItem("Borrowed", summary.totalBorrowed, false)
+                    BalanceMiniItem(stringResource(R.string.borrowed), summary.totalBorrowed, false)
                     Spacer(modifier = Modifier.width(12.dp))
                     Icon(
                         imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -392,7 +396,7 @@ fun NetBalanceCard(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         BalanceItemExtended(
-                            label = "Lent",
+                            label = stringResource(R.string.lent),
                             amount = summary.totalLent,
                             isPositive = true,
                             icon = Icons.Default.KeyboardArrowUp,
@@ -406,7 +410,7 @@ fun NetBalanceCard(
                         Spacer(modifier = Modifier.width(16.dp))
 
                         BalanceItemExtended(
-                            label = "Borrowed",
+                            label = stringResource(R.string.borrowed),
                             amount = summary.totalBorrowed,
                             isPositive = false,
                             icon = Icons.Default.KeyboardArrowDown,
@@ -442,7 +446,7 @@ private fun BalanceMiniItem(label: String, amount: Double, isPositive: Boolean) 
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "${CurrencyUtils.getCurrencyCode(context)} ${amount.toInt()}",
+                text = "${AppPreferenceUtils.getCurrencyCode(context)} ${amount.toInt()}",
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
@@ -494,7 +498,7 @@ fun BalanceItemExtended(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "${CurrencyUtils.getCurrencyCode(context)} ${amount.toInt()}",
+            text = "${AppPreferenceUtils.getCurrencyCode(context)} ${amount.toInt()}",
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -516,9 +520,19 @@ fun BalanceItemExtended(
         ) {
             Text(
                 text = if (isPositive) {
-                    "Lent to $count ${if (count == 1) "person" else "people"}"
+                    stringResource(
+                        R.string.lent_to_n_person,
+                        count,
+                        if (count == 1) stringResource(R.string.person)
+                        else stringResource(R.string.people)
+                    )
                 } else {
-                    "Borrowed from $count ${if (count == 1) "person" else "people"}"
+                    stringResource(
+                        R.string.borrowed_from_n_person,
+                        count,
+                        if (count == 1) stringResource(R.string.person)
+                        else  stringResource(R.string.people)
+                    )
                 },
                 style = MaterialTheme.typography.labelMedium
             )

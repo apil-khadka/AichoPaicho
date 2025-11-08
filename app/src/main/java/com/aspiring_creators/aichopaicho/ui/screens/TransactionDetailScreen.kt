@@ -33,11 +33,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 // import androidx.compose.ui.graphics.Color // To be removed
 import androidx.compose.ui.tooling.preview.Preview // Added
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.ui.component.SnackbarComponent // Added
 import com.aspiring_creators.aichopaicho.ui.component.TransactionDetailsCard
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme // Added
@@ -51,6 +54,7 @@ fun TransactionDetailScreen(
     transactionDetailViewModel: TransactionDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val uiState by transactionDetailViewModel.uiState.collectAsStateWithLifecycle()
     var isEditing by remember { mutableStateOf(false) }
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
@@ -72,7 +76,7 @@ fun TransactionDetailScreen(
     }
      LaunchedEffect(uiState.isRecordDeleted) {
         if (uiState.isRecordDeleted) { // Check for explicit true
-            snackbarHostState.showSnackbar("Transaction deleted")
+            snackbarHostState.showSnackbar(context.getString(R.string.transaction_deleted))
             transactionDetailViewModel.acknowledgeRecordDeleted() // Reset flag
             onNavigateBack()
         }
@@ -82,8 +86,8 @@ fun TransactionDetailScreen(
     if (showDeleteConfirmationDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmationDialog = false },
-            title = { Text("Delete Transaction") },
-            text = { Text("Are you sure you want to delete this transaction? This action cannot be undone.") },
+            title = { Text(stringResource(R.string.delete_transaction)) },
+            text = { Text(stringResource(R.string.delete_transaction_confirmation)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -93,7 +97,7 @@ fun TransactionDetailScreen(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error) // Themed
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
@@ -101,7 +105,7 @@ fun TransactionDetailScreen(
                     onClick = { showDeleteConfirmationDialog = false },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary) // Themed
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
             // Dialog colors will use MaterialTheme defaults
@@ -111,7 +115,7 @@ fun TransactionDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Transaction Details") },
+                title = { Text(stringResource(R.string.transaction_details)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -190,11 +194,13 @@ fun TransactionDetailScreen(
                         )
                     }
                 } ?: Box(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = uiState.errorMessage ?: "Transaction not found or could not be loaded.",
+                        text = uiState.errorMessage ?: stringResource(R.string.transaction_not_found),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -232,7 +238,9 @@ fun TransactionDetailScreenPreview_Loading() {
                 )
             }
         ) { padding ->
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+            Box(Modifier
+                .fillMaxSize()
+                .padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }

@@ -3,12 +3,14 @@ package com.aspiring_creators.aichopaicho.viewmodel
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import androidx.core.app.ActivityCompat.recreate
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aspiring_creators.aichopaicho.CurrencyUtils
+import com.aspiring_creators.aichopaicho.AppLocaleManager
+import com.aspiring_creators.aichopaicho.AppPreferenceUtils
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.BackgroundSyncWorker
 import com.aspiring_creators.aichopaicho.data.entity.User
@@ -16,7 +18,6 @@ import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
 import com.aspiring_creators.aichopaicho.data.repository.PreferencesRepository
 import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
 import com.aspiring_creators.aichopaicho.data.repository.SyncRepository
-import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
 import com.aspiring_creators.aichopaicho.data.repository.UserRepository
 import com.aspiring_creators.aichopaicho.viewmodel.data.SettingsUiState
 import com.google.android.gms.tasks.Task
@@ -28,7 +29,6 @@ import com.google.firebase.auth.GoogleAuthProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -64,7 +64,7 @@ class SettingsViewModel @Inject constructor(
                 val user = userRepository.getUser()
                 val appVersion = getAppVersion()
                 val lastSync = getLastSyncTime()
-
+                val languageCode = AppPreferenceUtils.getLanguageCode(context)
                 val currencies = Currency.getAvailableCurrencies().map{it.currencyCode}
                val selectedCurrency: String =  preferencesRepository.getCurrency()
                 _uiState.value = _uiState.value.copy(
@@ -72,22 +72,31 @@ class SettingsViewModel @Inject constructor(
                     appVersion = appVersion,
                     lastSyncTime = lastSync ,
                     availableCurrencies = currencies,
-                    selectedCurrency = selectedCurrency
+                    selectedCurrency = selectedCurrency,
+                    selectedLanguage = languageCode
                 )
 
             } catch (e: Exception) {
-                setErrorMessage("Failed to load settings: ${e.message}")
+                setErrorMessage(context.getString(R.string.failed_to_load_settings, e.message))
             }
         }
     }
 
     fun loadCurrencySettings(context: Context) {
-        val currentCurrency = CurrencyUtils.getCurrencyCode(context)
+        val currentCurrency = AppPreferenceUtils.getCurrencyCode(context)
         _uiState.value = _uiState.value.copy(selectedCurrency = currentCurrency)
     }
 
+    fun updateLanguage(activity: Activity,language: String){
+        AppPreferenceUtils.setLanguageCode(context, language)
+        AppLocaleManager.setAppLocale(context , language)
+        _uiState.value = _uiState.value.copy(selectedLanguage = language)
+
+        recreate(activity)
+    }
+
     fun updateCurrency(context: Context, currencyCode: String) {
-        CurrencyUtils.setCurrencyCode(context, currencyCode)
+        AppPreferenceUtils.setCurrencyCode(context, currencyCode)
         _uiState.value = _uiState.value.copy(
             selectedCurrency = currencyCode,
             showCurrencyDropdown = false
@@ -120,7 +129,7 @@ class SettingsViewModel @Inject constructor(
             selectedCurrency = currency,
             showCurrencyDropdown = false
         )
-        CurrencyUtils.setCurrencyCode(context, currency)
+        AppPreferenceUtils.setCurrencyCode(context, currency)
     }
 
     fun hideSignInDialog() {
@@ -178,7 +187,7 @@ class SettingsViewModel @Inject constructor(
 
         } catch (e: Exception) {
             Log.e("SettingViewModel", "Sign in failed", e)
-            setErrorMessage(e.message ?: "Sign in failed")
+            setErrorMessage(e.message ?: context.getString(R.string.sign_in_failed))
             Result.failure(e)
         } finally {
         }
@@ -192,7 +201,7 @@ class SettingsViewModel @Inject constructor(
                 val idToken = googleIdTokenCredential.idToken
 
                 if (idToken.isEmpty()) {
-                    throw Exception("Failed to retrieve Google ID token")
+                    throw Exception(context.getString(R.string.failed_to_retrieve_google_id_token))
                 }
 
                 val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
@@ -201,7 +210,11 @@ class SettingsViewModel @Inject constructor(
                 return authResult.user
             }
             else -> {
-                throw IllegalArgumentException("Unsupported credential type: ${credential.type}")
+                throw IllegalArgumentException(
+                    context.getString(
+                        R.string.unsupported_credential_type,
+                        credential.type
+                    ))
             }
         }
     }
@@ -242,7 +255,7 @@ class SettingsViewModel @Inject constructor(
                 startSync()
             }
         } catch (e: Exception) {
-            setErrorMessage("Data transfer failed: ${e.message}")
+            setErrorMessage(context.getString(R.string.data_transfer_failed, e.message))
         }
     }
 
@@ -269,7 +282,7 @@ class SettingsViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                setErrorMessage("Sign out failed: ${e.message}")
+                setErrorMessage(context.getString(R.string.sign_out_failed, e.message))
             } finally {
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
@@ -293,17 +306,17 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             isSyncing = true,
             syncProgress = 0f,
-            syncMessage = "Starting backup..."
+            syncMessage = context.getString(R.string.starting_backup)
         )
         BackgroundSyncWorker.scheduleOneTimeSyncOnLogin(context)
         _uiState.value = _uiState.value.copy(
             syncProgress = 0.25f,
-            syncMessage = "Backing up contacts..."
+            syncMessage = context.getString(R.string.backing_up_contacts)
         )
 
         _uiState.value = _uiState.value.copy(
             syncProgress = 1f,
-            syncMessage = "Backup completed successfully"
+            syncMessage = context.getString(R.string.backup_completed_successfully)
         )
     }
     private fun getAppVersion(): String {

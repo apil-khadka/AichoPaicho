@@ -57,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -66,6 +67,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme // Added for previews
 import kotlinx.coroutines.Dispatchers
@@ -77,7 +79,7 @@ fun ContactPickerField(
     label: String,
     onContactSelected: (Contact) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Click logo to select from contacts",
+    placeholder: String = stringResource(R.string.contact_placeholder),
     selectedContact: Contact?,
 ) {
     var showContactPicker by remember { mutableStateOf(false) }
@@ -179,15 +181,15 @@ fun ContactPickerDialog(
     AlertDialog(
         modifier = modifier, // Apply modifier
         onDismissRequest = onDismiss,
-        title = { Text("Select Contact") },
+        title = { Text(stringResource(R.string.select_contact)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    label = { Text("Search contacts") },
+                    label = { Text(stringResource(R.string.search_contacts)) },
                     leadingIcon = {
-                        Icon(Icons.Filled.Search, "Search")
+                        Icon(Icons.Filled.Search, stringResource(R.string.search))
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
@@ -221,23 +223,27 @@ fun ContactPickerDialog(
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                                             Spacer(Modifier.height(8.dp))
-                                            Text("Loading contacts...")
+                                            Text(stringResource(R.string.loading_contacts))
                                         }
                                     }
                                 }
                                 hasError -> {
                                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        Text("Failed to load contacts", color = MaterialTheme.colorScheme.error)
+                                        Text(stringResource(R.string.failed_load_contacts), color = MaterialTheme.colorScheme.error)
                                     }
                                 }
                                 filteredContacts.isEmpty() && searchQuery.isNotEmpty() -> {
                                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        Text("No contacts found matching \"$searchQuery\"")
+                                        Text(
+                                            stringResource(
+                                                R.string.no_contacts_matching, searchQuery
+                                            )
+                                        )
                                     }
                                 }
                                 contacts.isEmpty() && !searchQuery.isNotEmpty() -> { // Changed from filteredContacts to contacts
                                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                       Text("No contacts found on device.", textAlign = TextAlign.Center)
+                                       Text(stringResource(R.string.no_contacts), textAlign = TextAlign.Center)
                                     }
                                 }
                                 else -> {
@@ -264,7 +270,7 @@ fun ContactPickerDialog(
                 onClick = onDismiss,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary) // Themed
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
 
@@ -329,7 +335,7 @@ fun ContactListItem(
                 }
                 if (contact.phone.size > 2) {
                     Text(
-                        text = "+${contact.phone.size - 2} more",
+                        text = stringResource(R.string.n_more, contact.phone.size - 2),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary // This is fine
                     )
@@ -528,7 +534,9 @@ private fun PermissionDeniedUI(
 ) {
     val context = LocalContext.current
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -539,15 +547,15 @@ private fun PermissionDeniedUI(
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            "Contact Permission Required",
+            stringResource(R.string.contact_permission_required),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            if (canRetry) "To select contacts, we need access. You can still enter names manually."
-            else "Permission was permanently denied. Enable it in settings to select contacts.",
+            if (canRetry) stringResource(R.string.request_permission_explanation)
+            else stringResource(R.string.permission_denied_explanation),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant // Themed
@@ -564,19 +572,19 @@ private fun PermissionDeniedUI(
             ) {
                 Icon(Icons.Filled.Settings, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Settings")
+                Text(stringResource(R.string.settings))
             }
             if (canRetry) {
                 Button(onClick = onRetryClick) { // M3 component, colors will adapt
                     Icon(Icons.Filled.Refresh, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Try Again")
+                    Text(stringResource(R.string.try_again))
                 }
             }
         }
         Spacer(Modifier.height(16.dp))
         Text(
-            "Note: Manual contact entry is always available.",
+            stringResource(R.string.note_manual_contact),
             style = MaterialTheme.typography.labelSmall,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.primary // Fine for emphasis

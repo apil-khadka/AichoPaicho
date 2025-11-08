@@ -1,8 +1,8 @@
 package com.aspiring_creators.aichopaicho
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
-import android.util.Log.DEBUG
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
@@ -13,6 +13,9 @@ class AichoPaichoApp : Application(), Configuration.Provider {
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+
+
 
     // This is the property that Configuration.Provider requires
     override val workManagerConfiguration: Configuration

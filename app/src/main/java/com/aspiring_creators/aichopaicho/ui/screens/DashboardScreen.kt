@@ -15,9 +15,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.User // For Preview
 import com.aspiring_creators.aichopaicho.data.entity.UserRecordSummary
 import com.aspiring_creators.aichopaicho.ui.component.DashboardContent
@@ -82,7 +84,7 @@ fun DashboardScreen(
                 item {
                     when {
                         uiState.isLoading -> {
-                            LoadingContent(text = "Loading Dashboard...")
+                            LoadingContent(text = stringResource(R.string.loading_dashboard))
                         }
                         !uiState.isSignedIn || uiState.user == null -> { // Simplified condition for not signed in
                             NotSignedInContent(onSignOut = onSignOut)

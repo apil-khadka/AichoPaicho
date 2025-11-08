@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 // import androidx.compose.ui.res.colorResource // No longer needed
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -76,7 +77,7 @@ fun WelcomeScreen(
         ) {
             Spacer(modifier = Modifier.size(33.dp))
 
-            LogoTopBar(logo = R.drawable.logo_aichopaicho, title = "AichoPaicho")
+            LogoTopBar(logo = R.drawable.logo_aichopaicho, title = stringResource(R.string.app_name))
 
             Spacer(modifier = Modifier.size(33.dp))
 
@@ -92,7 +93,7 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.size(33.dp))
 
             TextComponent(
-                value = "Never forget a loan or a debt",
+                value = stringResource(R.string.never_forget_a_loan_or_a_debt),
                 textSize = 28.sp,
                 lineHeight = 36.sp,
                 textAlign = TextAlign.Center
@@ -113,7 +114,7 @@ fun WelcomeScreen(
             // Google Sign In Button
             ButtonComponent(
                 logo = R.drawable.logo_google,
-                text = "Sign in with Google",
+                text = stringResource(R.string.sign_in_google),
                 onClick = {
                     scope.launch {
                         val result = welcomeViewModel.signInWithGoogle(activity, false)
@@ -131,7 +132,7 @@ fun WelcomeScreen(
             // Skip Button
             ButtonComponent(
                 logo = R.drawable.logo_skip,
-                text = "Skip for Now",
+                text = stringResource(R.string.skip_for_now),
                 onClick = {
                     scope.launch {
                         val result = welcomeViewModel.skipSignIn()

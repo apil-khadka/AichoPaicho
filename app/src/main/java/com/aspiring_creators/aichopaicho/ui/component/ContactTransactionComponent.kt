@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 // import androidx.compose.ui.res.stringResource // Not used
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,7 +44,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 // import androidx.compose.ui.unit.sp // Replaced with MaterialTheme.typography
-import com.aspiring_creators.aichopaicho.CurrencyUtils
+import com.aspiring_creators.aichopaicho.AppPreferenceUtils
+import com.aspiring_creators.aichopaicho.R
 // import com.aspiring_creators.aichopaicho.R // Not used
 import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.data.entity.Record
@@ -114,16 +115,16 @@ fun ContactSummaryCard(
                 else -> MaterialTheme.colorScheme.onSurface
             }
             Text(
-                text = "${CurrencyUtils.getCurrencySymbol(context)} ${ "%.2f".format(netBalance.toBigDecimal().abs())}", // Show absolute value
+                text = "${AppPreferenceUtils.getCurrencySymbol(context)} ${ "%.2f".format(netBalance.toBigDecimal().abs())}", // Show absolute value
                 style = MaterialTheme.typography.headlineMedium, // Themed
                 color = netBalanceColor
             )
 
             Text(
                 text = when {
-                    netBalance > 0 -> "They owe you"
-                    netBalance < 0 -> "You owe them"
-                    else -> "All settled"
+                    netBalance > 0 -> stringResource(R.string.they_owe_you)
+                    netBalance < 0 -> stringResource(R.string.you_owe_them)
+                    else -> stringResource(R.string.all_settled)
                 },
                 style = MaterialTheme.typography.bodySmall, // Themed
                 color = MaterialTheme.colorScheme.onSurfaceVariant // Themed
@@ -135,13 +136,13 @@ fun ContactSummaryCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 SummaryItem(
-                    label = "Total Lent", // Clarified label
+                    label = stringResource(R.string.total_lent), // Clarified label
                     amount = totalLent,
                     icon = Icons.AutoMirrored.Filled.ArrowForward,
                     color = MaterialTheme.colorScheme.primary // Use theme color
                 )
                 SummaryItem(
-                    label = "Total Borrowed", // Clarified label
+                    label = stringResource(R.string.total_borrowed), // Clarified label
                     amount = totalBorrowed,
                     icon = Icons.AutoMirrored.Filled.ArrowBack,
                     color = MaterialTheme.colorScheme.error // Use theme color
@@ -159,7 +160,7 @@ fun ContactSummaryCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "Show completed transactions",
+                    stringResource(R.string.show_completed_transactions),
                     style = MaterialTheme.typography.bodyMedium // Themed
                 )
             }
@@ -188,7 +189,7 @@ fun SummaryItem(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "${CurrencyUtils.getCurrencySymbol(context)} ${ "%.2f".format(amount)}",
+                text = "${AppPreferenceUtils.getCurrencySymbol(context)} ${ "%.2f".format(amount)}",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), // Themed
                 color = color
             )
@@ -219,19 +220,19 @@ fun ContactRecordTabs(
     ) {
         Row(modifier = Modifier.padding(4.dp)) {
             TabButtonInternal(
-                text = "All ($allCount)",
+                text = stringResource(R.string.all_count, allCount),
                 isSelected = selectedTab == 0,
                 onClick = { onTabSelected(0) },
                 modifier = Modifier.weight(1f)
             )
             TabButtonInternal(
-                text = "Lent ($lentCount)",
+                text = stringResource(R.string.lent_count, lentCount),
                 isSelected = selectedTab == 1,
                 onClick = { onTabSelected(1) },
                 modifier = Modifier.weight(1f)
             )
             TabButtonInternal(
-                text = "Borrowed ($borrowedCount)",
+                text = stringResource(R.string.borrowed_count, borrowedCount),
                 isSelected = selectedTab == 2,
                 onClick = { onTabSelected(2) },
                 modifier = Modifier.weight(1f)
@@ -278,17 +279,19 @@ fun EmptyRecordsCard() {
         )
     ) {
         Column(
-            modifier = Modifier.padding(24.dp).fillMaxWidth(), // Adjusted padding
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(), // Adjusted padding
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "No Records Found", // Title case
+                text = stringResource(R.string.no_records), // Title case
                 style = MaterialTheme.typography.titleMedium, // Themed
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "There are no transactions matching the current filters.", // More descriptive
+                text = stringResource(R.string.no_transactions), // More descriptive
                 style = MaterialTheme.typography.bodyMedium, // Themed
                 textAlign = TextAlign.Center
             )
@@ -345,7 +348,7 @@ fun ContactRecordCard(
                 ) {
                     Text(
                         // Assuming amount is stored in cents
-                        text = "$amountPrefix ${CurrencyUtils.getCurrencySymbol(context)} ${record.amount}",
+                        text = "$amountPrefix ${AppPreferenceUtils.getCurrencySymbol(context)} ${record.amount}",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), // Themed
                         color = amountColor,
                         textDecoration = if (record.isComplete) TextDecoration.LineThrough else TextDecoration.None
@@ -418,7 +421,7 @@ fun ContactHeadingDisplay(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = contact?.name ?: "Contact Details", // Fallback title
+            text = contact?.name ?: stringResource(R.string.contact_details), // Fallback title
             style = MaterialTheme.typography.titleLarge, // Themed for TopAppBar
             // Color will be inherited from TopAppBar
             modifier = Modifier.weight(1f, fill = false) // Allow text to take space but not push button
@@ -431,7 +434,7 @@ fun ContactHeadingDisplay(
                 modifier = Modifier.padding(start = 8.dp)
             ) {
                 Text(
-                    text = "View Details",
+                    text = stringResource(R.string.view_details),
                     color = MaterialTheme.colorScheme.primary // Themed
                 )
             }

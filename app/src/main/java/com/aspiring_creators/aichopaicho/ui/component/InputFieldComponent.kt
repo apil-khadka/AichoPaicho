@@ -30,10 +30,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 // import androidx.compose.ui.platform.LocalContext // Not used
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme // Added for previews
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -229,7 +231,7 @@ fun DateInputField(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary) // Themed
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             },
             dismissButton = {
@@ -237,7 +239,7 @@ fun DateInputField(
                     onClick = { showDialog = false },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant) // Themed
                 ) {
-                    Text("Cancel")
+                    Text( stringResource(R.string.cancel))
                 }
             },
             colors = dialogColors // Apply themed dialog colors

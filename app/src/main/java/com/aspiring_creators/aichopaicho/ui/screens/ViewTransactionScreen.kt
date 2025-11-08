@@ -25,9 +25,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.ui.component.SnackbarComponent
 import com.aspiring_creators.aichopaicho.ui.component.TransactionCard
 import com.aspiring_creators.aichopaicho.ui.component.TransactionFilterSection
@@ -125,7 +127,7 @@ fun ViewTransactionScreen(
                                 contentAlignment = Center
                             ) {
                                 Text(
-                                    text = "No transactions match your filters.",
+                                    text = stringResource(R.string.no_transactions_match),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

@@ -3,13 +3,15 @@ package com.aspiring_creators.aichopaicho.ui.navigation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme // Added import
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,6 +28,30 @@ import com.aspiring_creators.aichopaicho.ui.screens.ViewTransactionScreen
 import com.aspiring_creators.aichopaicho.ui.screens.WelcomeScreen
 import com.aspiring_creators.aichopaicho.viewmodel.AppNavigationViewModel
 
+private var lastNavigationTime = 0L
+private const val NAVIGATION_DEBOUNCE = 1000L
+
+private fun canNavigate(): Boolean {
+    val now = System.currentTimeMillis()
+    return if (now - lastNavigationTime >= NAVIGATION_DEBOUNCE) {
+        lastNavigationTime = now
+        true
+    } else {
+        false
+    }
+}
+
+private fun NavController.popSafe(): Boolean {
+    if (!canNavigate()) return false
+    if (currentBackStackEntry == null || previousBackStackEntry == null) return false
+    return popBackStack()
+}
+
+private fun NavController.navSafe(route: String, builder: NavOptionsBuilder.() -> Unit = {}) {
+    if (!canNavigate()) return
+    navigate(route, builder)
+}
+
 @Composable
 fun AppNavigationGraph(
     appNavigationViewModel: AppNavigationViewModel = hiltViewModel()
@@ -33,7 +59,6 @@ fun AppNavigationGraph(
     val navController = rememberNavController()
     val startDestination by appNavigationViewModel.startDestination.collectAsState()
 
-    // Show loading while determining start destination
     if (startDestination == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -49,7 +74,7 @@ fun AppNavigationGraph(
             composable(Routes.WELCOME_SCREEN) {
                 WelcomeScreen(
                     onNavigateToPermissions = {
-                        navController.navigate(Routes.PERMISSION_CONTACTS_SCREEN) {
+                        navController.navSafe(Routes.PERMISSION_CONTACTS_SCREEN) {
                             launchSingleTop = true
                         }
                     }
@@ -59,13 +84,13 @@ fun AppNavigationGraph(
             composable(Routes.PERMISSION_CONTACTS_SCREEN) {
                 PermissionScreen(
                     onNavigateToDashboard = {
-                        navController.navigate(Routes.DASHBOARD_SCREEN) {
+                        navController.navSafe(Routes.DASHBOARD_SCREEN) {
                             popUpTo(Routes.PERMISSION_CONTACTS_SCREEN) { inclusive = true }
                             launchSingleTop = true
                         }
                     },
                     onNavigateBack = {
-                        navController.popBackStack()
+                        navController.popSafe()
                     }
                 )
             }
@@ -73,28 +98,28 @@ fun AppNavigationGraph(
             composable(Routes.DASHBOARD_SCREEN) {
                 DashboardScreen(
                     onSignOut = {
-                        navController.navigate(Routes.WELCOME_SCREEN) {
+                        navController.navSafe(Routes.WELCOME_SCREEN) {
                             popUpTo(0) { inclusive = true }
                             launchSingleTop = true
                         }
                     },
                     onNavigateToAddTransaction = {
-                        navController.navigate(Routes.ADD_TRANSACTION_SCREEN){
+                        navController.navSafe(Routes.ADD_TRANSACTION_SCREEN){
                             launchSingleTop = true
                         }
                     },
                     onNavigateToViewTransactions = {
-                        navController.navigate(Routes.VIEW_TRANSACTION_SCREEN){
+                        navController.navSafe(Routes.VIEW_TRANSACTION_SCREEN){
                             launchSingleTop = true
                         }
                     },
                     onNavigateToSettings = {
-                        navController.navigate(Routes.SETTING_SCREEN){
+                        navController.navSafe(Routes.SETTING_SCREEN){
                             launchSingleTop = true
                         }
                     },
                     onNavigateToContactList = {
-                        navController.navigate("${Routes.CONTACT_LIST_SCREEN}/$it"){
+                        navController.navSafe("${Routes.CONTACT_LIST_SCREEN}/$it"){
                             launchSingleTop = true
                         }
                     }
@@ -104,7 +129,7 @@ fun AppNavigationGraph(
             composable(Routes.ADD_TRANSACTION_SCREEN) {
                 AddTransactionScreen(
                     onNavigateBack = {
-                        navController.popBackStack()
+                        navController.popSafe()
                     }
                 )
             }
@@ -112,20 +137,20 @@ fun AppNavigationGraph(
             composable(Routes.VIEW_TRANSACTION_SCREEN){
                 ViewTransactionScreen(
                     onNavigateBack = {
-                        navController.popBackStack()
+                        navController.popSafe()
                     },
                     onNavigateToIndividualRecord = {
-                        navController.navigate("${Routes.TRANSACTION_DETAIL_SCREEN}/$it"){
+                        navController.navSafe("${Routes.TRANSACTION_DETAIL_SCREEN}/$it"){
                             launchSingleTop = true
                         }
                     },
                     onNavigateToContactList ={
-                        navController.navigate("${Routes.CONTACT_TRANSACTION_SCREEN}/$it"){
+                        navController.navSafe("${Routes.CONTACT_TRANSACTION_SCREEN}/$it"){
                             launchSingleTop = true
                         }
                     },
                     onNavigateToContact = {
-                        navController.navigate("${Routes.CONTACT_LIST_SCREEN}/"){
+                        navController.navSafe("${Routes.CONTACT_LIST_SCREEN}/"){
                             launchSingleTop = true
                         }
                     }
@@ -142,7 +167,7 @@ fun AppNavigationGraph(
                 TransactionDetailScreen(
                     transactionId = transactionId!!,
                     onNavigateBack = {
-                        navController.popBackStack()
+                        navController.popSafe()
                     }
                 )
             }
@@ -156,10 +181,10 @@ fun AppNavigationGraph(
                 ContactTransactionScreen(
                     contactId = contactId!!,
                     onNavigateBack = {
-                        navController.popBackStack()
+                        navController.popSafe()
                     },
                     onNavigateToRecord = {
-                        navController.navigate("${Routes.TRANSACTION_DETAIL_SCREEN}/$it"){
+                        navController.navSafe("${Routes.TRANSACTION_DETAIL_SCREEN}/$it"){
                             launchSingleTop = true
                         }
                     }
@@ -176,12 +201,12 @@ fun AppNavigationGraph(
                 ContactListScreen(
                     type = type!!,
                     onContactClicked = {
-                        navController.navigate("${Routes.CONTACT_TRANSACTION_SCREEN}/$it"){
+                        navController.navSafe("${Routes.CONTACT_TRANSACTION_SCREEN}/$it"){
                             launchSingleTop = false
                         }
                     },
                     onNavigateBack = {
-                        navController.popBackStack()
+                        navController.popSafe()
                     }
                 )
             }
@@ -189,7 +214,7 @@ fun AppNavigationGraph(
             composable(Routes.SETTING_SCREEN){
                 SettingsScreen(
                     onNavigateBack = {
-                        navController.popBackStack()
+                        navController.popSafe()
                     }
                 )
             }

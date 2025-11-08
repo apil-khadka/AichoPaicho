@@ -26,10 +26,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember // Added
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview // Added
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.ui.component.ContactHeadingDisplay
 import com.aspiring_creators.aichopaicho.ui.component.ContactRecordCard
 import com.aspiring_creators.aichopaicho.ui.component.ContactRecordTabs
@@ -104,11 +106,13 @@ fun ContactTransactionScreen(
                 }
             } else if (uiState.contact == null && !uiState.isLoading) { // Contact not found or error state
                  Box(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = uiState.errorMessage ?: "Contact not found.",
+                        text = uiState.errorMessage ?: stringResource(R.string.contact_not_found),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

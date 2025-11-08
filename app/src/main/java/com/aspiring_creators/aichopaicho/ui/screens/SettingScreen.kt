@@ -30,15 +30,20 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat.recreate
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aspiring_creators.aichopaicho.R
@@ -46,6 +51,7 @@ import com.aspiring_creators.aichopaicho.ui.component.AboutSection
 import com.aspiring_creators.aichopaicho.ui.component.AppInformation
 import com.aspiring_creators.aichopaicho.ui.component.BackupSyncSettings
 import com.aspiring_creators.aichopaicho.ui.component.CurrencyDropdown
+import com.aspiring_creators.aichopaicho.ui.component.LanguageDropDown
 import com.aspiring_creators.aichopaicho.ui.component.SettingsCard
 import com.aspiring_creators.aichopaicho.ui.component.UserProfileCard
 import com.aspiring_creators.aichopaicho.viewmodel.SettingsViewModel
@@ -61,6 +67,12 @@ fun SettingsScreen(
     val context = LocalContext.current
     val activity = context as ComponentActivity
     val scope = rememberCoroutineScope()
+
+    val availableLanguages = remember {
+        mapOf("en" to "English", "ne" to "नेपाली (Nepali)")
+    }
+    var languageDropdownExpanded by remember { mutableStateOf(false) }
+
 
     Column(
         modifier = Modifier
@@ -114,11 +126,26 @@ fun SettingsScreen(
                     }
                 )
             }
+            SettingsCard(
+                title = "Language",
+                icon = Icons.Outlined.AddCircle
+            ) {
+                LanguageDropDown(
+                    selectedLanguageCode = uiState.selectedLanguage,
+                    availableLanguages = availableLanguages,
+                    expanded = languageDropdownExpanded,
+                    onToggleDropdown = { languageDropdownExpanded = !languageDropdownExpanded },
+                    onLanguageSelected = { newLangCode ->
+                        settingsViewModel.updateLanguage(activity,  newLangCode)
+                    }
+                )
+
+            }
 
             // Backup & Sync Settings
             if (uiState.user?.isOffline == false) {
                 SettingsCard(
-                    title = "Backup & Sync",
+                    title = stringResource(R.string.backup_sync),
                     icon = Icons.Default.ThumbUp
                 ) {
                     BackupSyncSettings(
@@ -135,7 +162,7 @@ fun SettingsScreen(
 
             // App Information
             SettingsCard(
-                title = "App Information",
+                title = stringResource(R.string.app_information),
                 icon = Icons.Default.Info
             ) {
                 AppInformation(
@@ -146,7 +173,7 @@ fun SettingsScreen(
 
             // About Section
             SettingsCard(
-                title = "About",
+                title = stringResource(R.string.about),
                 icon = Icons.Default.Info
             ) {
                 AboutSection()
@@ -166,9 +193,9 @@ fun SettingsScreen(
     if (uiState.showSignOutDialog) {
         AlertDialog(
             onDismissRequest = settingsViewModel::hideSignOutDialog,
-            title = { Text("Sign Out") },
+            title = { Text(stringResource(R.string.sign_out)) },
             text = {
-                Text("Are you sure you want to sign out? This will delete all your local data permanently.")
+                Text(stringResource(R.string.sign_out_confirm))
             },
             confirmButton = {
                 TextButton(
@@ -177,12 +204,12 @@ fun SettingsScreen(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Sign Out")
+                    Text(stringResource(R.string.sign_out))
                 }
             },
             dismissButton = {
                 TextButton(onClick = settingsViewModel::hideSignOutDialog) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

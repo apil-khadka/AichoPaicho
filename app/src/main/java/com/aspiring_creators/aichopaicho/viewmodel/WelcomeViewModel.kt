@@ -39,6 +39,7 @@ import kotlin.coroutines.resumeWithException
 
 @HiltViewModel
 class WelcomeViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val userRepository: UserRepository,
     private val firebaseAuth: FirebaseAuth,
     private val screenViewRepository: ScreenViewRepository,
@@ -119,7 +120,7 @@ class WelcomeViewModel @Inject constructor(
 
         } catch (e: Exception) {
             Log.e("WelcomeViewModel", "Sign in failed", e)
-            setErrorMessage(e.message ?: "Sign in failed")
+            setErrorMessage(e.message ?: context.getString(R.string.sign_in_failed))
             Result.failure(e)
         } finally {
             setLoading(false)
@@ -170,7 +171,7 @@ class WelcomeViewModel @Inject constructor(
                 val idToken = googleIdTokenCredential.idToken
 
                 if (idToken.isEmpty()) {
-                    throw Exception("Failed to retrieve Google ID token")
+                    throw Exception(context.getString(R.string.failed_to_retrieve_google_id_token))
                 }
 
                 val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
@@ -180,7 +181,10 @@ class WelcomeViewModel @Inject constructor(
                 return authResult.user
             }
             else -> {
-                throw IllegalArgumentException("Unsupported credential type: ${credential.type}")
+                throw IllegalArgumentException(context.getString(
+                    R.string.unsupported_credential_type,
+                    credential.type
+                ))
             }
         }
     }

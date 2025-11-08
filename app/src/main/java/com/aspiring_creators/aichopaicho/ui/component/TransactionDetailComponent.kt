@@ -1,10 +1,5 @@
 package com.aspiring_creators.aichopaicho.ui.component
 
-import android.content.ContentUris
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.provider.ContactsContract
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,10 +26,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.aspiring_creators.aichopaicho.CurrencyUtils
+import com.aspiring_creators.aichopaicho.AppPreferenceUtils
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.data.entity.Record
 import com.aspiring_creators.aichopaicho.data.entity.Type
@@ -89,7 +86,7 @@ fun TransactionDetailsCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Transaction Details",
+                    text = stringResource(R.string.transaction_details),
                     style = MaterialTheme.typography.titleLarge
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -98,7 +95,7 @@ fun TransactionDetailsCard(
                         onCheckedChange = { onCompletionToggle() }
                     )
                     Text(
-                        "Completed",
+                        text = stringResource(R.string.completed),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -109,8 +106,9 @@ fun TransactionDetailsCard(
             ContactDisplayRow(contact)
 
             DetailRow(
-                label = "Type",
-                value = (type?.name ?: TypeConstants.getTypeName(record.typeId)), // Use typeId as fallback
+                label = stringResource(R.string.type),
+                value = (type?.name
+                    ?: TypeConstants.getTypeName(record.typeId)), // Use typeId as fallback
                 isEditing = false
             )
 
@@ -121,22 +119,22 @@ fun TransactionDetailsCard(
                         amountText = it // Update local state
                         onAmountChange(it) // Pass raw string to ViewModel for parsing
                     },
-                    label = { Text("Amount") },
+                    label = { Text(stringResource(R.string.amount)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    prefix = { Text(CurrencyUtils.getCurrencySymbol(context)) }
+                    prefix = { Text(AppPreferenceUtils.getCurrencySymbol(context)) }
                 )
             } else {
                 DetailRow(
-                    label = "Amount",
+                    label = stringResource(R.string.amount),
                     // Assuming amount is stored in cents
-                    value = "${CurrencyUtils.getCurrencySymbol(context)} ${record.amount}",
+                    value = "${AppPreferenceUtils.getCurrencySymbol(context)} ${record.amount}",
                     isEditing = false
                 )
             }
 
             DetailRow(
-                label = "Date",
+                label = stringResource(R.string.date),
                 value = dateFormatter.format(Date(record.date)),
                 isEditing = false // Date is not editable in this component
             )
@@ -148,15 +146,15 @@ fun TransactionDetailsCard(
                         descriptionText = it // Update local state
                         onDescriptionChange(it)
                     },
-                    label = { Text("Description") },
+                    label = { Text(stringResource(R.string.description)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 5
                 )
             } else {
                 DetailRow(
-                    label = "Description",
-                    value = record.description ?: "No description",
+                    label = stringResource(R.string.description),
+                    value = record.description ?: stringResource(R.string.no_description),
                     isEditing = false
                 )
             }
@@ -169,12 +167,22 @@ fun TransactionDetailsCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Created: ${SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(record.createdAt))}",
+                    text = stringResource(
+                        R.string.created_at,
+                        SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(
+                            Date(record.createdAt)
+                        )
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Updated: ${SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(record.updatedAt))}",
+                    text = stringResource(
+                        R.string.updated_at,
+                        SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(
+                            Date(record.updatedAt)
+                        )
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -218,7 +226,7 @@ fun ContactDisplayRow(
     ) {
         Column(modifier = Modifier.weight(1f)) { // Allow name to take available space
             DetailRow(
-                label = "Contact",
+                label = stringResource(R.string.contact),
                 value = contact?.name ?: "Unknown Contact",
                 isEditing = false,
             )
@@ -231,7 +239,7 @@ fun ContactDisplayRow(
                 },
                 modifier = Modifier.padding(start = 8.dp) // Add some spacing
             ) {
-                Text(text = "View Details")
+                Text(text = stringResource(R.string.view_details))
             }
         }
     }
@@ -251,12 +259,24 @@ fun TransactionDetailsCardPreview() {
             updatedAt = System.currentTimeMillis() - 86400000L * 2,  // 2 days ago
             isDeleted = false
         )
-        val sampleContact = Contact(id = "contact1", name = "Alex Johnson", phone = listOf("555-0101"), contactId = "101", userId = "user1")
+        val sampleContact = Contact(
+            id = "contact1",
+            name = "Alex Johnson",
+            phone = listOf("555-0101"),
+            contactId = "101",
+            userId = "user1"
+        )
         val sampleType = Type(id = TypeConstants.LENT_ID, name = "Lent")
 
         TransactionDetailsCard(
-            record = sampleRecord, contact = sampleContact, type = sampleType, isEditing = false,
-            onAmountChange = {}, onDescriptionChange = {}, onDateChange = {}, onCompletionToggle = {}
+            record = sampleRecord,
+            contact = sampleContact,
+            type = sampleType,
+            isEditing = false,
+            onAmountChange = {},
+            onDescriptionChange = {},
+            onDateChange = {},
+            onCompletionToggle = {}
         )
     }
 }
@@ -275,12 +295,24 @@ fun TransactionDetailsCardEditingPreview() {
             updatedAt = System.currentTimeMillis() - 86400000L * 1,  // 1 day ago
             isDeleted = false
         )
-        val sampleContact = Contact(id = "contact2", name = "Maria Garcia", phone = listOf("555-0202"), contactId = "102", userId = "user1")
+        val sampleContact = Contact(
+            id = "contact2",
+            name = "Maria Garcia",
+            phone = listOf("555-0202"),
+            contactId = "102",
+            userId = "user1"
+        )
         val sampleType = Type(id = TypeConstants.BORROWED_ID, name = "Borrowed")
 
         TransactionDetailsCard(
-            record = sampleRecord, contact = sampleContact, type = sampleType, isEditing = true,
-            onAmountChange = {}, onDescriptionChange = {}, onDateChange = {}, onCompletionToggle = {}
+            record = sampleRecord,
+            contact = sampleContact,
+            type = sampleType,
+            isEditing = true,
+            onAmountChange = {},
+            onDescriptionChange = {},
+            onDateChange = {},
+            onCompletionToggle = {}
         )
     }
 }

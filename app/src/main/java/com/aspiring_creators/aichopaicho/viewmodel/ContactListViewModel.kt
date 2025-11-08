@@ -1,14 +1,17 @@
 package com.aspiring_creators.aichopaicho.viewmodel
 
+import android.content.Context
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
 import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
 import com.aspiring_creators.aichopaicho.ui.component.TypeConstants
 import com.aspiring_creators.aichopaicho.viewmodel.data.ContactListUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -17,6 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ContactListViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val contactRepository: ContactRepository,
     private val recordRepository: RecordRepository
 ) : ViewModel(){
@@ -36,7 +40,11 @@ class ContactListViewModel @Inject constructor(
     private suspend fun loadContacts() {
         _uiState.value = _uiState.value.copy(isLoading = true)
         contactRepository.getAllContacts()
-            .catch { e -> setErrorMessage("Failed to load contacts: ${e.message}") }
+            .catch { e -> setErrorMessage(
+                context.getString(
+                    R.string.failed_to_load_contacts,
+                    e.message
+                )) }
             .collect { contacts ->
                 val sortedContacts = contacts.sortedBy { it.name.uppercase() }
                 _uiState.value = _uiState.value.copy(
@@ -49,7 +57,12 @@ class ContactListViewModel @Inject constructor(
     private suspend fun loadRecords() {
         _uiState.value = _uiState.value.copy(isLoading = true)
         recordRepository.getAllRecords()
-            .catch { e -> setErrorMessage("Failed to load records: ${e.message}") }
+            .catch { e -> setErrorMessage(
+                context.getString(
+                    R.string.failed_to_load_records,
+                    e.message
+                )
+            ) }
             .collect { records ->
                 _uiState.value = _uiState.value.copy(
                     records = records,

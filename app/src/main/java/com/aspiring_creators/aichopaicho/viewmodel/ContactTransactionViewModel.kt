@@ -1,7 +1,9 @@
 package com.aspiring_creators.aichopaicho.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
 import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
 import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
@@ -15,10 +17,12 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import com.aspiring_creators.aichopaicho.data.entity.*
 import com.aspiring_creators.aichopaicho.ui.component.TypeConstants
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 
 @HiltViewModel
 class ContactTransactionViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val recordRepository: RecordRepository,
     private val contactRepository: ContactRepository,
     private val typeRepository: TypeRepository
@@ -36,7 +40,11 @@ class ContactTransactionViewModel @Inject constructor(
                 launch { loadRecords(contactId) }
                 launch { loadTypes() }
             } catch (e: Exception) {
-                setErrorMessage("Failed to load contact records: ${e.message}")
+                setErrorMessage(
+                    context.getString(
+                        R.string.failed_to_load_contact_records,
+                        e.message
+                    ))
             } finally {
                 setLoading(false)
             }
@@ -48,13 +56,22 @@ class ContactTransactionViewModel @Inject constructor(
             val contact = contactRepository.getContactById(contactId)
             _uiState.value = _uiState.value.copy(contact = contact)
         } catch (e: Exception) {
-            setErrorMessage("Failed to load contact: ${e.message}")
+            setErrorMessage(
+                context.getString(
+                    R.string.failed_to_load_contacts,
+                    e.message
+                ))
         }
     }
 
     private suspend fun loadRecords(contactId: String) {
         recordRepository.getRecordsByContactId(contactId)
-            .catch { e -> setErrorMessage("Failed to load records: ${e.message}") }
+            .catch { e -> setErrorMessage(
+                context.getString(
+                    R.string.failed_to_load_records,
+                    e.message
+                ))
+            }
             .collect { records ->
                 val filteredRecords = if (_uiState.value.showCompleted) {
                     records
@@ -78,7 +95,11 @@ class ContactTransactionViewModel @Inject constructor(
 
     private suspend fun loadTypes() {
         typeRepository.getAllTypes()
-            .catch { e -> setErrorMessage("Failed to load types: ${e.message}") }
+            .catch { e -> setErrorMessage(
+                context.getString(
+                    R.string.failed_to_load_types,
+                    e.message
+                )) }
             .collect { types ->
                 val typeMap = types.associateBy { it.id }
                 _uiState.value = _uiState.value.copy(types = typeMap)
@@ -123,7 +144,7 @@ class ContactTransactionViewModel @Inject constructor(
                     recordRepository.updateRecord(updatedRecord)
                 }
             } catch (e: Exception) {
-                setErrorMessage("Failed to update record: ${e.message}")
+                setErrorMessage(context.getString(R.string.failed_to_update_record, e.message))
             }
         }
     }
@@ -133,7 +154,7 @@ class ContactTransactionViewModel @Inject constructor(
             try {
                 recordRepository.deleteRecord(recordId)
             } catch (e: Exception) {
-                setErrorMessage("Failed to delete record: ${e.message}")
+                setErrorMessage(context.getString(R.string.failed_to_delete_record, e.message))
             }
         }
     }

@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.vector.DefaultTintColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -110,12 +111,12 @@ fun UserProfileCard(
 
             if (user?.isOffline == true) {
                 Text(
-                    text = "Local Account",
+                    text = stringResource(R.string.local_account),
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp
                 )
                 Text(
-                    text = "Sign in to backup your data",
+                    text = stringResource(R.string.sign_in_to_backup),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -136,11 +137,11 @@ fun UserProfileCard(
                         tint = Color.Unspecified
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Sign in with Google", color = Color.Black)
+                    Text( stringResource(R.string.sign_in_google), color = Color.Black)
                 }
             } else {
                 Text(
-                    text = user?.name ?: "Unknown User",
+                    text = user?.name ?: stringResource(R.string.unknown_user),
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp
                 )
@@ -159,7 +160,7 @@ fun UserProfileCard(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Sign Out")
+                    Text(stringResource(R.string.sign_out))
                 }
             }
         }
@@ -202,6 +203,48 @@ fun SettingsCard(
 }
 
 @Composable
+fun LanguageDropDown(
+    selectedLanguageCode: String,
+    availableLanguages: Map<String, String>,
+    expanded: Boolean,
+    onToggleDropdown: () -> Unit,
+    onLanguageSelected: (String) -> Unit
+) {
+    val languageDisplayMap = remember { availableLanguages }
+
+    Box {
+        OutlinedButton(
+            onClick = onToggleDropdown,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(languageDisplayMap[selectedLanguageCode] ?: selectedLanguageCode)
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = if (expanded) "Collapse language selection" else "Expand language selection"
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = onToggleDropdown,
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer)
+        ) {
+            availableLanguages.forEach { (code, name) ->
+                DropdownMenuItem(
+                    onClick = {
+                        onToggleDropdown()
+                        onLanguageSelected(code)
+                    },
+                    text = { Text(name) }
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
 fun CurrencyDropdown(
     selectedCurrency: String,
     allCurrencies: List<String>, // Rename for clarity
@@ -230,7 +273,7 @@ fun CurrencyDropdown(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Currency: $selectedCurrency")
+            Text(stringResource(R.string.currency, selectedCurrency))
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
                 imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -250,7 +293,7 @@ fun CurrencyDropdown(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search currency") },
+                placeholder = { Text(stringResource(R.string.search_currency)) },
                 singleLine = true,
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -268,7 +311,7 @@ fun CurrencyDropdown(
                 DropdownMenuItem(
                     enabled = false,
                     onClick = { },
-                    text = { Text("No matching currencies") }
+                    text = { Text(stringResource(R.string.no_matching_currencies)) }
                 )
             } else {
                 filteredCurrencies.forEach { currency ->
@@ -305,7 +348,7 @@ fun BackupSyncSettings(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Enable Backup")
+            Text(stringResource(R.string.enable_backup))
             Switch(
                 checked = isBackupEnabled,
                 onCheckedChange = { onToggleBackup() }
@@ -335,7 +378,7 @@ fun BackupSyncSettings(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Manual Backup", fontSize = 14.sp)
+                        Text(stringResource(R.string.manual_backup), fontSize = 14.sp)
                         lastSyncTime?.let {
                             Text(
                                 text = "Last: ${dateFormatter.format(Date(it))}",
@@ -351,7 +394,7 @@ fun BackupSyncSettings(
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Backup Now")
+                        Text(stringResource(R.string.backup_now))
                     }
                 }
             }
@@ -369,14 +412,14 @@ fun AppInformation(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Version")
+            Text(stringResource(R.string.version))
             Text(version, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Build")
+            Text(stringResource(R.string.build))
             Text(buildNumber, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -386,21 +429,21 @@ fun AppInformation(
 fun AboutSection() {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Privacy Policy",
+            text = stringResource(R.string.privacy_policy),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { /* Open privacy policy */ }
                 .padding(vertical = 8.dp)
         )
         Text(
-            text = "Terms of Service",
+            text = stringResource(R.string.terms_of_service),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { /* Open terms */ }
                 .padding(vertical = 8.dp)
         )
         Text(
-            text = "Contact Support",
+            text = stringResource(R.string.contact_support),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { /* Open support */ }

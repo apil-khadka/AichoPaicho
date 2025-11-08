@@ -1,12 +1,15 @@
 package com.aspiring_creators.aichopaicho.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.local.ScreenViewRepository
 import com.aspiring_creators.aichopaicho.ui.navigation.Routes
 import com.aspiring_creators.aichopaicho.viewmodel.data.PermissionScreenUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PermissionViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val screenViewRepository: ScreenViewRepository
 ) : ViewModel() {
 
@@ -46,7 +50,7 @@ class PermissionViewModel @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("PermissionViewModel", "Error marking permission screen as shown", e)
-            setErrorMessage("Failed to save permission status")
+            setErrorMessage(context.getString(R.string.failed_to_save_permission_status))
             Result.failure(e)
         } finally {
             setLoading(false)
@@ -64,7 +68,7 @@ class PermissionViewModel @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("PermissionViewModel", "Error marking permission screen as shown", e)
-            setErrorMessage("Failed to save permission status")
+            setErrorMessage(context.getString(R.string.failed_to_save_permission_status))
             Result.failure(e)
         } finally {
             setLoading(false)

@@ -2,9 +2,6 @@ package com.aspiring_creators.aichopaicho.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,7 +9,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,11 +17,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -34,16 +26,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aspiring_creators.aichopaicho.CurrencyUtils
+import com.aspiring_creators.aichopaicho.AppPreferenceUtils
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.data.entity.Record
 import com.aspiring_creators.aichopaicho.data.entity.UserRecordSummary
@@ -53,6 +46,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.String
 import kotlin.Unit
+import kotlin.to
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,10 +60,10 @@ fun TransactionTopBar(
     val dateFormatter = remember { SimpleDateFormat("dd MMM yy", Locale.getDefault()) }
 
     // Display text: Show "All Time" or specific dates
-    val startDateText = if (dateRange.first == Long.MIN_VALUE) "Start" else dateFormatter.format(Date(dateRange.first))
-    val endDateText = if (dateRange.second == Long.MAX_VALUE) "End" else dateFormatter.format(Date(dateRange.second))
+    val startDateText = if (dateRange.first == Long.MIN_VALUE) stringResource(R.string.start) else dateFormatter.format(Date(dateRange.first))
+    val endDateText = if (dateRange.second == Long.MAX_VALUE) stringResource(R.string.end) else dateFormatter.format(Date(dateRange.second))
     val dateRangeText = if (dateRange.first == Long.MIN_VALUE && dateRange.second == Long.MAX_VALUE) {
-        "All Time"
+        stringResource(R.string.all_time)
     } else {
         "$startDateText – $endDateText"
     }
@@ -144,13 +138,13 @@ fun TransactionTopBar(
             TextButton(onClick = {
                 onDateRangeSelected(Long.MIN_VALUE, Long.MAX_VALUE)
             }) {
-                Text("Clear", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.clear), style = MaterialTheme.typography.bodySmall)
             }
 
             IconButton(onClick = onContactsNavigation) {
                 Icon(
                     imageVector = Icons.Default.AccountBox, // Example icon
-                    contentDescription = "View Contacts",
+                    contentDescription = stringResource(R.string.view_contacts),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant // Adjust tint as needed
                 )
             }
@@ -204,7 +198,7 @@ fun TransactionTopBar(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             },
             dismissButton = {
@@ -212,7 +206,7 @@ fun TransactionTopBar(
                     onClick = { showDatePickerDialog = false },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
 
@@ -225,7 +219,7 @@ fun TransactionTopBar(
                 // colors = DatePickerDefaults.colors(...)
                 title = {
                     Text(
-                        text = "Select Date Range",
+                        text = stringResource(R.string.select_date_range),
                         modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp, bottom = 12.dp),
                         style = MaterialTheme.typography.titleMedium
                     )
@@ -234,7 +228,9 @@ fun TransactionTopBar(
                     Text(
                         text = formatDatePickerHeadline(
                             dateRangePickerState.selectedStartDateMillis,
+                            stringResource(R.string.start_date),
                             dateRangePickerState.selectedEndDateMillis,
+                            stringResource(R.string.end_date),
                             dateFormatter
                         ),
                         modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 0.dp, bottom = 20.dp),
@@ -250,11 +246,13 @@ fun TransactionTopBar(
 @OptIn(ExperimentalMaterial3Api::class)
 private fun formatDatePickerHeadline(
     startMillis: Long?,
+    startText: String?,
     endMillis: Long?,
+    endText: String?,
     dateFormatter: SimpleDateFormat
 ): String {
-    val startStr = startMillis?.let { dateFormatter.format(Date(it)) } ?: "Start Date"
-    val endStr = endMillis?.let { dateFormatter.format(Date(it)) } ?: "End Date"
+    val startStr = startMillis?.let { dateFormatter.format(Date(it)) } ?: startText
+    val endStr = endMillis?.let { dateFormatter.format(Date(it)) } ?: endText
     return "$startStr - $endStr"
 }
 
@@ -321,7 +319,7 @@ fun ContactChip(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "${CurrencyUtils.getCurrencyCode(context)} ${contact.amount.toInt()}",
+                    text = "${AppPreferenceUtils.getCurrencyCode(context)} ${contact.amount.toInt()}",
                     style = MaterialTheme.typography.labelSmall,
                     color = baseColor // Use tertiary for amount text to match avatar theme
                 )
@@ -400,18 +398,18 @@ fun TransactionFilterSection(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Filter",
+                        text = stringResource(R.string.filter),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     // brief summary of active filters in single line (compact)
                     val summary = buildString {
-                        if (selectedType == TypeConstants.LENT_ID) append("• Lent ")
-                        else if (selectedType == TypeConstants.BORROWED_ID) append("• Borrowed ")
-                        if (fromQuery.isNotBlank()) append("• From=$fromQuery ")
+                        if (selectedType == TypeConstants.LENT_ID) append("• ${stringResource(R.string.lent)} ")
+                        else if (selectedType == TypeConstants.BORROWED_ID) append("• ${stringResource(R.string.borrowed)} ")
+                        if (fromQuery.isNotBlank()) append("• ${stringResource(R.string.from)}=$fromQuery ")
                         if (moneyToQuery.isNotBlank()) append("• ≤ $moneyToQuery")
-                        if (showCompleted) append(" • Completed")
+                        if (showCompleted) append(" • ${stringResource(R.string.completed)}")
                     }
                     if (summary.isNotEmpty()) {
                         Text(
@@ -469,7 +467,7 @@ fun TransactionFilterSection(
                                 onMoneyToQueryChanged("")
                                 onShowCompletedChanged(false)
                             }) {
-                                Text("Clear", style = MaterialTheme.typography.bodySmall)
+                                Text(stringResource(R.string.clear), style = MaterialTheme.typography.bodySmall)
                             }
                     }
 
@@ -481,14 +479,14 @@ fun TransactionFilterSection(
                         OutlinedTextField(
                             value = fromQuery,
                             onValueChange = onFromQueryChanged,
-                            label = { Text("From") },
+                            label = { Text(stringResource(R.string.from)) },
                             singleLine = true,
                             modifier = Modifier.weight(1f)
                         )
                         OutlinedTextField(
                             value = moneyToQuery,
                             onValueChange = onMoneyToQueryChanged,
-                            label = { Text("To") },
+                            label = { Text(stringResource(R.string.to)) },
                             singleLine = true,
                             modifier = Modifier.weight(1f)
                         )
@@ -497,7 +495,7 @@ fun TransactionFilterSection(
                             onClick = { onMoneyFilterApplyClicked() },
                             modifier = Modifier.height(56.dp)
                         ) {
-                            Text("Apply")
+                            Text(stringResource(R.string.apply))
                         }
                     }
 
@@ -513,12 +511,12 @@ fun TransactionFilterSection(
                                 onCheckedChange = onShowCompletedChanged,
                                 modifier = Modifier.padding(end = 8.dp)
                             )
-                            Text("Show completed")
+                            Text(stringResource(R.string.show_completed))
                         }
 
                         // collapse button
                         TextButton(onClick = { expanded = false }) {
-                            Text("Done")
+                            Text(stringResource(R.string.done))
                         }
                     }
                 }
@@ -594,7 +592,7 @@ fun TransactionCard(
             // Details
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = contact?.name ?: "Unknown",
+                    text = contact?.name ?: stringResource(R.string.unknown),
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -615,7 +613,7 @@ fun TransactionCard(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${if (isLent) "+" else "-"} ${CurrencyUtils.getCurrencyCode(LocalContext.current)} ${record.amount}",
+                    text = "${if (isLent) "+" else "-"} ${AppPreferenceUtils.getCurrencyCode(LocalContext.current)} ${record.amount}",
                     fontWeight = FontWeight.Bold,
                     color = accent,
                     textDecoration = if (record.isComplete) TextDecoration.LineThrough else TextDecoration.None

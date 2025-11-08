@@ -1,12 +1,15 @@
 package com.aspiring_creators.aichopaicho.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
 import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
 import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
 import com.aspiring_creators.aichopaicho.viewmodel.data.RecordDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +18,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class TransactionDetailViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val recordRepository: RecordRepository,
     private val contactRepository: ContactRepository,
     private val typeRepository: TypeRepository
@@ -41,7 +45,7 @@ class TransactionDetailViewModel @Inject constructor(
                     val type = typeRepository.getTypeById(record.typeId)
                     _uiState.value = _uiState.value.copy(type = type)
                 } else {
-                    _uiState.value = _uiState.value.copy(errorMessage = "Record not found")
+                    _uiState.value = _uiState.value.copy(errorMessage = context.getString(R.string.record_not_found))
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(errorMessage = e.message)
