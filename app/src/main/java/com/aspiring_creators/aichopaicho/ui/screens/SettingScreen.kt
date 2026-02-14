@@ -43,9 +43,9 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat.recreate
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aspiring_creators.aichopaicho.AppLocaleManager
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.ui.component.AboutSection
 import com.aspiring_creators.aichopaicho.ui.component.AppInformation
@@ -120,9 +120,9 @@ fun SettingsScreen(
                     selectedCurrency = uiState.selectedCurrency,
                     allCurrencies = uiState.availableCurrencies,
                     expanded = uiState.showCurrencyDropdown,
-                    onToggleDropdown = settingsViewModel::toggleCurrencyDropdown,
+                    onToggleDropdown = { settingsViewModel.toggleCurrencyDropdown(!uiState.showCurrencyDropdown) },
                     onCurrencySelected = { currency ->
-                        settingsViewModel.selectCurrency(currency, context)
+                        settingsViewModel.selectCurrency(currency)
                     }
                 )
             }
@@ -136,7 +136,9 @@ fun SettingsScreen(
                     expanded = languageDropdownExpanded,
                     onToggleDropdown = { languageDropdownExpanded = !languageDropdownExpanded },
                     onLanguageSelected = { newLangCode ->
-                        settingsViewModel.updateLanguage(activity,  newLangCode)
+                        AppLocaleManager.setAppLocale(context, newLangCode)
+                        settingsViewModel.updateLanguage(newLangCode)
+                        activity.recreate()
                     }
                 )
 
@@ -150,7 +152,7 @@ fun SettingsScreen(
                 ) {
                     BackupSyncSettings(
                         isBackupEnabled = uiState.isBackupEnabled,
-                        onToggleBackup = settingsViewModel::toggleBackupEnabled,
+                        onToggleBackup = { settingsViewModel.toggleBackupEnabled(!uiState.isBackupEnabled) },
                         isSyncing = uiState.isSyncing,
                         syncProgress = uiState.syncProgress,
                         syncMessage = uiState.syncMessage,
@@ -227,4 +229,3 @@ fun SettingsScreen(
         }
     }
 }
-

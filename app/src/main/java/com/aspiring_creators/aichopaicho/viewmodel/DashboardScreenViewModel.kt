@@ -5,12 +5,15 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aspiring_creators.aichopaicho.R
+import com.aspiring_creators.aichopaicho.data.entity.User
+import com.aspiring_creators.aichopaicho.data.repository.LoanRepository
 import com.aspiring_creators.aichopaicho.data.repository.UserRecordSummaryRepository
 import com.aspiring_creators.aichopaicho.data.repository.UserRepository
 import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,10 +27,14 @@ class DashboardScreenViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val firebaseAuth: FirebaseAuth,
     private val userRecordSummaryRepository: UserRecordSummaryRepository,
+    private val loanRepository: LoanRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardScreenUiState(isLoading = true))
     val uiState: StateFlow<DashboardScreenUiState> = _uiState.asStateFlow()
+
+    private var summaryJob: Job? = null
+    private var loansJob: Job? = null
 
     private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
         viewModelScope.launch {
@@ -37,21 +44,24 @@ class DashboardScreenViewModel @Inject constructor(
                 loadUserDataAndDependents()
             } else {
                 Log.d("DashboardViewModel", "AuthStateListener: Firebase user signed out. Clearing UI state.")
-                _uiState.value = DashboardScreenUiState(isSignedIn = false) // Reset to a clean, signed-out state
+                _uiState.value = DashboardScreenUiState(isSignedIn = false)
+                cancelJobs()
             }
         }
     }
 
     init {
         firebaseAuth.addAuthStateListener(authStateListener)
-        // The listener will be called with the initial auth state.
-        // If there's no current user, it will set isSignedIn to false.
-        // If there is a user, it will call loadUserDataAndDependents().
     }
 
     override fun onCleared() {
         super.onCleared()
         firebaseAuth.removeAuthStateListener(authStateListener)
+    }
+
+    private fun cancelJobs() {
+        summaryJob?.cancel()
+        loansJob?.cancel()
     }
 
     fun loadUserDataAndDependents() {
@@ -60,33 +70,30 @@ class DashboardScreenViewModel @Inject constructor(
             try {
                 val firebaseUser = firebaseAuth.currentUser
                 if (firebaseUser != null) {
-                    // Firebase reports a signed-in user.
-                    val localUser = userRepository.getUser() // Fetch from local DB
+                    val localUser = userRepository.getUser()
 
-                    // Crucial check: Does the local user match the Firebase session?
-                    if (localUser.id == firebaseUser.uid && !localUser.isOffline) {
+                    // Simple check: if local user ID matches Firebase UID, we are good.
+                    // The offline check might be too aggressive if we just synced.
+                    if (localUser.id == firebaseUser.uid) {
                         _uiState.value = _uiState.value.copy(
                             user = localUser,
                             isSignedIn = true,
                             isLoading = false
                         )
-                        Log.d("DashboardViewModel", "User data loaded and matches Firebase session: ${localUser.name}")
-                        loadRecordSummary() // Load summary now that user is confirmed
+                        loadRecordSummary()
+                        loadRecentLoans()
                     } else {
-                        Log.w("DashboardViewModel", "Local user (ID: ${localUser.id}, Offline: ${localUser.isOffline}) mismatch with Firebase session (UID: ${firebaseUser.uid}). Treating as not fully signed in.")
-                        // This could happen if local data is stale or sign-out didn't fully clear things.
-                        _uiState.value = _uiState.value.copy(
-                            user = null, // Or localUser if you want to show some details despite mismatch
+                         // Mismatch or offline user trying to become online?
+                         // For now, let's assume we use local user if IDs match.
+                        Log.w("DashboardViewModel", "Local user ID ${localUser.id} mismatch with Firebase ${firebaseUser.uid}")
+                         _uiState.value = _uiState.value.copy(
+                            user = null,
                             isSignedIn = false,
                             isLoading = false,
-                            errorMessage = if (localUser.id.isNotEmpty() && localUser.id != firebaseUser.uid) context.getString(
-                                R.string.account_mismatch
-                            ) else null
+                            errorMessage = context.getString(R.string.account_mismatch)
                         )
                     }
                 } else {
-                    // No Firebase user, so cannot be signed in.
-                    Log.d("DashboardViewModel", "loadUserDataAndDependents: No Firebase user found.")
                     _uiState.value = _uiState.value.copy(
                         user = null,
                         isSignedIn = false,
@@ -105,8 +112,9 @@ class DashboardScreenViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadRecordSummary() {
-        if (_uiState.value.isSignedIn && _uiState.value.user != null) {
+    private fun loadRecordSummary() {
+        summaryJob?.cancel()
+        summaryJob = viewModelScope.launch {
             userRecordSummaryRepository.getCurrentUserSummary()
                 .catch { e ->
                     Log.e("DashboardViewModel", "Error loading summary", e)
@@ -118,19 +126,23 @@ class DashboardScreenViewModel @Inject constructor(
                 .collect { summary ->
                     _uiState.value = _uiState.value.copy(recordSummary = summary)
                 }
-        } else {
-            Log.d("DashboardViewModel", "Skipping record summary load: User not signed in or null.")
-            _uiState.value = _uiState.value.copy(recordSummary = null) // Clear summary if not signed in
+        }
+    }
+
+    private fun loadRecentLoans() {
+        loansJob?.cancel()
+        loansJob = viewModelScope.launch {
+            loanRepository.getRecentLoans(5)
+                .catch { e ->
+                    Log.e("DashboardViewModel", "Error loading recent loans", e)
+                }
+                .collect { loans ->
+                    _uiState.value = _uiState.value.copy(recentLoans = loans)
+                }
         }
     }
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
-
-    // Helper methods (consider if they are still needed or if UI directly uses uiState.user)
-    fun getUserName(): String? = uiState.value.user?.name
-    fun getUserEmail(): String? = uiState.value.user?.email
-    fun getUserId(): String? = uiState.value.user?.id
-    fun isUserSignedIn(): Boolean = uiState.value.isSignedIn && uiState.value.user != null
 }

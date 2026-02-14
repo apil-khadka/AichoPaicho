@@ -1,32 +1,40 @@
 package com.aspiring_creators.aichopaicho.ui.screens
 
-// import androidx.compose.foundation.background // To be removed
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults // Added
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme // Added
-import androidx.compose.material3.Scaffold // Added
-import androidx.compose.material3.SnackbarHostState // Added
-import androidx.compose.material3.Surface // Added
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults // Added
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,214 +42,211 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-// import androidx.compose.ui.graphics.Color // To be removed
-import androidx.compose.ui.tooling.preview.Preview // Added
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aspiring_creators.aichopaicho.R
-import com.aspiring_creators.aichopaicho.ui.component.SnackbarComponent // Added
-import com.aspiring_creators.aichopaicho.ui.component.TransactionDetailsCard
-import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme // Added
+import com.aspiring_creators.aichopaicho.ui.component.BatchPaymentInput
+import com.aspiring_creators.aichopaicho.ui.component.PaymentHistory
+import com.aspiring_creators.aichopaicho.ui.theme.BorrowedColor
+import com.aspiring_creators.aichopaicho.ui.theme.LentColor
 import com.aspiring_creators.aichopaicho.viewmodel.TransactionDetailViewModel
-
+import java.text.DateFormat
+import java.text.NumberFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionDetailScreen(
     transactionId: String,
-    transactionDetailViewModel: TransactionDetailViewModel = hiltViewModel(),
+    viewModel: TransactionDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val uiState by transactionDetailViewModel.uiState.collectAsStateWithLifecycle()
-    var isEditing by remember { mutableStateOf(false) }
-    var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(transactionId) {
-        if (transactionId.isBlank()) { // Check for blank instead of just empty
-            onNavigateBack()
-            return@LaunchedEffect
+        if(transactionId.isNotBlank()) {
+            viewModel.loadRecord(transactionId)
         }
-        transactionDetailViewModel.loadRecord(transactionId)
     }
 
-    LaunchedEffect(uiState.errorMessage) {
-        uiState.errorMessage?.let { error ->
-            snackbarHostState.showSnackbar(error)
-            transactionDetailViewModel.clearErrorMessage() // Acknowledge
-        }
-    }
-     LaunchedEffect(uiState.isRecordDeleted) {
-        if (uiState.isRecordDeleted) { // Check for explicit true
-            snackbarHostState.showSnackbar(context.getString(R.string.transaction_deleted))
-            transactionDetailViewModel.acknowledgeRecordDeleted() // Reset flag
+    LaunchedEffect(uiState.isRecordDeleted) {
+        if (uiState.isRecordDeleted) {
+            viewModel.acknowledgeRecordDeleted()
             onNavigateBack()
         }
     }
 
-
-    if (showDeleteConfirmationDialog) {
+    if (showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = { showDeleteConfirmationDialog = false },
-            title = { Text(stringResource(R.string.delete_transaction)) },
-            text = { Text(stringResource(R.string.delete_transaction_confirmation)) },
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Transaction") },
+            text = { Text("Are you sure you want to delete this transaction? This action cannot be undone.") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        transactionDetailViewModel.deleteRecord()
-                        showDeleteConfirmationDialog = false
-                        // onNavigateBack() will be called by LaunchedEffect on uiState.isRecordDeleted
+                        viewModel.deleteRecord()
+                        showDeleteDialog = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error) // Themed
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text(stringResource(R.string.delete))
+                    Text("Delete")
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { showDeleteConfirmationDialog = false },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary) // Themed
-                ) {
-                    Text(stringResource(R.string.cancel))
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
                 }
             }
-            // Dialog colors will use MaterialTheme defaults
         )
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.transaction_details)) },
+                title = { Text("Transaction Details") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface // Standard M3 behavior
-                        )
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    if (uiState.record != null && !uiState.isLoading) { // Show actions only if record loaded
-                        IconButton(
-                            onClick = {
-                                if (isEditing) {
-                                    transactionDetailViewModel.saveRecord()
-                                }
-                                isEditing = !isEditing // Toggle edit state
-                            }
-                        ) {
-                            Icon(
-                                if (isEditing) Icons.Default.Done else Icons.Default.Edit,
-                                contentDescription = if (isEditing) "Save" else "Edit",
-                                tint = if(isEditing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant // Themed Save icon
-                            )
-                        }
-                        IconButton(onClick = { showDeleteConfirmationDialog = true }) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.error // Themed Delete icon
-                            )
-                        }
+                    IconButton(onClick = { showDeleteDialog = true }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors( // Themed TopAppBar
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant // Default for actions
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            color = MaterialTheme.colorScheme.background // Themed background
-        ) {
-            if (uiState.isLoading && uiState.record == null) { // Show loader only if record is not yet available
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (uiState.loan == null) {
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+                Text("Transaction not found", color = MaterialTheme.colorScheme.error)
+            }
+        } else {
+            val loan = uiState.loan!!
+            val contact = uiState.contact
+            val type = uiState.type
+            val isLent = type?.name == "Lent" // Or use ID check
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Header Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) // Themed
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = contact?.name ?: "Unknown Contact",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(loan.date)),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Text(
+                                text = type?.name ?: "",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (isLent) LentColor else BorrowedColor,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.size(16.dp))
+
+                        Text("Original Amount", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(loan.amount),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(modifier = Modifier.size(8.dp))
+
+                        if (!loan.description.isNullOrBlank()) {
+                            Text("Description", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                text = loan.description,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
                 }
-            } else {
-                uiState.record?.let { record ->
-                    Column(
+
+                // Balance Info
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                     colors = CardDefaults.cardColors(
+                        containerColor = if (uiState.remainingBalance <= 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Row(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .fillMaxWidth()
                             .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        TransactionDetailsCard(
-                            record = record,
-                            contact = uiState.contact,
-                            type = uiState.type,
-                            isEditing = isEditing,
-                            // Assuming ViewModel's updateAmount takes String as per TransactionDetailComponent
-                            onAmountChange = transactionDetailViewModel::updateAmount,
-                            onDescriptionChange = transactionDetailViewModel::updateDescription,
-                            onDateChange = transactionDetailViewModel::updateDate,
-                            onCompletionToggle = transactionDetailViewModel::toggleCompletion
+                        Text(
+                            text = if (uiState.remainingBalance <= 0) "Fully Paid" else "Remaining Balance",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (uiState.remainingBalance <= 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Text(
+                            text = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(if(uiState.remainingBalance < 0) 0.0 else uiState.remainingBalance),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                             color = if (uiState.remainingBalance <= 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
-                } ?: Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = uiState.errorMessage ?: stringResource(R.string.transaction_not_found),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                }
+
+                // Partial Payment Input
+                if (uiState.remainingBalance > 0.01) {
+                    BatchPaymentInput(
+                        remainingBalance = uiState.remainingBalance,
+                        onPaymentSubmit = { amount ->
+                            viewModel.addRepayment(amount)
+                        },
+                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
-            }
-        }
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun TransactionDetailScreenPreview_ViewMode() {
-    AichoPaichoTheme {
-        TransactionDetailScreen(
-            transactionId = "previewIdView",
-            onNavigateBack = {}
-
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview(showBackground = true)
-@Composable
-fun TransactionDetailScreenPreview_Loading() {
-    AichoPaichoTheme {
-        // Simulate loading state. In a real app, this would be driven by ViewModel state.
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Transaction Details") },
-                    navigationIcon = {
-                        IconButton(onClick = {}) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-                    }
+                // Payment History
+                PaymentHistory(
+                    repayments = uiState.repayments,
+                    modifier = Modifier.padding(16.dp)
                 )
-            }
-        ) { padding ->
-            Box(Modifier
-                .fillMaxSize()
-                .padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
     }

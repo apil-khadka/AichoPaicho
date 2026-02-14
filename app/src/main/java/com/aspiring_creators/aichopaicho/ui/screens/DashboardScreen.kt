@@ -34,16 +34,16 @@ import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState /
 @Composable
 fun DashboardScreen(
     onSignOut: (() -> Unit)? = null,
-    onNavigateToAddTransaction: (() -> Unit)? = null, // Made nullable to match DashboardContent
-    onNavigateToViewTransactions: (() -> Unit)? = null, // Made nullable to match DashboardContent
-    onNavigateToSettings: (() -> Unit)? = null, // Made nullable to match DashboardContent
+    onNavigateToAddTransaction: (() -> Unit)? = null,
+    onNavigateToViewTransactions: (() -> Unit)? = null,
+    onNavigateToSettings: (() -> Unit)? = null,
     onNavigateToContactList: (String) -> Unit,
+    onNavigateToTransactionDetail: (String) -> Unit = {},
     dashboardScreenViewModel: DashboardScreenViewModel = hiltViewModel()
 ) {
     val uiState by dashboardScreenViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Handles general screen errors via Snackbar
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
             snackbarHostState.showSnackbar(message = message)
@@ -51,7 +51,6 @@ fun DashboardScreen(
         }
     }
 
-    // Handles automatic sign-out if user state indicates not signed in
     LaunchedEffect(uiState.isLoading, uiState.isSignedIn, uiState.user) {
         if (!uiState.isLoading && !uiState.isSignedIn && uiState.user == null) {
             onSignOut?.invoke()
@@ -70,7 +69,7 @@ fun DashboardScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp) // This provides spacing
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                   item {
                     uiState.recordSummary?.let { summary ->
@@ -86,7 +85,7 @@ fun DashboardScreen(
                         uiState.isLoading -> {
                             LoadingContent(text = stringResource(R.string.loading_dashboard))
                         }
-                        !uiState.isSignedIn || uiState.user == null -> { // Simplified condition for not signed in
+                        !uiState.isSignedIn || uiState.user == null -> {
                             NotSignedInContent(onSignOut = onSignOut)
                         }
                         else -> {
@@ -94,7 +93,8 @@ fun DashboardScreen(
                                 uiState = uiState,
                                 onNavigateToAddTransaction = onNavigateToAddTransaction,
                                 onNavigateToViewTransactions = onNavigateToViewTransactions,
-                                onNavigateToSettings = onNavigateToSettings
+                                onNavigateToSettings = onNavigateToSettings,
+                                onTransactionClick = onNavigateToTransactionDetail
                             )
                         }
                     }

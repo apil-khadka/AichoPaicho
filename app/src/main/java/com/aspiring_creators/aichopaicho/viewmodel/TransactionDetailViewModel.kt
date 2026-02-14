@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aspiring_creators.aichopaicho.R
+import com.aspiring_creators.aichopaicho.data.entity.Repayment
 import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
-import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
+import com.aspiring_creators.aichopaicho.data.repository.LoanRepository
+import com.aspiring_creators.aichopaicho.data.repository.RepaymentRepository
 import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
 import com.aspiring_creators.aichopaicho.viewmodel.data.RecordDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,12 +16,15 @@ import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 @HiltViewModel
 class TransactionDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val recordRepository: RecordRepository,
+    private val loanRepository: LoanRepository,
+    private val repaymentRepository: RepaymentRepository,
     private val contactRepository: ContactRepository,
     private val typeRepository: TypeRepository
 ) : ViewModel() {
@@ -27,97 +32,101 @@ class TransactionDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RecordDetailUiState())
     val uiState: StateFlow<RecordDetailUiState> = _uiState.asStateFlow()
 
-    fun loadRecord(recordId: String) {
+    fun loadRecord(loanId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             try {
-                val record = recordRepository.getRecordById(recordId)
-                if (record != null) {
-                    _uiState.value = _uiState.value.copy(record = record)
+                val loan = loanRepository.getLoanById(loanId)
+                if (loan != null) {
+                    _uiState.value = _uiState.value.copy(loan = loan)
 
                     // Load contact and type details
-                    record.contactId?.let { contactId ->
+                    loan.contactId?.let { contactId ->
                         val contact = contactRepository.getContactById(contactId)
                         _uiState.value = _uiState.value.copy(contact = contact)
                     }
 
-                    val type = typeRepository.getTypeById(record.typeId)
+                    val type = typeRepository.getTypeById(loan.typeId)
                     _uiState.value = _uiState.value.copy(type = type)
+
+                    // Observe repayments
+                    repaymentRepository.getRepaymentsByLoan(loanId).collectLatest { repayments ->
+                        val totalRepaid = repayments.sumOf { it.amount }
+                        val remaining = loan.amount - totalRepaid
+                        _uiState.value = _uiState.value.copy(
+                            repayments = repayments,
+                            remainingBalance = remaining,
+                            isLoading = false
+                        )
+                    }
                 } else {
                     _uiState.value = _uiState.value.copy(errorMessage = context.getString(R.string.record_not_found))
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(errorMessage = e.message)
             } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+               // isLoading handled in collect
             }
         }
     }
 
-    fun updateAmount(amountString: String) {
-        val amount = amountString.toIntOrNull() ?: 0
-        _uiState.value.record?.let { record ->
-            _uiState.value = _uiState.value.copy(
-                record = record.copy(amount = amount, updatedAt = System.currentTimeMillis())
-            )
+    fun updateAmount(amount: Double) {
+        _uiState.value.loan?.let { loan ->
+            val updatedLoan = loan.copy(amount = amount, updatedAt = System.currentTimeMillis())
+            val totalRepaid = _uiState.value.repayments.sumOf { it.amount }
+            val balance = updatedLoan.amount - totalRepaid
+            _uiState.value = _uiState.value.copy(loan = updatedLoan, remainingBalance = balance)
+
+            viewModelScope.launch { loanRepository.update(updatedLoan) }
         }
     }
 
     fun updateDescription(description: String) {
-        _uiState.value.record?.let { record ->
-            _uiState.value = _uiState.value.copy(
-                record = record.copy(
+        _uiState.value.loan?.let { loan ->
+             val updatedLoan = loan.copy(
                     description = description,
                     updatedAt = System.currentTimeMillis()
                 )
-            )
+             _uiState.value = _uiState.value.copy(loan = updatedLoan)
+             viewModelScope.launch { loanRepository.update(updatedLoan) }
         }
     }
 
     fun updateDate(date: Long) {
-        _uiState.value.record?.let { record ->
-            _uiState.value = _uiState.value.copy(
-                record = record.copy(date = date, updatedAt = System.currentTimeMillis())
-            )
+        _uiState.value.loan?.let { loan ->
+             val updatedLoan = loan.copy(date = date, updatedAt = System.currentTimeMillis())
+             _uiState.value = _uiState.value.copy(loan = updatedLoan)
+             viewModelScope.launch { loanRepository.update(updatedLoan) }
         }
     }
 
-    fun toggleCompletion() {
-        _uiState.value.record?.let { record ->
-            val updatedRecord = record.copy(
-                isComplete = !record.isComplete,
-                updatedAt = System.currentTimeMillis()
-            )
-            _uiState.value = _uiState.value.copy(record = updatedRecord)
+    fun addRepayment(amount: Double) {
+        val loan = uiState.value.loan ?: return
+        if (amount <= 0) return
 
-            viewModelScope.launch {
-                try {
-                    recordRepository.updateRecord(updatedRecord)
-                } catch (e: Exception) {
-                    _uiState.value = _uiState.value.copy(errorMessage = e.message)
-                }
-            }
-        }
-    }
-
-    fun saveRecord() {
-        _uiState.value.record?.let { record ->
-            viewModelScope.launch {
-                try {
-                    recordRepository.updateRecord(record)
-                } catch (e: Exception) {
-                    _uiState.value = _uiState.value.copy(errorMessage = e.message)
-                }
+        viewModelScope.launch {
+            try {
+                 val repayment = Repayment(
+                    id = UUID.randomUUID().toString(),
+                    loanId = loan.id,
+                    userId = loan.userId,
+                    amount = amount,
+                    date = System.currentTimeMillis(),
+                    description = null
+                )
+                repaymentRepository.insert(repayment)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(errorMessage = e.message)
             }
         }
     }
 
     fun deleteRecord() {
-        _uiState.value.record?.let { record ->
+        _uiState.value.loan?.let { loan ->
             viewModelScope.launch {
                 try {
-                    recordRepository.deleteRecord(record.id)
+                    loanRepository.delete(loan.id)
                     _uiState.value = _uiState.value.copy(isRecordDeleted = true)
                 } catch (e: Exception) {
                     _uiState.value = _uiState.value.copy(errorMessage = e.message)
@@ -125,6 +134,17 @@ class TransactionDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun deleteRepayment(repaymentId: String) {
+        viewModelScope.launch {
+             try {
+                repaymentRepository.delete(repaymentId)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(errorMessage = e.message)
+            }
+        }
+    }
+
     fun acknowledgeRecordDeleted()
     {
         _uiState.value = _uiState.value.copy(isRecordDeleted = false)

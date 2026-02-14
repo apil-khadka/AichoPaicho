@@ -11,27 +11,50 @@ import javax.inject.Singleton
 class ContactRepository @Inject constructor(private val contactDao: ContactDao) {
 
     suspend fun checkAndInsert(contact: Contact) : Boolean {
-        return try {
-            contactDao.insert(contact)
-            true
-        } catch (e: SQLiteConstraintException) {
-            false
-            throw SQLiteConstraintException("Contact with the same contactId already exists.")
-        } catch (e: Exception) {
+        try {
+            if (contact.externalRef != null) {
+                val existing = contactDao.getContactByExternalRef(contact.externalRef)
+                if (existing != null) return true
+            }
 
-            false
+            if (contact.normalizedPhone != null) {
+                val existingPhone = contactDao.getContactByPhone(contact.normalizedPhone)
+                if (existingPhone != null) {
+                     if (existingPhone.externalRef == null && contact.externalRef != null) {
+                         contactDao.updateContact(existingPhone.copy(externalRef = contact.externalRef))
+                     }
+                     return true
+                }
+            }
+
+            contactDao.insert(contact)
+            return true
+        } catch (e: SQLiteConstraintException) {
+            return false
+        } catch (e: Exception) {
+            return false
         }
     }
-     suspend fun getContactByContactId(contactId: String): Contact? {
-        return contactDao.getContactByContactId(contactId)
+
+     suspend fun getContactByExternalRef(externalRef: String): Contact? {
+        return contactDao.getContactByExternalRef(externalRef)
+    }
+
+    suspend fun getContactByPhone(normalizedPhone: String): Contact? {
+        return contactDao.getContactByPhone(normalizedPhone)
+    }
+
+    suspend fun getContactByContactId(contactId: String): Contact? {
+        // Fallback or alias
+        return contactDao.getContactByExternalRef(contactId) ?: contactDao.getContactById(contactId)
     }
 
     fun getAllContacts(): Flow<List<Contact>> {
         return contactDao.getAllContacts()
     }
 
-    suspend fun getContactById(contactId: String): Contact? {
-        return contactDao.getContactById(contactId)
+    suspend fun getContactById(id: String): Contact? {
+        return contactDao.getContactById(id)
     }
 
     suspend fun insertContact(contact: Contact) {
@@ -42,8 +65,8 @@ class ContactRepository @Inject constructor(private val contactDao: ContactDao) 
         contactDao.updateContact(contact)
     }
 
-    suspend fun deleteContact(contactId: String) {
-        contactDao.deleteContact(contactId)
+    suspend fun deleteContact(id: String) {
+        contactDao.deleteContact(id)
     }
 
     suspend fun updateUserId(oldUserId: String, newUserId: String) {

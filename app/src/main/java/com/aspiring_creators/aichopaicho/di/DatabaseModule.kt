@@ -4,18 +4,18 @@ import android.content.Context
 import androidx.room.Room
 import com.aspiring_creators.aichopaicho.data.AppDatabaseCallback
 import com.aspiring_creators.aichopaicho.data.dao.ContactDao
-import com.aspiring_creators.aichopaicho.data.dao.RecordDao
+import com.aspiring_creators.aichopaicho.data.dao.LoanDao
+import com.aspiring_creators.aichopaicho.data.dao.RepaymentDao
 import com.aspiring_creators.aichopaicho.data.dao.TypeDao
 import com.aspiring_creators.aichopaicho.data.dao.UserDao
 import com.aspiring_creators.aichopaicho.data.dao.UserRecordSummaryDao
-import com.aspiring_creators.aichopaicho.data.database.AppDatabase // Import the new AppDatabase
+import com.aspiring_creators.aichopaicho.data.database.AppDatabase
 import com.aspiring_creators.aichopaicho.data.local.ScreenViewDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Provider
 import javax.inject.Singleton
 
 @Module
@@ -25,15 +25,14 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAppDatabase(
-        @ApplicationContext appContext: Context,
-        typeDaoProvider: Provider<TypeDao>
+        @ApplicationContext appContext: Context
     ): AppDatabase {
         return Room.databaseBuilder(
                 appContext,
                 AppDatabase::class.java,
                 "aichopaicho_app_database"
-            ).fallbackToDestructiveMigration(true) // review
-            .addCallback(AppDatabaseCallback(typeDaoProvider))
+            ).fallbackToDestructiveMigration(true)
+            .addCallback(AppDatabaseCallback())
          .build()
     }
 
@@ -57,8 +56,14 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideRecordDao(appDatabase: AppDatabase): RecordDao {
-        return appDatabase.recordDao()
+    fun provideLoanDao(appDatabase: AppDatabase): LoanDao {
+        return appDatabase.loanDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRepaymentDao(appDatabase: AppDatabase): RepaymentDao {
+        return appDatabase.repaymentDao()
     }
 
     @Provides

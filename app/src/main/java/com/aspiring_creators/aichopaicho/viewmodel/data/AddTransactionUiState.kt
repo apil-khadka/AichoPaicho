@@ -5,7 +5,7 @@ import com.aspiring_creators.aichopaicho.data.entity.Contact
 data class AddTransactionUiState (
     val type: String? = null,
     val contact: Contact? = null,
-    val amount: Int? = null,
+    val amount: Double? = null,
     val date: Long? = null,
     val description: String? = null,
 

@@ -4,19 +4,32 @@ import androidx.room.ColumnInfo
 import androidx.room.DatabaseView
 
 @DatabaseView(
-    """
+    viewName = "user_record_summary",
+    value = """
     SELECT
-        r.userId AS user_id,
-        COALESCE(SUM(CASE WHEN r.typeId = 1 THEN r.amount ELSE 0 END), 0) AS total_lent,
-        COALESCE(SUM(CASE WHEN r.typeId = 0 THEN r.amount ELSE 0 END), 0) AS total_borrowed,
-        COALESCE(SUM(CASE WHEN r.typeId = 1 THEN r.amount ELSE 0 END), 0)
-          - COALESCE(SUM(CASE WHEN r.typeId = 0 THEN r.amount ELSE 0 END), 0) AS net_total,
-          COUNT(DISTINCT CASE WHEN r.typeId = 1 THEN r.contactId ELSE NULL END) AS lent_contacts_count,
-    COUNT(DISTINCT CASE WHEN r.typeId = 0 THEN r.contactId ELSE NULL END) AS borrowed_contacts_count
-    FROM records r
-    WHERE r.isDeleted = 0  AND r.isComplete = 0
-    GROUP BY r.userId
-"""
+        u.id AS user_id,
+        (
+            COALESCE((SELECT SUM(amount) FROM loans WHERE userId = u.id AND typeId = 1 AND isDeleted = 0), 0) -
+            COALESCE((SELECT SUM(r.amount) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 1 AND r.isDeleted = 0), 0)
+        ) AS total_lent,
+        (
+            COALESCE((SELECT SUM(amount) FROM loans WHERE userId = u.id AND typeId = 0 AND isDeleted = 0), 0) -
+            COALESCE((SELECT SUM(r.amount) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 0 AND r.isDeleted = 0), 0)
+        ) AS total_borrowed,
+        (
+            (
+                COALESCE((SELECT SUM(amount) FROM loans WHERE userId = u.id AND typeId = 1 AND isDeleted = 0), 0) -
+                COALESCE((SELECT SUM(r.amount) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 1 AND r.isDeleted = 0), 0)
+            ) -
+            (
+                COALESCE((SELECT SUM(amount) FROM loans WHERE userId = u.id AND typeId = 0 AND isDeleted = 0), 0) -
+                COALESCE((SELECT SUM(r.amount) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 0 AND r.isDeleted = 0), 0)
+            )
+        ) AS net_total,
+        (SELECT COUNT(DISTINCT contactId) FROM loans WHERE userId = u.id AND typeId = 1 AND isDeleted = 0) AS lent_contacts_count,
+        (SELECT COUNT(DISTINCT contactId) FROM loans WHERE userId = u.id AND typeId = 0 AND isDeleted = 0) AS borrowed_contacts_count
+    FROM users u
+    """
 )
 data class UserRecordSummary(
     @ColumnInfo(name = "user_id")

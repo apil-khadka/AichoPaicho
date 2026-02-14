@@ -4,26 +4,26 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aspiring_creators.aichopaicho.data.entity.Contact
-import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
+import com.aspiring_creators.aichopaicho.data.entity.Loan
+import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
+import com.aspiring_creators.aichopaicho.data.repository.LoanRepository
+import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
+import com.aspiring_creators.aichopaicho.data.repository.UserRepository
 import com.aspiring_creators.aichopaicho.viewmodel.data.AddTransactionUiEvents
 import com.aspiring_creators.aichopaicho.viewmodel.data.AddTransactionUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import jakarta.inject.Inject
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.aspiring_creators.aichopaicho.data.entity.Record
-import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
-import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
-import com.aspiring_creators.aichopaicho.data.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import java.util.UUID
 
 @HiltViewModel
 class AddTransactionViewModel @Inject constructor(
-    private val recordRepository: RecordRepository,
+    private val loanRepository: LoanRepository,
     private val typeRepository: TypeRepository,
     private val userRepository: UserRepository,
     private val contactRepository: ContactRepository,
@@ -44,34 +44,53 @@ class AddTransactionViewModel @Inject constructor(
             val type = typeRepository.getByName(uiState.value.type!!)
             val user = userRepository.getUser()
 
-            val contactExist = contactRepository.getContactByContactId(uiState.value.contact!!.contactId!!)
-            val contactToSave: Contact
-            if(contactExist == null) {
-                contactToSave = Contact(
-                    id = UUID.randomUUID().toString(),
-                    name = uiState.value.contact!!.name,
-                    phone = uiState.value.contact!!.phone,
-                    contactId = uiState.value.contact!!.contactId,
-                    userId = user.id
-                )
+            val contactInput = uiState.value.contact!!
+            // Use existing contact logic or create new
+            // Assuming contactInput has at least a name.
 
-                contactRepository.checkAndInsert(contactToSave)
-            } else {
-                contactToSave = contactExist
+            var contactToUse: Contact? = null
+
+            // Try to find existing contact by ID if present
+            if (!contactInput.id.isNullOrBlank()) {
+                 contactToUse = contactRepository.getContactById(contactInput.id)
             }
 
-            val recordToSave = Record(
+            // Or by External Ref
+            if (contactToUse == null && !contactInput.externalRef.isNullOrBlank()) {
+                contactToUse = contactRepository.getContactByExternalRef(contactInput.externalRef!!)
+            }
+
+            // Or by Phone
+            val normalizedPhone = contactInput.phone.firstOrNull()?.replace(Regex("[^0-9]"), "")
+            if (contactToUse == null && !normalizedPhone.isNullOrBlank()) {
+                contactToUse = contactRepository.getContactByPhone(normalizedPhone)
+            }
+
+            if (contactToUse == null) {
+                // Create new
+                contactToUse = Contact(
+                    id = UUID.randomUUID().toString(),
+                    name = contactInput.name,
+                    phone = contactInput.phone,
+                    normalizedPhone = normalizedPhone,
+                    externalRef = contactInput.externalRef,
+                    userId = user.id
+                )
+                contactRepository.insertContact(contactToUse)
+            }
+
+            val loanToSave = Loan(
                 id = UUID.randomUUID().toString(),
                 userId = user.id,
                 typeId = type.id,
-                contactId = contactToSave.id,
+                contactId = contactToUse.id,
                 amount = uiState.value.amount!!,
                 date = uiState.value.date!!,
                 description = uiState.value.description
             )
-            recordRepository.upsert(recordToSave)
+            loanRepository.insert(loanToSave)
 
-            Log.e("AddTransactionViewModel", "handleSubmit: $recordToSave")
+            Log.e("AddTransactionViewModel", "handleSubmit: $loanToSave")
 
             // Clear form fields after successful save
             _uiState.update { currentState ->
@@ -82,7 +101,6 @@ class AddTransactionViewModel @Inject constructor(
                     contact = null,
                     amount = null,
                     description = null
-                    // Note: We keep type and date as they might want to add similar transactions
                 )
             }
 
@@ -104,15 +122,13 @@ class AddTransactionViewModel @Inject constructor(
             is AddTransactionUiEvents.TypeSelected -> {
                 _uiState.value = _uiState.value.copy(
                     type = event.type,
-                    // Clear any previous success/error states when user starts new input
                     submissionSuccessful = false,
                     errorMessage = null
                 )
             }
             is AddTransactionUiEvents.AmountEntered -> {
                 _uiState.value = _uiState.value.copy(
-                    amount = event.amount.toIntOrNull(),
-                    // Clear any previous success/error states when user starts new input
+                    amount = event.amount.toDoubleOrNull(),
                     submissionSuccessful = false,
                     errorMessage = null
                 )
@@ -120,7 +136,6 @@ class AddTransactionViewModel @Inject constructor(
             is AddTransactionUiEvents.DateEntered -> {
                 _uiState.value = _uiState.value.copy(
                     date = event.date,
-                    // Clear any previous success/error states when user starts new input
                     submissionSuccessful = false,
                     errorMessage = null
                 )
@@ -128,7 +143,6 @@ class AddTransactionViewModel @Inject constructor(
             is AddTransactionUiEvents.DescriptionEntered -> {
                 _uiState.value = _uiState.value.copy(
                     description = event.description,
-                    // Clear any previous success/error states when user starts new input
                     submissionSuccessful = false,
                     errorMessage = null
                 )
@@ -136,7 +150,6 @@ class AddTransactionViewModel @Inject constructor(
             is AddTransactionUiEvents.ContactSelected -> {
                 _uiState.value = _uiState.value.copy(
                     contact = event.contact,
-                    // Clear any previous success/error states when user starts new input
                     submissionSuccessful = false,
                     errorMessage = null
                 )
@@ -144,7 +157,6 @@ class AddTransactionViewModel @Inject constructor(
             AddTransactionUiEvents.Submit -> {
                 viewModelScope.launch {
                     handleSubmit()
-                    // No need to handle snackbar here, let the screen handle it reactively
                 }
             }
         }
@@ -159,6 +171,4 @@ class AddTransactionViewModel @Inject constructor(
     {
         _uiState.update { it.copy(submissionSuccessful = false) }
     }
-
-
 }

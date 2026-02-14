@@ -24,7 +24,6 @@ import com.aspiring_creators.aichopaicho.ui.screens.DashboardScreen
 import com.aspiring_creators.aichopaicho.ui.screens.PermissionScreen
 import com.aspiring_creators.aichopaicho.ui.screens.SettingsScreen
 import com.aspiring_creators.aichopaicho.ui.screens.TransactionDetailScreen
-import com.aspiring_creators.aichopaicho.ui.screens.ViewTransactionScreen
 import com.aspiring_creators.aichopaicho.ui.screens.WelcomeScreen
 import com.aspiring_creators.aichopaicho.viewmodel.AppNavigationViewModel
 
@@ -109,7 +108,8 @@ fun AppNavigationGraph(
                         }
                     },
                     onNavigateToViewTransactions = {
-                        navController.navSafe(Routes.VIEW_TRANSACTION_SCREEN){
+                        // Redirect to Contact List (All) for now as ViewTransactionScreen is removed
+                        navController.navSafe("${Routes.CONTACT_LIST_SCREEN}/ALL"){
                             launchSingleTop = true
                         }
                     },
@@ -122,6 +122,11 @@ fun AppNavigationGraph(
                         navController.navSafe("${Routes.CONTACT_LIST_SCREEN}/$it"){
                             launchSingleTop = true
                         }
+                    },
+                    onNavigateToTransactionDetail = {
+                        navController.navSafe("${Routes.TRANSACTION_DETAIL_SCREEN}/$it"){
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -130,29 +135,6 @@ fun AppNavigationGraph(
                 AddTransactionScreen(
                     onNavigateBack = {
                         navController.popSafe()
-                    }
-                )
-            }
-
-            composable(Routes.VIEW_TRANSACTION_SCREEN){
-                ViewTransactionScreen(
-                    onNavigateBack = {
-                        navController.popSafe()
-                    },
-                    onNavigateToIndividualRecord = {
-                        navController.navSafe("${Routes.TRANSACTION_DETAIL_SCREEN}/$it"){
-                            launchSingleTop = true
-                        }
-                    },
-                    onNavigateToContactList ={
-                        navController.navSafe("${Routes.CONTACT_TRANSACTION_SCREEN}/$it"){
-                            launchSingleTop = true
-                        }
-                    },
-                    onNavigateToContact = {
-                        navController.navSafe("${Routes.CONTACT_LIST_SCREEN}/"){
-                            launchSingleTop = true
-                        }
                     }
                 )
             }

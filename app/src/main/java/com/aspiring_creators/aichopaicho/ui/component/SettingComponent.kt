@@ -44,9 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.isEmpty
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.DefaultTintColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
@@ -58,10 +56,6 @@ import com.aspiring_creators.aichopaicho.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.text.contains
-import kotlin.text.isNotEmpty
-import kotlin.text.lowercase
-
 
 @Composable
 fun UserProfileCard(
@@ -72,7 +66,7 @@ fun UserProfileCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp), // space around the card
+            .padding(16.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
@@ -80,9 +74,8 @@ fun UserProfileCard(
                 .fillMaxWidth()
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center // optional, helps if card height is big
+            verticalArrangement = Arrangement.Center
         ) {
-            // Avatar
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -125,7 +118,7 @@ fun UserProfileCard(
 
                 Button(
                     onClick = onSignInClick,
-                    modifier = Modifier.align(Alignment.CenterHorizontally), // force center
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorResource(R.color.buttonColor)
                     )
@@ -155,7 +148,7 @@ fun UserProfileCard(
 
                 OutlinedButton(
                     onClick = onSignOutClick,
-                    modifier = Modifier.align(Alignment.CenterHorizontally), // center button
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     )
@@ -247,14 +240,13 @@ fun LanguageDropDown(
 @Composable
 fun CurrencyDropdown(
     selectedCurrency: String,
-    allCurrencies: List<String>, // Rename for clarity
+    allCurrencies: List<String>,
     expanded: Boolean,
     onToggleDropdown: () -> Unit,
     onCurrencySelected: (String) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
-    // Filter currencies based on search query
     val filteredCurrencies = if (searchQuery.isEmpty()) {
         allCurrencies
     } else {
@@ -267,7 +259,7 @@ fun CurrencyDropdown(
         OutlinedButton(
             onClick = {
                 onToggleDropdown()
-                if (!expanded) { // Reset search query when opening
+                if (!expanded) {
                     searchQuery = ""
                 }
             },
@@ -284,9 +276,8 @@ fun CurrencyDropdown(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = onToggleDropdown,
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer) // Set a background for the dropdown
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer)
         ) {
-            // Search TextField
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -304,8 +295,7 @@ fun CurrencyDropdown(
                 }
             )
 
-            Spacer(modifier = Modifier.height(8.dp)) // Add some space
-
+            Spacer(modifier = Modifier.height(8.dp))
 
             if (filteredCurrencies.isEmpty()) {
                 DropdownMenuItem(
@@ -359,11 +349,11 @@ fun BackupSyncSettings(
             if (isSyncing) {
                 Column {
                     LinearProgressIndicator(
-                    progress = { syncProgress },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = ProgressIndicatorDefaults.linearColor,
-                    trackColor = ProgressIndicatorDefaults.linearTrackColor,
-                    strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
+                        progress = { syncProgress },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = ProgressIndicatorDefaults.linearColor,
+                        trackColor = ProgressIndicatorDefaults.linearTrackColor,
+                        strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
                     )
                     Text(
                         text = syncMessage,
@@ -432,21 +422,21 @@ fun AboutSection() {
             text = stringResource(R.string.privacy_policy),
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* Open privacy policy */ }
+                .clickable { }
                 .padding(vertical = 8.dp)
         )
         Text(
             text = stringResource(R.string.terms_of_service),
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* Open terms */ }
+                .clickable { }
                 .padding(vertical = 8.dp)
         )
         Text(
             text = stringResource(R.string.contact_support),
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* Open support */ }
+                .clickable { }
                 .padding(vertical = 8.dp)
         )
     }

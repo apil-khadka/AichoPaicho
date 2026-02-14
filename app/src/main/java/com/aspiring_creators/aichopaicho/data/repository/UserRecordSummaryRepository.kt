@@ -13,8 +13,5 @@ class UserRecordSummaryRepository @Inject constructor(
         return userRecordSummaryDao.getCurrentUserSummary()
     }
 
-     fun getCurrentUserSummaryByDate(start: Long, end: Long): Flow<UserRecordSummary?> {
-        return userRecordSummaryDao.getCurrentUserSummaryByDateRange(start, end)
-    }
 
 }

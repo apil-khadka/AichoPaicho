@@ -7,40 +7,33 @@ import androidx.room.PrimaryKey
 import com.google.firebase.firestore.PropertyName
 
 @Entity(
-    tableName = "records",
+    tableName = "repayments",
     foreignKeys = [
         ForeignKey(entity = User::class, parentColumns = ["id"], childColumns = ["userId"], onDelete = ForeignKey.CASCADE),
-        ForeignKey(entity = Contact::class, parentColumns = ["id"], childColumns = ["contactId"], onDelete = ForeignKey.CASCADE),
-        ForeignKey(entity = Type::class, parentColumns = ["id"], childColumns = ["typeId"], onDelete = ForeignKey.CASCADE)
+        ForeignKey(entity = Loan::class, parentColumns = ["id"], childColumns = ["loanId"], onDelete = ForeignKey.CASCADE)
     ],
-    indices = [Index(value = ["userId"]), Index(value = ["contactId"]), Index(value = ["typeId"])]
+    indices = [Index(value = ["userId"]), Index(value = ["loanId"])]
 )
-data class Record(
-    @PrimaryKey val id: String,  // UUID
+data class Repayment(
+    @PrimaryKey val id: String, // UUID
     val userId: String?,
-    val contactId: String?,
-    val typeId: Int,
-    val amount: Int,
+    val loanId: String?,
+    val amount: Double,
     val date: Long,
-    @get:PropertyName("complete")
-    val isComplete: Boolean = false,
+    val description: String?,
     @get:PropertyName("deleted")
     val isDeleted: Boolean = false,
-    val description: String?,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
-){
-    // Default constructor for Firestore/Room
+) {
     constructor(): this(
         id = "",
         userId = null,
-        contactId = null,
-        typeId = 0,
-        amount = 0,
+        loanId = null,
+        amount = 0.0,
         date = 0L,
-        isComplete = false,
-        isDeleted = false,
         description = null,
+        isDeleted = false,
         createdAt = System.currentTimeMillis(),
         updatedAt = System.currentTimeMillis()
     )

@@ -36,9 +36,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import com.aspiring_creators.aichopaicho.data.BackgroundSyncWorker
 import com.aspiring_creators.aichopaicho.ui.navigation.AppNavigationGraph
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
+import com.aspiring_creators.aichopaicho.worker.BackgroundSyncWorker
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

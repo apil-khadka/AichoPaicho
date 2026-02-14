@@ -36,7 +36,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults // Added
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,7 +45,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-// import androidx.compose.material3.OutlinedTextFieldDefaults // For custom colors if needed
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -69,10 +68,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.Contact
-import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme // Added for previews
+import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
+import java.util.UUID
 
 @Composable
 fun ContactPickerField(
@@ -83,11 +82,10 @@ fun ContactPickerField(
     selectedContact: Contact?,
 ) {
     var showContactPicker by remember { mutableStateOf(false) }
-    var currentValue by remember(selectedContact) { // Recomposes when selectedContact changes
+    var currentValue by remember(selectedContact) {
         mutableStateOf(selectedContact?.name ?: "")
     }
 
-    // If selectedContact becomes null externally (e.g. form reset), clear currentValue
     LaunchedEffect(selectedContact) {
         if (selectedContact == null) {
             currentValue = ""
@@ -98,8 +96,22 @@ fun ContactPickerField(
         OutlinedTextField(
             value = currentValue,
             onValueChange = {
-                          },
-            readOnly = true,
+                currentValue = it
+                onContactSelected(
+                    Contact(
+                        id = "",
+                        name = it,
+                        phone = emptyList(),
+                        externalRef = null,
+                        isDeleted = false,
+                        createdAt = 0,
+                        updatedAt = 0,
+                        userId = "",
+                        normalizedPhone = null
+                    )
+                )
+            },
+            readOnly = false,
             label = { Text(label) },
             placeholder = { Text(placeholder) },
             modifier = Modifier.fillMaxWidth(),
@@ -112,16 +124,16 @@ fun ContactPickerField(
                         Icon(
                             imageVector = Icons.Filled.AccountBox,
                             contentDescription = "Select from contacts",
-                            tint = MaterialTheme.colorScheme.primary // This is fine
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     if (currentValue.isNotEmpty()) {
                         IconButton(
                             onClick = {
                                 currentValue = ""
-                                   val emptyContact = Contact(
-                                    id = "", name = "", phone = emptyList(), contactId = null,
-                                    isDeleted = false, createdAt = 0, updatedAt = 0, userId = ""
+                                val emptyContact = Contact(
+                                    id = "", name = "", phone = emptyList(), externalRef = null,
+                                    isDeleted = false, createdAt = 0, updatedAt = 0, userId = "", normalizedPhone = null
                                 )
                                 onContactSelected(emptyContact)
                             }
@@ -129,13 +141,12 @@ fun ContactPickerField(
                             Icon(
                                 imageVector = Icons.Filled.Clear,
                                 contentDescription = "Clear",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant // Good for less emphasis
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
             }
-            // Colors will be inherited from MaterialTheme
         )
 
         if (showContactPicker) {
@@ -157,12 +168,12 @@ fun ContactPickerField(
 fun ContactPickerDialog(
     onContactSelected: (Contact) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier // Added modifier
+    modifier: Modifier = Modifier
 ) {
     var contacts by remember { mutableStateOf<List<Contact>>(emptyList()) }
     var filteredContacts by remember { mutableStateOf<List<Contact>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(true) } // Start with loading true
+    var isLoading by remember { mutableStateOf(true) }
     var hasError by remember { mutableStateOf(false) }
     var permissionGrantedInitially by remember { mutableStateOf(false) }
 
@@ -179,7 +190,7 @@ fun ContactPickerDialog(
     }
 
     AlertDialog(
-        modifier = modifier, // Apply modifier
+        modifier = modifier,
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.select_contact)) },
         text = {
@@ -193,24 +204,23 @@ fun ContactPickerDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
-                    // Colors will be inherited
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(300.dp) // Adjusted height
+                        .height(300.dp)
                 ) {
                     ContactPermissionHandler(
                         onPermissionGranted = {
-                              if(!permissionGrantedInitially) { // Load only once after initial grant
+                            if(!permissionGrantedInitially) {
                                 permissionGrantedInitially = true
                             }
-                              ContactsLoader(
+                            ContactsLoader(
                                 onContactsLoaded = { loadedContacts ->
                                     contacts = loadedContacts
-                                    isLoading = false // Ensure loading is false after load
+                                    isLoading = false
                                     hasError = false
                                 },
                                 onLoadingChange = { loading -> isLoading = loading },
@@ -241,9 +251,9 @@ fun ContactPickerDialog(
                                         )
                                     }
                                 }
-                                contacts.isEmpty() && !searchQuery.isNotEmpty() -> { // Changed from filteredContacts to contacts
+                                contacts.isEmpty() && !searchQuery.isNotEmpty() -> {
                                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                       Text(stringResource(R.string.no_contacts), textAlign = TextAlign.Center)
+                                        Text(stringResource(R.string.no_contacts), textAlign = TextAlign.Center)
                                     }
                                 }
                                 else -> {
@@ -259,8 +269,7 @@ fun ContactPickerDialog(
                                 }
                             }
                         },
-                        onPermissionDenied = {
-                         }
+                        onPermissionDenied = {}
                     )
                 }
             }
@@ -268,7 +277,7 @@ fun ContactPickerDialog(
         confirmButton = {
             TextButton(
                 onClick = onDismiss,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary) // Themed
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text(stringResource(R.string.cancel))
             }
@@ -282,14 +291,14 @@ fun ContactListItem(
     contact: Contact,
     onClick: () -> Unit,
     searchQuery: String = "",
-    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier // Keep if necessary for specific cases
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier // Use the passed modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), // Subtle elevation
-        colors = CardDefaults.cardColors( // Themed
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -303,7 +312,7 @@ fun ContactListItem(
                         if (startIndex >= 0) {
                             append(name.substring(0, startIndex))
                             withStyle(
-                                style = SpanStyle( // Themed highlight
+                                style = SpanStyle(
                                     background = MaterialTheme.colorScheme.primaryContainer,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     fontWeight = FontWeight.Bold
@@ -321,7 +330,6 @@ fun ContactListItem(
                 },
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
-                // Color from Card's contentColor
             )
 
             if (contact.phone.isNotEmpty()) {
@@ -330,14 +338,14 @@ fun ContactListItem(
                     Text(
                         text = phoneNumber!!,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant // Themed
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 if (contact.phone.size > 2) {
                     Text(
                         text = stringResource(R.string.n_more, contact.phone.size - 2),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary // This is fine
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -350,7 +358,7 @@ fun ContactListItem(
 @Composable
 fun ContactPickerFieldPreview() {
     var selectedContactPreview by remember { mutableStateOf<Contact?>(null) }
-    AichoPaichoTheme { // Use AichoPaichoTheme
+    AichoPaichoTheme {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -379,9 +387,9 @@ fun ContactPickerFieldPreview() {
 @Composable
 fun ContactsLoader(
     onContactsLoaded: (List<Contact>) -> Unit,
-    onLoadingChange: (Boolean) -> Unit, // Callback for loading state
-    onErrorChange: (Boolean) -> Unit,   // Callback for error state
-    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier // Added modifier
+    onLoadingChange: (Boolean) -> Unit,
+    onErrorChange: (Boolean) -> Unit,
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val contentResolver: ContentResolver = context.contentResolver
@@ -393,7 +401,6 @@ fun ContactsLoader(
             val contacts = withContext(Dispatchers.IO) {
                 loadContactsFromDevice(contentResolver)
             }
-            // Ensure onContactsLoaded is called on the main thread if it updates UI state
             withContext(Dispatchers.Main) {
                 onContactsLoaded(contacts)
                 onLoadingChange(false)
@@ -402,11 +409,10 @@ fun ContactsLoader(
             withContext(Dispatchers.Main) {
                 onErrorChange(true)
                 onLoadingChange(false)
-                onContactsLoaded(emptyList()) // Provide empty list on error
+                onContactsLoaded(emptyList())
             }
         }
     }
-    // The UI for loading/error is now handled in ContactPickerDialog based on these callbacks
 }
 
 @SuppressLint("Range")
@@ -430,14 +436,15 @@ private fun loadContactsFromDevice(contentResolver: ContentResolver): List<Conta
             val name = it.getString(nameColumn) ?: "Unknown"
             val hasPhoneNumber = it.getInt(hasPhoneNumberColumn) > 0
             val phoneNumbers = if (hasPhoneNumber) getPhoneNumbers(contentResolver, contactId) else emptyList()
-            if (phoneNumbers.isNotEmpty()) { // Only add contacts with phone numbers
+            if (phoneNumbers.isNotEmpty()) {
                 contactsList.add(
                     Contact(
-                        id = contactId, // Use system contactId as a unique ID for now
+                        id = UUID.randomUUID().toString(), // Generate new UUID for local storage
                         name = name,
                         phone = phoneNumbers,
-                        userId = "", // Needs to be set appropriately
-                        contactId = contactId
+                        userId = "",
+                        externalRef = contactId, // Store system contactId
+                        normalizedPhone = phoneNumbers.firstOrNull() // Simple normalization
                     )
                 )
             }
@@ -477,11 +484,10 @@ private enum class PermissionStatus {
 @Composable
 fun ContactPermissionHandler(
     onPermissionGranted: @Composable () -> Unit,
-    onPermissionDenied: @Composable () -> Unit = { PermissionDeniedUI() } // Default UI
+    onPermissionDenied: @Composable () -> Unit = { PermissionDeniedUI() }
 ) {
     val context = LocalContext.current
     val activity = context as? androidx.activity.ComponentActivity
-    // Start with INITIAL_CHECK to decide whether to show UI or request permission
     var permissionStatus by remember { mutableStateOf(PermissionStatus.INITIAL_CHECK) }
 
     val launcher = rememberLauncherForActivityResult(
@@ -495,11 +501,10 @@ fun ContactPermissionHandler(
         }
     }
 
-    LaunchedEffect(Unit) { // Initial check on composition
+    LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             permissionStatus = PermissionStatus.GRANTED
         } else {
-             // If not granted, immediately try to launch. UI will update based on result.
             permissionStatus = PermissionStatus.REQUESTING
             launcher.launch(Manifest.permission.READ_CONTACTS)
         }
@@ -515,7 +520,6 @@ fun ContactPermissionHandler(
         }
         PermissionStatus.PERMANENTLY_DENIED -> {
             PermissionDeniedUI(canRetry = false) {
-                // Action for settings button in PermissionDeniedUI will handle this
             }
         }
         PermissionStatus.INITIAL_CHECK, PermissionStatus.REQUESTING -> {
@@ -523,14 +527,13 @@ fun ContactPermissionHandler(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
-        // null state removed as it's covered by INITIAL_CHECK
     }
 }
 
 @Composable
 private fun PermissionDeniedUI(
     canRetry: Boolean = true,
-    onRetryClick: () -> Unit = {} // Used by "Try Again"
+    onRetryClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     Column(
@@ -558,11 +561,11 @@ private fun PermissionDeniedUI(
             else stringResource(R.string.permission_denied_explanation),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant // Themed
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton( // M3 component, colors will adapt
+            OutlinedButton(
                 onClick = {
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                         data = Uri.fromParts("package", context.packageName, null)
@@ -575,7 +578,7 @@ private fun PermissionDeniedUI(
                 Text(stringResource(R.string.settings))
             }
             if (canRetry) {
-                Button(onClick = onRetryClick) { // M3 component, colors will adapt
+                Button(onClick = onRetryClick) {
                     Icon(Icons.Filled.Refresh, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.try_again))
@@ -587,23 +590,23 @@ private fun PermissionDeniedUI(
             stringResource(R.string.note_manual_contact),
             style = MaterialTheme.typography.labelSmall,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.primary // Fine for emphasis
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
 
 
 @Composable
-fun ContactItem( // General purpose contact item
+fun ContactItem(
     contact: Contact,
     onClick: ((Contact) -> Unit)? = null,
-    modifier: Modifier = Modifier // Added modifier
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier // Use passed modifier
+        modifier = modifier
             .fillMaxWidth()
             .let { if (onClick != null) it.clickable { onClick(contact) } else it },
-        colors = CardDefaults.cardColors( // Themed
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer
         )
@@ -612,14 +615,13 @@ fun ContactItem( // General purpose contact item
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Person, null,
-                    tint = MaterialTheme.colorScheme.primary // Fine
+                    tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(
                     contact.name,
-                    style = MaterialTheme.typography.titleMedium, // Adjusted style
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
-                    // Color from Card's contentColor
                 )
             }
             if (contact.phone.isNotEmpty()) {
@@ -628,18 +630,18 @@ fun ContactItem( // General purpose contact item
                     phoneNumber.let {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(start = 36.dp) // Indent phone numbers
+                            modifier = Modifier.padding(start = 36.dp)
                         ) {
                             Icon(
                                 Icons.Default.Phone, null, Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant // Themed
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(Modifier.width(8.dp))
                             if (it != null) {
                                 Text(
                                     text = it,
-                                    style = MaterialTheme.typography.bodyMedium, // Adjusted style
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant // Themed
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -653,28 +655,24 @@ fun ContactItem( // General purpose contact item
 @Preview(showBackground = true)
 @Composable
 fun ContactItemPreview() {
-    AichoPaichoTheme { // Use AichoPaichoTheme
+    AichoPaichoTheme {
         ContactItem(
             contact = Contact(
                 id = "1", name = "John Doe", userId = "",
-                phone = listOf("+1234567890", "+0987654321"), contactId = "123"
+                phone = listOf("+1234567890", "+0987654321"), externalRef = "123",
+                normalizedPhone = "+1234567890"
             )
         )
     }
 }
 
-// openContactDetails is utility, no UI theme changes needed
 fun openContactDetails(context: Context, contactId: Long) {
-    println("Contact Id $contactId")
     if (contactId <= 0) {
-        println("Invalid contact ID: $contactId")
         return
     }
     val contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId)
     val intent = Intent(Intent.ACTION_VIEW, contactUri)
     if (intent.resolveActivity(context.packageManager) != null) {
         context.startActivity(intent)
-    } else {
-        println("No app found to open contact details.")
     }
 }

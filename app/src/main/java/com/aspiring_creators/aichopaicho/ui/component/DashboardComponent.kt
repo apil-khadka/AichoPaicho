@@ -33,14 +33,15 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card // Used by UserDashboardToast, NetBalanceCard
-import androidx.compose.material3.CardDefaults // Used by Card
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text // Standard Text, used alongside TextComponent
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -72,7 +74,7 @@ import com.aspiring_creators.aichopaicho.viewmodel.ContactPreview
 import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState
 
 @Composable
-fun UserProfileImage( // No changes from previous plan, looks good
+fun UserProfileImage(
     photoUrl: String?,
     userName: String?,
     modifier: Modifier = Modifier
@@ -123,7 +125,7 @@ fun UserProfileImagePreview() {
 }
 
 @Composable
-fun ErrorContent( // Uses TextComponent and ButtonComponent from AppComponent.kt
+fun ErrorContent(
     errorMessage: String,
     onRetry: () -> Unit
 ) {
@@ -137,14 +139,13 @@ fun ErrorContent( // Uses TextComponent and ButtonComponent from AppComponent.kt
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            TextComponent( // Using TextComponent from AppComponent.kt
+            TextComponent(
                 value = stringResource(R.string.error_detail, errorMessage),
-                // textSize = 18.sp, // TextComponent default is 12.sp, use its default or pass explicit M3 typography based size
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ButtonComponent( // Using ButtonComponent from AppComponent.kt
+            ButtonComponent(
                 vectorLogo = Icons.Default.Refresh,
                 text = stringResource(R.string.retry),
                 onClick = onRetry,
@@ -166,7 +167,7 @@ fun ErrorContentPreview() {
 }
 
 @Composable
-fun UserDashboardToast(uiState: DashboardScreenUiState) { // User Welcome Card
+fun UserDashboardToast(uiState: DashboardScreenUiState) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -188,12 +189,12 @@ fun UserDashboardToast(uiState: DashboardScreenUiState) { // User Welcome Card
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text( // Standard Text for consistency within this card
+                Text(
                     text = stringResource(R.string.welcome_back),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text( // Standard Text
+                Text(
                     text = uiState.user?.name ?: stringResource(R.string.user_uc),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
@@ -201,7 +202,7 @@ fun UserDashboardToast(uiState: DashboardScreenUiState) { // User Welcome Card
                 )
                 uiState.user?.email?.let { email ->
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text( // Standard Text
+                    Text(
                         text = email,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1
@@ -230,18 +231,19 @@ fun UserDashboardToastPreview() {
 }
 
 @Composable
-fun DashboardContent( // Uses QuickActionButton from AppComponent.kt
+fun DashboardContent(
     uiState: DashboardScreenUiState,
     onNavigateToAddTransaction: (() -> Unit)?,
     onNavigateToViewTransactions: (() -> Unit)?,
     onNavigateToSettings: (() -> Unit)?,
+    onTransactionClick: ((String) -> Unit)? = null
 ) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
         UserDashboardToast(uiState)
         Spacer(modifier = Modifier.height(24.dp))
-        Text( // Standard Text for section header
+        Text(
             text = stringResource(R.string.quick_actions),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(bottom = 12.dp, start = 8.dp, end = 8.dp)
@@ -252,10 +254,10 @@ fun DashboardContent( // Uses QuickActionButton from AppComponent.kt
                 .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            maxItemsInEachRow = 2 // Keeps the 2-item row structure
+            maxItemsInEachRow = 2
         ) {
             onNavigateToAddTransaction?.let { navigate ->
-                QuickActionButton( // Using QuickActionButton from AppComponent.kt
+                QuickActionButton(
                     text = stringResource(R.string.new_txn),
                     onClick = navigate,
                     contentDescription = stringResource(R.string.add_new_transaction),
@@ -263,7 +265,7 @@ fun DashboardContent( // Uses QuickActionButton from AppComponent.kt
                 )
             }
             onNavigateToViewTransactions?.let { navigate ->
-                QuickActionButton( // Using QuickActionButton from AppComponent.kt
+                QuickActionButton(
                     text = stringResource(R.string.view_txns),
                     onClick = navigate,
                     contentDescription = stringResource(R.string.view_transactions),
@@ -271,7 +273,7 @@ fun DashboardContent( // Uses QuickActionButton from AppComponent.kt
                 )
             }
             onNavigateToSettings?.let { navigate ->
-                QuickActionButton( // Using QuickActionButton from AppComponent.kt
+                QuickActionButton(
                     text = stringResource(R.string.settings),
                     onClick = navigate,
                     contentDescription = stringResource(R.string.open_settings),
@@ -279,9 +281,23 @@ fun DashboardContent( // Uses QuickActionButton from AppComponent.kt
                 )
             }
         }
+
+        if (uiState.recentLoans.isNotEmpty()) {
+             Spacer(modifier = Modifier.height(24.dp))
+             Text(
+                text = stringResource(R.string.recent_activity),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 12.dp, start = 8.dp, end = 8.dp)
+            )
+            RecentTransactionsList(
+                loans = uiState.recentLoans,
+                onClick = onTransactionClick ?: {}
+            )
+        }
+
         uiState.errorMessage?.let { error ->
             Spacer(modifier = Modifier.height(16.dp))
-            Text( // Standard Text for error
+            Text(
                 text = error,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
@@ -294,6 +310,56 @@ fun DashboardContent( // Uses QuickActionButton from AppComponent.kt
     }
 }
 
+@Composable
+fun RecentTransactionsList(
+    loans: List<LoanWithContact>,
+    onClick: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        loans.forEach { loanWithContact ->
+            RecentTransactionItem(
+                loan = loanWithContact.loan,
+                contactName = loanWithContact.contact?.name ?: "Unknown",
+                onClick = { onClick(loanWithContact.loan.id) }
+            )
+        }
+    }
+}
+
+@Composable
+fun RecentTransactionItem(
+    loan: Loan,
+    contactName: String,
+    onClick: () -> Unit
+) {
+    val context = LocalContext.current
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant, // Themed
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(text = contactName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    text = java.text.SimpleDateFormat("dd MMM", java.util.Locale.getDefault()).format(java.util.Date(loan.date)),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Text(
+                text = "${AppPreferenceUtils.getCurrencyCode(context)} ${loan.amount.toInt()}",
+                style = MaterialTheme.typography.titleMedium,
+                color = if (loan.typeId == TypeConstants.LENT_ID) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
 
 
 @Composable
@@ -309,7 +375,7 @@ fun NetBalanceCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp) // Keep padding from DashboardScreen in mind
+            .padding(horizontal = 6.dp)
             .animateContentSize(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -317,10 +383,10 @@ fun NetBalanceCard(
                 )
             ),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), // Slightly less elevation than before
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant, // Themed container
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant // Themed content
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     ) {
         Column {
@@ -336,7 +402,6 @@ fun NetBalanceCard(
                     Text(
                         stringResource(R.string.net_balance),
                         style = MaterialTheme.typography.titleMedium
-                        // Color from Card's contentColor
                     )
                     Text(
                         "${AppPreferenceUtils.getCurrencyCode(context)} ${summary.netTotal.toInt()}",
@@ -358,7 +423,7 @@ fun NetBalanceCard(
                     Icon(
                         imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                         contentDescription = if (expanded) "Collapse" else "Expand",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant // Keep as is, good contrast
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -388,7 +453,7 @@ fun NetBalanceCard(
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 12.dp),
                         thickness = DividerDefaults.Thickness,
-                        color = MaterialTheme.colorScheme.outlineVariant // Themed divider
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
 
                     Row(
@@ -484,14 +549,14 @@ fun BalanceItemExtended(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = amountColor, // Match amount color
+                tint = amountColor,
                 modifier = Modifier.size(6.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant // Good for secondary info
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -507,7 +572,7 @@ fun BalanceItemExtended(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        FilledTonalButton( // Using FilledTonalButton for less emphasis than FilledButton
+        FilledTonalButton(
             onClick = onNavigateToContactList,
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier
@@ -550,7 +615,6 @@ fun BalanceItemExtended(
                     ContactChip(
                         contact = c,
                         onClick = { onContactClick(c.id) },
-                        // Use tertiary for contact chips to differentiate from primary/error actions
                         baseColor = MaterialTheme.colorScheme.tertiary,
                         onBaseColor = MaterialTheme.colorScheme.onTertiary,
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -558,6 +622,36 @@ fun BalanceItemExtended(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ContactChip(
+    contact: ContactPreview,
+    onClick: () -> Unit,
+    baseColor: Color,
+    onBaseColor: Color,
+    containerColor: Color,
+    onContainerColor: Color
+) {
+    Surface(
+        modifier = Modifier.clickable { onClick() },
+        shape = CircleShape,
+        color = containerColor,
+        contentColor = onContainerColor,
+        border = null
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        ) {
+            // Maybe add avatar if available
+             Text(
+                text = contact.name,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1
+            )
         }
     }
 }

@@ -16,14 +16,19 @@ import com.google.firebase.firestore.PropertyName
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["contactId"],  unique = true) , Index(value = ["userId"])]
+    indices = [
+        Index(value = ["externalRef"], unique = true),
+        Index(value = ["normalizedPhone"]),
+        Index(value = ["userId"])
+    ]
 )
 data class Contact(
-    @PrimaryKey val id: String,
+    @PrimaryKey val id: String, // Internal UUID
     val name: String,
     val userId: String?,
     val phone: List<String?> ,
-    val contactId: String?,
+    val normalizedPhone: String?, // For deduplication
+    val externalRef: String?, // External ID (e.g. Google Contact ID)
     @get:PropertyName("deleted")
     val isDeleted: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
@@ -34,7 +39,8 @@ data class Contact(
         name = "",
         userId = null,
         phone = emptyList(),
-        contactId = null,
+        normalizedPhone = null,
+        externalRef = null,
         isDeleted = false,
         createdAt = System.currentTimeMillis(),
         updatedAt = System.currentTimeMillis()
