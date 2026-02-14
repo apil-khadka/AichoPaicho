@@ -274,7 +274,7 @@ class SettingsViewModel @Inject constructor(
 
                     // Create new offline user
                     val newOfflineUser = createNewOfflineUser()
-//                    userRepository.upsert(newOfflineUser)
+                    userRepository.upsert(newOfflineUser)
 
                     _uiState.value = _uiState.value.copy(
                         user = newOfflineUser,

@@ -51,13 +51,6 @@ fun DashboardScreen(
         }
     }
 
-    // Handles automatic sign-out if user state indicates not signed in
-    LaunchedEffect(uiState.isLoading, uiState.isSignedIn, uiState.user) {
-        if (!uiState.isLoading && !uiState.isSignedIn && uiState.user == null) {
-            onSignOut?.invoke()
-        }
-    }
-
     Scaffold(
         snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
     ) { paddingValues ->
@@ -86,7 +79,7 @@ fun DashboardScreen(
                         uiState.isLoading -> {
                             LoadingContent(text = stringResource(R.string.loading_dashboard))
                         }
-                        !uiState.isSignedIn || uiState.user == null -> { // Simplified condition for not signed in
+                        uiState.user == null -> {
                             NotSignedInContent(onSignOut = onSignOut)
                         }
                         else -> {

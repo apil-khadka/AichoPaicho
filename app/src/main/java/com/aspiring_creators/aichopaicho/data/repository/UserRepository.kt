@@ -17,7 +17,13 @@ class UserRepository @Inject constructor(private val userDao: UserDao) {
     }
 
     suspend fun getUser(): User {
-        return userDao.getUser()
+        return try {
+            userDao.getUser()
+        } catch (e: Exception) {
+            // When no user is in the DB, Room throws an exception for a non-null return type.
+            // We catch it and return a default "sentinel" user to avoid a crash.
+            User(id = "", name = null, email = null, photoUrl = null, isOffline = true)
+        }
     }
 
     suspend fun deleteUserCompletely(userId: String) {
