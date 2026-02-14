@@ -2,6 +2,7 @@ package com.aspiring_creators.aichopaicho.data.repository
 
 import com.aspiring_creators.aichopaicho.data.dao.RecordDao
 import com.aspiring_creators.aichopaicho.data.entity.Record
+import com.aspiring_creators.aichopaicho.data.entity.RecordWithRepayments
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,17 +22,27 @@ class RecordRepository @Inject constructor(private val recordDao: RecordDao) {
         return recordDao.getRecordsByContactId(contactId)
     }
 
+    // New method to get records with repayments for a specific contact
+    fun getRecordsWithRepaymentsByContactId(contactId: String): Flow<List<RecordWithRepayments>> {
+        return recordDao.getRecordsWithRepaymentsByContactId(contactId)
+    }
+
     suspend fun getTotalByType(typeId: Int): Int {
         return recordDao.getTotalByType(typeId)
     }
 
     // New methods needed for the screen
-    fun getRecordsByDateRange(startDate: Long, endDate: Long): Flow<List<Record>> {
+    fun getRecordsByDateRange(startDate: Long, endDate: Long): Flow<List<RecordWithRepayments>> {
         return recordDao.getRecordsByDateRange(startDate, endDate)
     }
 
     suspend fun getRecordById(recordId: String): Record? {
         return recordDao.getRecordById(recordId)
+    }
+
+    // New method to get a single record with its repayments
+    fun getRecordWithRepaymentsById(recordId: String): Flow<RecordWithRepayments?> {
+        return recordDao.getRecordWithRepaymentsById(recordId)
     }
 
     suspend fun updateRecord(record: Record) {

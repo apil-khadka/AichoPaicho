@@ -39,9 +39,10 @@ import com.aspiring_creators.aichopaicho.AppPreferenceUtils
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.data.entity.Record
+import com.aspiring_creators.aichopaicho.data.entity.RecordWithRepayments
 import com.aspiring_creators.aichopaicho.data.entity.UserRecordSummary
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme // Added for preview
-import com.aspiring_creators.aichopaicho.viewmodel.ContactPreview
+import com.aspiring_creators.aichopaicho.viewmodel.data.ContactPreview // Updated import
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.String
@@ -528,13 +529,13 @@ fun TransactionFilterSection(
 // ---------- Transaction Card (aligned & compact) ----------
 @Composable
 fun TransactionCard(
-    record: Record,
+    recordWithRepayments: RecordWithRepayments,
     contact: Contact?,
     onRecordClick: () -> Unit,
-    onCompletionToggle: () -> Unit,
     onDeleteRecord: () -> Unit,
     onNavigateToContactList: (String) -> Unit,
 ) {
+    val record = recordWithRepayments.record
     val dateFormatter = remember { SimpleDateFormat("dd/M/yy", Locale.getDefault()) }
     val isLent = record.typeId == TypeConstants.LENT_ID
     val accent = if (isLent) Color(0xFF2E7D32) else Color(0xFFC62828)
@@ -573,7 +574,7 @@ fun TransactionCard(
                     .clip(CircleShape)
                     .clickable {
                         contact?.id?.let { onNavigateToContactList(it) }
-                    }, // TODO(Show Spotlight for user to see)
+                    },
                 shape = CircleShape,
                 color = accent,
                 tonalElevation = 2.dp
@@ -596,8 +597,8 @@ fun TransactionCard(
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    textDecoration = if (record.isComplete) TextDecoration.LineThrough else TextDecoration.None,
-                    color = if (record.isComplete) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                    textDecoration = if (recordWithRepayments.isSettled) TextDecoration.LineThrough else TextDecoration.None,
+                    color = if (recordWithRepayments.isSettled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -613,19 +614,20 @@ fun TransactionCard(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${if (isLent) "+" else "-"} ${AppPreferenceUtils.getCurrencyCode(LocalContext.current)} ${record.amount}",
+                    text = "${if (isLent) "+" else "-"} ${AppPreferenceUtils.getCurrencyCode(LocalContext.current)} ${recordWithRepayments.remainingAmount}",
                     fontWeight = FontWeight.Bold,
                     color = accent,
-                    textDecoration = if (record.isComplete) TextDecoration.LineThrough else TextDecoration.None
+                    textDecoration = if (recordWithRepayments.isSettled) TextDecoration.LineThrough else TextDecoration.None
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Completion checkbox: small
+                    // Completion checkbox: small and read-only
                     Checkbox(
-                        checked = record.isComplete,
-                        onCheckedChange = { onCompletionToggle() }
+                        checked = recordWithRepayments.isSettled,
+                        onCheckedChange = null,
+                        enabled = false
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -660,11 +662,12 @@ fun TransactionFilterSectionPreview() {
 @Preview(showBackground = true, widthDp = 360)
 @Composable
 fun TransactionCardPreview() {
+    val sampleRecord = Record("","","89474dfsdf-dfsdf",1,2323,System.currentTimeMillis(),false,false,"",0,0)
+    val sampleRecordWithRepayments = RecordWithRepayments(sampleRecord, emptyList())
     TransactionCard(
-        record = Record("","","89474dfsdf-dfsdf",1,2323,System.currentTimeMillis(),false,false,""),
-        contact = Contact("c1","Golesam", userId = "",listOf("987"),"",false),
+        recordWithRepayments = sampleRecordWithRepayments,
+        contact = Contact("c1","Golesam", userId = "",phone = listOf("987"), contactId = "", isDeleted = false, createdAt = 0, updatedAt = 0),
         onRecordClick = {},
-        onCompletionToggle = {},
         onDeleteRecord = {},
         onNavigateToContactList = {}
     )

@@ -38,6 +38,7 @@ class BackgroundSyncWorker @AssistedInject constructor(
                 println("BackgroundSyncWorker: Starting upload phase (with server timestamps)...")
                 syncRepository.syncContacts()
                 syncRepository.syncRecords()
+                syncRepository.syncRepayments() // Added sync for the new table
                 syncRepository.syncUserData()
                 println("BackgroundSyncWorker: Starting upload phase (with server timestamps)...")
 

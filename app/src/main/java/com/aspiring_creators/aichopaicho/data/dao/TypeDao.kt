@@ -21,7 +21,7 @@ interface TypeDao {
     suspend fun softDelete(id: String, updatedAt: Long)
 
     @Query("SELECT * FROM types WHERE name = :name")
-    suspend fun getByName(name: String): Type
+    suspend fun getByName(name: String): Type?
 
     @Query("SELECT * FROM types WHERE isDeleted = 0 ORDER BY name ASC")
     fun getAllTypes(): Flow<List<Type>>

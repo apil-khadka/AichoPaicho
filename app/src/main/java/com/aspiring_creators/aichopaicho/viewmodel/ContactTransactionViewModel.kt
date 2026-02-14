@@ -37,7 +37,7 @@ class ContactTransactionViewModel @Inject constructor(
             try {
                 // Load all data concurrently
                 launch { loadContact(contactId) }
-                launch { loadRecords(contactId) }
+                launch { loadRecordsAndCalculations(contactId) } // Renamed and refactored
                 launch { loadTypes() }
             } catch (e: Exception) {
                 setErrorMessage(
@@ -64,23 +64,27 @@ class ContactTransactionViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadRecords(contactId: String) {
-        recordRepository.getRecordsByContactId(contactId)
+    private suspend fun loadRecordsAndCalculations(contactId: String) {
+        // Use the new repository method to get records with their repayments
+        recordRepository.getRecordsWithRepaymentsByContactId(contactId)
             .catch { e -> setErrorMessage(
                 context.getString(
                     R.string.failed_to_load_records,
                     e.message
                 ))
             }
-            .collect { records ->
+            .collect { recordsWithRepayments ->
+
+                // Filter settled records based on the new isSettled property
                 val filteredRecords = if (_uiState.value.showCompleted) {
-                    records
+                    recordsWithRepayments
                 } else {
-                    records.filter { !it.isComplete }
+                    recordsWithRepayments.filter { !it.isSettled }
                 }
 
                 val (lentRecords, borrowedRecords) = separateRecordsByType(filteredRecords)
-                val (totalLent, totalBorrowed) = calculateTotals(filteredRecords)
+                val (totalLent, totalBorrowed) = calculateGrossTotals(filteredRecords)
+                val netBalance = calculateNetBalance(filteredRecords)
 
                 _uiState.value = _uiState.value.copy(
                     allRecords = filteredRecords,
@@ -88,7 +92,7 @@ class ContactTransactionViewModel @Inject constructor(
                     borrowedRecords = borrowedRecords,
                     totalLent = totalLent,
                     totalBorrowed = totalBorrowed,
-                    netBalance = totalLent - totalBorrowed
+                    netBalance = netBalance
                 )
             }
     }
@@ -106,16 +110,22 @@ class ContactTransactionViewModel @Inject constructor(
             }
     }
 
-    private fun separateRecordsByType(records: List<Record>): Pair<List<Record>, List<Record>> {
-        val lent = records.filter { it.typeId == TypeConstants.LENT_ID}.sortedByDescending { it.date }
-        val borrowed = records.filter { it.typeId == TypeConstants.BORROWED_ID }.sortedByDescending { it.date }
+    private fun separateRecordsByType(records: List<RecordWithRepayments>): Pair<List<RecordWithRepayments>, List<RecordWithRepayments>> {
+        val lent = records.filter { it.record.typeId == TypeConstants.LENT_ID}.sortedByDescending { it.record.date }
+        val borrowed = records.filter { it.record.typeId == TypeConstants.BORROWED_ID }.sortedByDescending { it.record.date }
         return lent to borrowed
     }
 
-    private fun calculateTotals(records: List<Record>): Pair<Double, Double> {
-        val totalLent = records.filter { it.typeId == TypeConstants.LENT_ID }.sumOf { it.amount.toDouble() }
-        val totalBorrowed = records.filter { it.typeId == TypeConstants.BORROWED_ID }.sumOf { it.amount.toDouble() }
+    private fun calculateGrossTotals(records: List<RecordWithRepayments>): Pair<Double, Double> {
+        val totalLent = records.filter { it.record.typeId == TypeConstants.LENT_ID }.sumOf { it.record.amount.toDouble() }
+        val totalBorrowed = records.filter { it.record.typeId == TypeConstants.BORROWED_ID }.sumOf { it.record.amount.toDouble() }
         return totalLent to totalBorrowed
+    }
+
+    private fun calculateNetBalance(records: List<RecordWithRepayments>): Double {
+        val outstandingLent = records.filter { it.record.typeId == TypeConstants.LENT_ID }.sumOf { it.remainingAmount.toDouble() }
+        val outstandingBorrowed = records.filter { it.record.typeId == TypeConstants.BORROWED_ID }.sumOf { it.remainingAmount.toDouble() }
+        return outstandingLent - outstandingBorrowed
     }
 
     fun updateShowCompleted(showCompleted: Boolean) {
@@ -123,7 +133,7 @@ class ContactTransactionViewModel @Inject constructor(
         // Reload records with new filter
         _uiState.value.contact?.id?.let { contactId ->
             viewModelScope.launch {
-                loadRecords(contactId)
+                loadRecordsAndCalculations(contactId)
             }
         }
     }
@@ -132,22 +142,9 @@ class ContactTransactionViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(selectedTab = tabIndex)
     }
 
-    fun toggleRecordCompletion(recordId: String) {
-        viewModelScope.launch {
-            try {
-                val record = _uiState.value.allRecords.find { it.id == recordId }
-                record?.let {
-                    val updatedRecord = it.copy(
-                        isComplete = !it.isComplete,
-                        updatedAt = System.currentTimeMillis()
-                    )
-                    recordRepository.updateRecord(updatedRecord)
-                }
-            } catch (e: Exception) {
-                setErrorMessage(context.getString(R.string.failed_to_update_record, e.message))
-            }
-        }
-    }
+    // This function is now obsolete, as completion is derived from repayments.
+    // Manual toggling is no longer supported in this ViewModel.
+    // fun toggleRecordCompletion(recordId: String) { ... }
 
     fun deleteRecord(recordId: String) {
         viewModelScope.launch {

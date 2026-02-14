@@ -2,6 +2,7 @@ package com.aspiring_creators.aichopaicho.data.repository
 
 import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.data.entity.Record
+import com.aspiring_creators.aichopaicho.data.entity.Repayment
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -18,6 +19,7 @@ class SyncRepository @Inject constructor(
     private val userRepository: UserRepository,
     private val contactRepository: ContactRepository,
     private val recordRepository: RecordRepository,
+    private val repaymentRepository: RepaymentRepository, // Added
     private val firebaseAuth: FirebaseAuth,
 ) {
 
@@ -123,6 +125,41 @@ class SyncRepository @Inject constructor(
             println("Error fetching records for sync: ${e.message}")
         }
     }
+    
+    suspend fun syncRepayments() {
+        try {
+            val user = userRepository.getUser()
+            val allRecords = recordRepository.getAllRecords().first()
+
+            allRecords.forEach { record ->
+                val repayments = repaymentRepository.getRepaymentsForRecord(record.id).first()
+                repayments.forEach { repayment ->
+                    try {
+                        val repaymentData = hashMapOf(
+                            "id" to repayment.id,
+                            "recordId" to repayment.recordId,
+                            "amount" to repayment.amount,
+                            "date" to repayment.date,
+                            "description" to repayment.description,
+                            "createdAt" to repayment.createdAt,
+                            "updatedAt" to FieldValue.serverTimestamp()
+                        )
+
+                        firestore.collection("users").document(user.id)
+                            .collection("records").document(repayment.recordId)
+                            .collection("repayments").document(repayment.id)
+                            .set(repaymentData, SetOptions.merge())
+                            .await()
+                    } catch (e: Exception) {
+                        println("Error syncing repayment ${repayment.id}: ${e.message}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Error fetching data for repayments sync: ${e.message}")
+        }
+    }
+
 
     suspend fun syncSingleRecord(recordId: String) {
         try {
@@ -159,6 +196,34 @@ class SyncRepository @Inject constructor(
             println("Error fetching records for sync: ${e.message}")
         }
     }
+    
+    suspend fun syncSingleRepayment(repaymentId: String) {
+        try {
+            val repayment = repaymentRepository.getRepaymentById(repaymentId)
+            val user = userRepository.getUser()
+
+            repayment?.let { r ->
+                val repaymentData = hashMapOf(
+                    "id" to r.id,
+                    "recordId" to r.recordId,
+                    "amount" to r.amount,
+                    "date" to r.date,
+                    "description" to r.description,
+                    "createdAt" to r.createdAt,
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+
+                firestore.collection("users").document(user.id)
+                    .collection("records").document(r.recordId)
+                    .collection("repayments").document(r.id)
+                    .set(repaymentData, SetOptions.merge())
+                    .await()
+            }
+        } catch (e: Exception) {
+            println("Error syncing single repayment ${repaymentId}: ${e.message}")
+        }
+    }
+
 
     suspend fun syncUserData() {
         try {
@@ -304,6 +369,39 @@ class SyncRepository @Inject constructor(
                                 println("Record ${localRecord.id} timestamps match or already synced.")
                             }
                         }
+
+                        // Download repayments for this record
+                        val repaymentsSnapshot = firestore.collection("users").document(user.id)
+                            .collection("records").document(firestoreId)
+                            .collection("repayments").get().await()
+
+                        for (repaymentDoc in repaymentsSnapshot.documents) {
+                            val firestoreRepaymentId = repaymentDoc.getString("id") ?: ""
+                             if (firestoreRepaymentId.isEmpty()) {
+                                println("Parsed repayment from Firestore with empty ID: ${repaymentDoc.id}, skipping.")
+                                continue
+                            }
+                            val firestoreRepaymentObject = repaymentDoc.toObject(Repayment::class.java)
+                            if (firestoreRepaymentObject == null) {
+                                println("Could not parse repayment document ${repaymentDoc.id}, skipping.")
+                                continue
+                            }
+                            val firestoreRepayment = firestoreRepaymentObject.copy(
+                                updatedAt = (repaymentDoc.getTimestamp("updatedAt")?.toDate()?.time ?: System.currentTimeMillis())
+                            )
+                            
+                            val localRepayment = repaymentRepository.getRepaymentById(firestoreRepaymentId)
+                            if (localRepayment == null) {
+                                repaymentRepository.insertRepayment(firestoreRepayment)
+                            } else {
+                                if (firestoreRepayment.updatedAt > localRepayment.updatedAt) {
+                                    repaymentRepository.insertRepayment(firestoreRepayment) // insert is upsert (replace)
+                                } else if (localRepayment.updatedAt > firestoreRepayment.updatedAt) {
+                                    syncSingleRepayment(localRepayment.id)
+                                }
+                            }
+                        }
+
                     } catch (e: Exception) {
                          println("Error processing record document ${doc.id}: ${e.message}")
                          e.printStackTrace()

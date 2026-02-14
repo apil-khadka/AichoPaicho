@@ -1,15 +1,11 @@
 package com.aspiring_creators.aichopaicho.ui.screens
 
-// import androidx.compose.foundation.background // To be removed
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column // Will be used inside LazyColumn or for specific structures
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding // Will be used by Scaffold
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
@@ -88,22 +84,9 @@ fun ViewTransactionScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), // Adjusted padding
-                    verticalArrangement = Arrangement.spacedBy(12.dp) // Consistent spacing
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Net Balance Section (kept commented as per original)
-                    /*
-                    item {
-                        uiState.recordSummary?.let { summary ->
-                            NetBalanceCard(
-                                summary = summary,
-                                onNavigateToContactList = { type -> onNavigateToContactList(type) },
-                                // Provide lentContacts and borrowedContacts if available from uiState
-                            )
-                        }
-                    }
-                    */
-
                     item {
                         TransactionFilterSection(
                             selectedType = uiState.selectedType,
@@ -134,18 +117,14 @@ fun ViewTransactionScreen(
                             }
                         }
                     } else {
-                        items(uiState.filteredRecords, key = { it.id }) { record ->
+                        items(uiState.filteredRecords, key = { it.record.id }) { recordWithRepayments ->
                             TransactionCard(
-                                record = record,
-                                contact = uiState.contacts[record.contactId],
-                                onRecordClick = { onNavigateToIndividualRecord(record.id) },
-                                onCompletionToggle = {
-                                    viewTransactionViewModel.toggleRecordCompletion(record.id)
-                                },
-                                onDeleteRecord = {
-                                },
+                                recordWithRepayments = recordWithRepayments,
+                                contact = uiState.contacts[recordWithRepayments.record.contactId],
+                                onRecordClick = { onNavigateToIndividualRecord(recordWithRepayments.record.id) },
+                                onDeleteRecord = { viewTransactionViewModel.deleteRecord(recordWithRepayments.record.id) },
                                 onNavigateToContactList = { contactId ->
-                                    onNavigateToContactList(contactId) // Navigate to specific contact's transactions
+                                    onNavigateToContactList(contactId)
                                 }
                             )
                         }
@@ -155,4 +134,3 @@ fun ViewTransactionScreen(
         }
     }
 }
-

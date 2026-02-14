@@ -5,10 +5,11 @@ import androidx.room.Room
 import com.aspiring_creators.aichopaicho.data.AppDatabaseCallback
 import com.aspiring_creators.aichopaicho.data.dao.ContactDao
 import com.aspiring_creators.aichopaicho.data.dao.RecordDao
+import com.aspiring_creators.aichopaicho.data.dao.RepaymentDao
 import com.aspiring_creators.aichopaicho.data.dao.TypeDao
 import com.aspiring_creators.aichopaicho.data.dao.UserDao
 import com.aspiring_creators.aichopaicho.data.dao.UserRecordSummaryDao
-import com.aspiring_creators.aichopaicho.data.database.AppDatabase // Import the new AppDatabase
+import com.aspiring_creators.aichopaicho.data.database.AppDatabase
 import com.aspiring_creators.aichopaicho.data.local.ScreenViewDao
 import dagger.Module
 import dagger.Provides
@@ -72,6 +73,10 @@ object DatabaseModule {
     fun provideUserRecordSummaryDao(appDatabase: AppDatabase): UserRecordSummaryDao {
         return appDatabase.userRecordSummaryDao()
     }
-
-
+    
+    @Provides
+    @Singleton
+    fun provideRepaymentDao(appDatabase: AppDatabase): RepaymentDao {
+        return appDatabase.repaymentDao()
+    }
 }

@@ -1,4 +1,3 @@
-// ViewTransactionViewModel.kt
 package com.aspiring_creators.aichopaicho.viewmodel
 
 import android.content.Context
@@ -93,7 +92,6 @@ class ViewTransactionViewModel @Inject constructor(
     fun updateDateRange(startDate: Long, endDate: Long) {
         _uiState.value = _uiState.value.copy(dateRange = startDate to endDate)
         viewModelScope.launch {
-//            loadRecordSummary()
             loadRecords()
         }
     }
@@ -127,21 +125,21 @@ class ViewTransactionViewModel @Inject constructor(
         )
     }
 
-    private fun applyFilters(records: List<Record>): List<Record> {
+    private fun applyFilters(records: List<RecordWithRepayments>): List<RecordWithRepayments> {
         val currentState = _uiState.value
-        return records.filter { record ->
+        return records.filter { recordWithRepayments ->
             // Filter by completion status
-            if (!currentState.showCompleted && record.isComplete) return@filter false
+            if (!currentState.showCompleted && recordWithRepayments.isSettled) return@filter false
 
             // Filter by type
             currentState.selectedType?.let { typeId ->
-                if (record.typeId != typeId) return@filter false
+                if (recordWithRepayments.record.typeId != typeId) return@filter false
             }
 
-            // Filter by contact name (From query)
+            // Filter by amount range
             if (currentState.fromQuery.isNotBlank() && currentState.moneyToQuery.isNotBlank()) {
-                val amountString = record.amount
-                if ( !(amountString >= uiState.value.fromQuery.toInt()  && amountString <= uiState.value.moneyToQuery.toInt())) {
+                val amount = recordWithRepayments.record.amount
+                if ( !(amount >= currentState.fromQuery.toInt() && amount <= currentState.moneyToQuery.toInt())) {
                     return@filter false
                 }
             }
@@ -149,25 +147,8 @@ class ViewTransactionViewModel @Inject constructor(
         }
     }
 
-    fun toggleRecordCompletion(recordId: String) {
-        viewModelScope.launch {
-            try {
-                val currentRecord = _uiState.value.records.find { it.id == recordId }
-                currentRecord?.let { record ->
-                    val updatedRecord = record.copy(
-                        isComplete = !record.isComplete,
-                        updatedAt = System.currentTimeMillis()
-                    )
-                    recordRepository.updateRecord(updatedRecord)
-                }
-            } catch (e: Exception) {
-                setErrorMessage(context.getString(
-                    R.string.failed_to_update_record,
-                    e.message
-                ))
-            }
-        }
-    }
+    // This is now obsolete as completion is derived
+    // fun toggleRecordCompletion(recordId: String) { ... }
 
     fun deleteRecord(recordId: String) {
         viewModelScope.launch {
@@ -194,12 +175,3 @@ class ViewTransactionViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isLoading = value)
     }
 }
-
-// ContactPreview data class
-data class ContactPreview(
-    val id: String,
-    val name: String,
-    val amount: Double
-)
-
-// Updated UI State

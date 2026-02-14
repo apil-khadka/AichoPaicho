@@ -54,6 +54,7 @@ import com.aspiring_creators.aichopaicho.R
 // import com.aspiring_creators.aichopaicho.R // Not used
 import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.data.entity.Record
+import com.aspiring_creators.aichopaicho.data.entity.RecordWithRepayments
 import com.aspiring_creators.aichopaicho.data.entity.Type
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
 import java.text.SimpleDateFormat
@@ -306,15 +307,15 @@ fun EmptyRecordsCard() {
 
 @Composable
 fun ContactRecordCard(
-    record: Record,
+    recordWithRepayments: RecordWithRepayments,
     type: Type?,
     onRecordClick: () -> Unit,
-    onCompletionToggle: () -> Unit,
-    onDeleteRecord: () -> Unit // Kept for now, confirm if needed
+    onDeleteRecord: () -> Unit
 ) {
+    val record = recordWithRepayments.record // Unpack for convenience
     val dateFormatter = remember { SimpleDateFormat("dd MMM yy", Locale.getDefault()) }
-    val timeFormatter = remember { SimpleDateFormat("HH:mm a", Locale.getDefault()) } // Added 'a' for AM/PM
-    val isLent = record.typeId == TypeConstants.LENT_ID // Check against constant
+    val timeFormatter = remember { SimpleDateFormat("HH:mm a", Locale.getDefault()) }
+    val isLent = record.typeId == TypeConstants.LENT_ID
     val context = LocalContext.current
 
     val amountColor = if (isLent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
@@ -328,10 +329,10 @@ fun ContactRecordCard(
             .fillMaxWidth()
             .clickable { onRecordClick() },
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), // Subtle elevation
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer, // Themed
-            contentColor = MaterialTheme.colorScheme.onSurface // Themed
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
     ) {
         Row(
@@ -340,7 +341,7 @@ fun ContactRecordCard(
         ) {
             Box( // Type indicator
                 modifier = Modifier
-                    .size(10.dp) // Slightly smaller
+                    .size(10.dp)
                     .clip(CircleShape)
                     .background(amountColor)
             )
@@ -352,15 +353,14 @@ fun ContactRecordCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        // Assuming amount is stored in cents
-                        text = "$amountPrefix ${AppPreferenceUtils.getCurrencySymbol(context)} ${record.amount}",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), // Themed
+                        text = "$amountPrefix ${AppPreferenceUtils.getCurrencySymbol(context)} ${recordWithRepayments.remainingAmount}",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = amountColor,
-                        textDecoration = if (record.isComplete) TextDecoration.LineThrough else TextDecoration.None
+                        textDecoration = if (recordWithRepayments.isSettled) TextDecoration.LineThrough else TextDecoration.None
                     )
                     Text(
                         text = typeName,
-                        style = MaterialTheme.typography.labelSmall, // Themed
+                        style = MaterialTheme.typography.labelSmall,
                         color = typeContentColor,
                         modifier = Modifier
                             .background(
@@ -371,18 +371,28 @@ fun ContactRecordCard(
                     )
                 }
 
+                // Show original amount if it's different from remaining and not settled
+                if (recordWithRepayments.totalRepayment > 0 && !recordWithRepayments.isSettled) {
+                    Text(
+                        text = "Original: ${AppPreferenceUtils.getCurrencySymbol(context)} ${record.amount}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textDecoration = TextDecoration.LineThrough
+                    )
+                }
+
                 Text(
                     text = "${dateFormatter.format(Date(record.date))} at ${timeFormatter.format(Date(record.date))}",
-                    style = MaterialTheme.typography.bodySmall, // Themed
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 record.description?.takeIf { it.isNotBlank() }?.let { description ->
                     Text(
                         text = description,
-                        style = MaterialTheme.typography.bodySmall, // Themed
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textDecoration = if (record.isComplete) TextDecoration.LineThrough else TextDecoration.None,
+                        textDecoration = if (recordWithRepayments.isSettled) TextDecoration.LineThrough else TextDecoration.None,
                         maxLines = 2
                     )
                 }
@@ -390,22 +400,23 @@ fun ContactRecordCard(
 
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(0.dp) // Reduced spacing
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
                 Checkbox(
-                    checked = record.isComplete,
-                    onCheckedChange = { onCompletionToggle() },
-                    modifier = Modifier.size(36.dp) // Ensure sufficient touch target
+                    checked = recordWithRepayments.isSettled,
+                    onCheckedChange = null, // Completion is automatic, so no manual toggle
+                    enabled = false,
+                    modifier = Modifier.size(36.dp)
                 )
                 IconButton(
                     onClick = onDeleteRecord,
-                    modifier = Modifier.size(36.dp) // Ensure sufficient touch target
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete Transaction",
-                        tint = MaterialTheme.colorScheme.error, // Themed
-                        modifier = Modifier.size(20.dp) // Icon size
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -509,10 +520,9 @@ fun ContactRecordCardLentPreview() {
         val record = Record("1", "u1", "c1", TypeConstants.LENT_ID, 12000, System.currentTimeMillis(), false, false, "Lunch",System.currentTimeMillis(), System.currentTimeMillis())
         val type = Type(TypeConstants.LENT_ID, "Lent")
         ContactRecordCard(
-            record = record,
+            recordWithRepayments = RecordWithRepayments(record, emptyList()),
             type = type,
             onRecordClick = {},
-            onCompletionToggle = {},
             onDeleteRecord = {}
         )
     }
@@ -525,10 +535,9 @@ fun ContactRecordCardBorrowedPreview() {
         val record = Record("2", "u1", "c1", TypeConstants.BORROWED_ID, 7550, System.currentTimeMillis() - 86400000, false, true, "just for fun",System.currentTimeMillis(), System.currentTimeMillis())
         val type = Type(TypeConstants.BORROWED_ID, "Borrowed")
         ContactRecordCard(
-            record = record,
+            recordWithRepayments = RecordWithRepayments(record, emptyList()),
             type = type,
             onRecordClick = {},
-            onCompletionToggle = {},
             onDeleteRecord = {}
         )
     }

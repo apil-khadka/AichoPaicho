@@ -149,7 +149,7 @@ fun ContactTransactionScreen(
                         1 -> uiState.lentRecords
                         2 -> uiState.borrowedRecords
                         else -> uiState.allRecords
-                    }.filter { uiState.showCompleted || !it.isComplete }
+                    }.filter { uiState.showCompleted || !it.isSettled } // Use new isSettled property
 
 
                     if (recordsToShow.isEmpty()) {
@@ -157,13 +157,12 @@ fun ContactTransactionScreen(
                             EmptyRecordsCard()
                         }
                     } else {
-                        items(recordsToShow, key = { it.id }) { record ->
+                        items(recordsToShow, key = { it.record.id }) { recordWithRepayments ->
                             ContactRecordCard(
-                                record = record,
-                                type = uiState.types[record.typeId],
-                                onRecordClick = { onNavigateToRecord(record.id) },
-                                onCompletionToggle = { contactTransactionViewModel.toggleRecordCompletion(record.id) },
-                                onDeleteRecord = { contactTransactionViewModel.deleteRecord(record.id) } // Add confirmation dialog later if needed
+                                recordWithRepayments = recordWithRepayments,
+                                type = uiState.types[recordWithRepayments.record.typeId],
+                                onRecordClick = { onNavigateToRecord(recordWithRepayments.record.id) },
+                                onDeleteRecord = { contactTransactionViewModel.deleteRecord(recordWithRepayments.record.id) }
                             )
                         }
                     }
@@ -172,4 +171,3 @@ fun ContactTransactionScreen(
         }
     }
 }
-

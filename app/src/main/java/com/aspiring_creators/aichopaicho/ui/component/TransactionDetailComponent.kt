@@ -5,14 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-// import androidx.compose.material3.CardColors // Not needed directly
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-// import androidx.compose.material3.DividerDefaults // Not used directly
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +34,8 @@ import com.aspiring_creators.aichopaicho.AppPreferenceUtils
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.data.entity.Record
+import com.aspiring_creators.aichopaicho.data.entity.RecordWithRepayments
+import com.aspiring_creators.aichopaicho.data.entity.Repayment
 import com.aspiring_creators.aichopaicho.data.entity.Type
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
 import java.text.SimpleDateFormat
@@ -44,20 +46,21 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionDetailsCard(
-    record: Record,
+    recordWithRepayments: RecordWithRepayments, // Changed parameter
     contact: Contact?,
     type: Type?,
     isEditing: Boolean,
     onAmountChange: (String) -> Unit, // Changed to String
     onDescriptionChange: (String) -> Unit,
     onDateChange: (Long) -> Unit, // Kept, though no UI for edit in this card
-    onCompletionToggle: () -> Unit
+    // onCompletionToggle: () -> Unit // Removed, as completion is now derived
 ) {
+    val record = recordWithRepayments.record // Unpack for convenience
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
     // Update local state handling for editing
     var amountText by remember(record.amount, isEditing) {
         // Initialize with formatted string if editing, otherwise it's not shown in an input field
-        mutableStateOf(if (isEditing) (record.amount / 100.0).toString() else "")
+        mutableStateOf(if (isEditing) record.amount.toString() else "")
     }
     var descriptionText by remember(record.description, isEditing) {
         mutableStateOf(if (isEditing) record.description ?: "" else "")
@@ -91,8 +94,9 @@ fun TransactionDetailsCard(
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
-                        checked = record.isComplete,
-                        onCheckedChange = { onCompletionToggle() }
+                        checked = recordWithRepayments.isSettled, // Use derived state
+                        onCheckedChange = null, // Read-only
+                        enabled = false // Disable user interaction
                     )
                     Text(
                         text = stringResource(R.string.completed),
@@ -112,6 +116,23 @@ fun TransactionDetailsCard(
                 isEditing = false
             )
 
+            // Original Amount Display
+            DetailRow(
+                label = "Original Amount", // New label
+                value = "${AppPreferenceUtils.getCurrencySymbol(context)} ${record.amount}",
+                isEditing = false
+            )
+
+            // Total Repaid Display (if any)
+            if (recordWithRepayments.totalRepayment > 0) {
+                DetailRow(
+                    label = "Total Repaid", // New label
+                    value = "${AppPreferenceUtils.getCurrencySymbol(context)} ${recordWithRepayments.totalRepayment}",
+                    isEditing = false
+                )
+            }
+
+            // Remaining Amount Display
             if (isEditing) {
                 OutlinedTextField(
                     value = amountText,
@@ -126,12 +147,12 @@ fun TransactionDetailsCard(
                 )
             } else {
                 DetailRow(
-                    label = stringResource(R.string.amount),
-                    // Assuming amount is stored in cents
-                    value = "${AppPreferenceUtils.getCurrencySymbol(context)} ${record.amount}",
+                    label = "Remaining Amount", // New label
+                    value = "${AppPreferenceUtils.getCurrencySymbol(context)} ${recordWithRepayments.remainingAmount}",
                     isEditing = false
                 )
             }
+
 
             DetailRow(
                 label = stringResource(R.string.date),
@@ -246,6 +267,134 @@ fun ContactDisplayRow(
     }
 }
 
+@Composable
+fun AddRepaymentCard(
+    repaymentAmount: String,
+    onRepaymentAmountChange: (String) -> Unit,
+    repaymentDescription: String,
+    onRepaymentDescriptionChange: (String) -> Unit,
+    onSaveRepayment: () -> Unit,
+    isLoading: Boolean,
+    remainingAmount: Int
+) {
+    val context = LocalContext.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = "Add Repayment",
+                style = MaterialTheme.typography.titleLarge
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            OutlinedTextField(
+                value = repaymentAmount,
+                onValueChange = onRepaymentAmountChange,
+                label = { Text("Amount") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                prefix = { Text(AppPreferenceUtils.getCurrencySymbol(context)) },
+                isError = repaymentAmount.toIntOrNull() ?: 0 > remainingAmount && remainingAmount > 0
+            )
+            if (repaymentAmount.toIntOrNull() ?: 0 > remainingAmount && remainingAmount > 0) {
+                Text(
+                    text = "Repayment amount cannot exceed remaining amount.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+            }
+
+            OutlinedTextField(
+                value = repaymentDescription,
+                onValueChange = onRepaymentDescriptionChange,
+                label = { Text("Description (Optional)") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 3
+            )
+
+            Button(
+                onClick = onSaveRepayment,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading && (repaymentAmount.toIntOrNull() ?: 0 > 0) && (repaymentAmount.toIntOrNull() ?: 0 <= remainingAmount)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else {
+                    Text("Save Repayment")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RepaymentHistoryCard(
+    repayments: List<Repayment>
+) {
+    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
+    val context = LocalContext.current
+
+    if (repayments.isEmpty()) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "Repayment History",
+                style = MaterialTheme.typography.titleLarge
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            repayments.forEach { repayment ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "${AppPreferenceUtils.getCurrencySymbol(context)} ${repayment.amount}",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        repayment.description?.takeIf { it.isNotBlank() }?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Text(
+                        text = dateFormatter.format(Date(repayment.date)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (repayment != repayments.last()) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+                }
+            }
+        }
+    }
+}
+
+
 @Preview(showBackground = true, name = "TransactionDetailsCard - View Mode")
 @Composable
 fun TransactionDetailsCardPreview() {
@@ -260,6 +409,7 @@ fun TransactionDetailsCardPreview() {
             updatedAt = System.currentTimeMillis() - 86400000L * 2,  // 2 days ago
             isDeleted = false
         )
+        val sampleRecordWithRepayments = RecordWithRepayments(sampleRecord, emptyList())
         val sampleContact = Contact(
             id = "contact1",
             name = "Alex Johnson",
@@ -270,14 +420,13 @@ fun TransactionDetailsCardPreview() {
         val sampleType = Type(id = TypeConstants.LENT_ID, name = "Lent")
 
         TransactionDetailsCard(
-            record = sampleRecord,
+            recordWithRepayments = sampleRecordWithRepayments,
             contact = sampleContact,
             type = sampleType,
             isEditing = false,
             onAmountChange = {},
             onDescriptionChange = {},
-            onDateChange = {},
-            onCompletionToggle = {}
+            onDateChange = {}
         )
     }
 }
@@ -296,6 +445,8 @@ fun TransactionDetailsCardEditingPreview() {
             updatedAt = System.currentTimeMillis() - 86400000L * 1,  // 1 day ago
             isDeleted = false
         )
+        val sampleRepayment = Repayment(recordId = "2", amount = 2500, date = System.currentTimeMillis() - 86400000L, description = "Partial repayment")
+        val sampleRecordWithRepayments = RecordWithRepayments(sampleRecord, listOf(sampleRepayment))
         val sampleContact = Contact(
             id = "contact2",
             name = "Maria Garcia",
@@ -306,14 +457,13 @@ fun TransactionDetailsCardEditingPreview() {
         val sampleType = Type(id = TypeConstants.BORROWED_ID, name = "Borrowed")
 
         TransactionDetailsCard(
-            record = sampleRecord,
+            recordWithRepayments = sampleRecordWithRepayments,
             contact = sampleContact,
             type = sampleType,
             isEditing = true,
             onAmountChange = {},
             onDescriptionChange = {},
-            onDateChange = {},
-            onCompletionToggle = {}
+            onDateChange = {}
         )
     }
 }

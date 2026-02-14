@@ -68,7 +68,7 @@ import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.*
 import com.aspiring_creators.aichopaicho.data.entity.User
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
-import com.aspiring_creators.aichopaicho.viewmodel.ContactPreview
+import com.aspiring_creators.aichopaicho.viewmodel.data.ContactPreview
 import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState
 
 @Composable

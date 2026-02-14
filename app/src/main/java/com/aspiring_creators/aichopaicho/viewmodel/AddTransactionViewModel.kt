@@ -42,6 +42,7 @@ class AddTransactionViewModel @Inject constructor(
             }
 
             val type = typeRepository.getByName(uiState.value.type!!)
+                ?: throw IllegalArgumentException("Selected transaction type '${uiState.value.type}' not found.")
             val user = userRepository.getUser()
 
             val selectedContactInfo = uiState.value.contact!!

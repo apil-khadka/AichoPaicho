@@ -17,7 +17,7 @@ class TypeRepository @Inject constructor(private val typeDao: TypeDao) {
         typeDao.softDelete(id, updatedAt)
     }
 
-    suspend fun getByName(name: String): Type {
+    suspend fun getByName(name: String): Type? {
         return typeDao.getByName(name)
     }
 
