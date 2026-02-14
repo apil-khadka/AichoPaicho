@@ -72,8 +72,6 @@ class DashboardScreenViewModel @Inject constructor(
                 if (firebaseUser != null) {
                     val localUser = userRepository.getUser()
 
-                    // Simple check: if local user ID matches Firebase UID, we are good.
-                    // The offline check might be too aggressive if we just synced.
                     if (localUser.id == firebaseUser.uid) {
                         _uiState.value = _uiState.value.copy(
                             user = localUser,
@@ -83,14 +81,15 @@ class DashboardScreenViewModel @Inject constructor(
                         loadRecordSummary()
                         loadRecentLoans()
                     } else {
-                         // Mismatch or offline user trying to become online?
-                         // For now, let's assume we use local user if IDs match.
                         Log.w("DashboardViewModel", "Local user ID ${localUser.id} mismatch with Firebase ${firebaseUser.uid}")
-                         _uiState.value = _uiState.value.copy(
+                        cancelJobs()
+                        _uiState.value = DashboardScreenUiState(
                             user = null,
                             isSignedIn = false,
                             isLoading = false,
-                            errorMessage = context.getString(R.string.account_mismatch)
+                            errorMessage = context.getString(R.string.account_mismatch),
+                            recordSummary = null,
+                            recentLoans = emptyList()
                         )
                     }
                 } else {

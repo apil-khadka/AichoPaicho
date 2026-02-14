@@ -9,23 +9,23 @@ import androidx.room.DatabaseView
     SELECT
         u.id AS user_id,
         (
-            COALESCE((SELECT SUM(amount) FROM loans WHERE userId = u.id AND typeId = 1 AND isDeleted = 0), 0) -
-            COALESCE((SELECT SUM(r.amount) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 1 AND r.isDeleted = 0), 0)
-        ) AS total_lent,
+            COALESCE((SELECT SUM(amountCents) FROM loans WHERE userId = u.id AND typeId = 1 AND isDeleted = 0), 0) -
+            COALESCE((SELECT SUM(r.amountCents) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 1 AND r.isDeleted = 0), 0)
+        ) / 100.0 AS total_lent,
         (
-            COALESCE((SELECT SUM(amount) FROM loans WHERE userId = u.id AND typeId = 0 AND isDeleted = 0), 0) -
-            COALESCE((SELECT SUM(r.amount) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 0 AND r.isDeleted = 0), 0)
-        ) AS total_borrowed,
+            COALESCE((SELECT SUM(amountCents) FROM loans WHERE userId = u.id AND typeId = 0 AND isDeleted = 0), 0) -
+            COALESCE((SELECT SUM(r.amountCents) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 0 AND r.isDeleted = 0), 0)
+        ) / 100.0 AS total_borrowed,
         (
             (
-                COALESCE((SELECT SUM(amount) FROM loans WHERE userId = u.id AND typeId = 1 AND isDeleted = 0), 0) -
-                COALESCE((SELECT SUM(r.amount) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 1 AND r.isDeleted = 0), 0)
+                COALESCE((SELECT SUM(amountCents) FROM loans WHERE userId = u.id AND typeId = 1 AND isDeleted = 0), 0) -
+                COALESCE((SELECT SUM(r.amountCents) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 1 AND r.isDeleted = 0), 0)
             ) -
             (
-                COALESCE((SELECT SUM(amount) FROM loans WHERE userId = u.id AND typeId = 0 AND isDeleted = 0), 0) -
-                COALESCE((SELECT SUM(r.amount) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 0 AND r.isDeleted = 0), 0)
+                COALESCE((SELECT SUM(amountCents) FROM loans WHERE userId = u.id AND typeId = 0 AND isDeleted = 0), 0) -
+                COALESCE((SELECT SUM(r.amountCents) FROM repayments r JOIN loans l ON r.loanId = l.id WHERE l.userId = u.id AND l.typeId = 0 AND r.isDeleted = 0), 0)
             )
-        ) AS net_total,
+        ) / 100.0 AS net_total,
         (SELECT COUNT(DISTINCT contactId) FROM loans WHERE userId = u.id AND typeId = 1 AND isDeleted = 0) AS lent_contacts_count,
         (SELECT COUNT(DISTINCT contactId) FROM loans WHERE userId = u.id AND typeId = 0 AND isDeleted = 0) AS borrowed_contacts_count
     FROM users u

@@ -149,4 +149,6 @@
     <string name="transaction_not_found">Transaction not found or could not be loaded.</string>
     <string name="no_transactions_match">No transactions match your filters.</string>
     <string name="never_forget_a_loan_or_a_debt">Never forget a loan or a debt</string>
+    <string name="recent_activity">Recent Activity</string>
+    <string name="unknown_contact">Unknown</string>
 </resources>

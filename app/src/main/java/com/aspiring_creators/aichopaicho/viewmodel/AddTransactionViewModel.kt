@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.google.firebase.auth.FirebaseAuth
 import java.util.UUID
+import kotlin.math.roundToLong
 
 @HiltViewModel
 class AddTransactionViewModel @Inject constructor(
@@ -84,7 +85,7 @@ class AddTransactionViewModel @Inject constructor(
                 userId = user.id,
                 typeId = type.id,
                 contactId = contactToUse.id,
-                amount = uiState.value.amount!!,
+                amountCents = (uiState.value.amount!! * 100).roundToLong(),
                 date = uiState.value.date!!,
                 description = uiState.value.description
             )
@@ -153,6 +154,18 @@ class AddTransactionViewModel @Inject constructor(
                     submissionSuccessful = false,
                     errorMessage = null
                 )
+            }
+            is AddTransactionUiEvents.LoadContact -> {
+                viewModelScope.launch {
+                    try {
+                        val contact = contactRepository.getContactById(event.contactId)
+                        if (contact != null) {
+                            _uiState.value = _uiState.value.copy(contact = contact)
+                        }
+                    } catch (e: Exception) {
+                        _uiState.value = _uiState.value.copy(errorMessage = e.message)
+                    }
+                }
             }
             AddTransactionUiEvents.Submit -> {
                 viewModelScope.launch {

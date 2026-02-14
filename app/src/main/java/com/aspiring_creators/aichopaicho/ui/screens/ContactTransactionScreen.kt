@@ -34,6 +34,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.Loan
 import com.aspiring_creators.aichopaicho.viewmodel.ContactTransactionViewModel
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +42,7 @@ fun ContactTransactionScreen(
     contactId: String,
     onNavigateBack: () -> Unit,
     onNavigateToRecord: (String) -> Unit, // Add Loan for this contact or view detail
+    onNavigateToAddTransaction: (String) -> Unit,
     viewModel: ContactTransactionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -74,7 +76,7 @@ fun ContactTransactionScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { /* Navigate to Add Transaction with contact pre-filled */ }) {
+            FloatingActionButton(onClick = { onNavigateToAddTransaction(contactId) }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Transaction")
             }
         }
@@ -121,7 +123,7 @@ fun LoanItem(
             .clickable { onClick() }
             .padding(8.dp)
     ) {
-        Text(text = "Amount: ${loan.amount}")
-        Text(text = "Date: ${java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(loan.date))}")
+        Text(text = "Amount: ${String.format(Locale.getDefault(), "%.2f", loan.amountCents / 100.0)}")
+        Text(text = "Date: ${java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(java.util.Date(loan.date))}")
     }
 }

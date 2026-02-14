@@ -1,5 +1,6 @@
 package com.aspiring_creators.aichopaicho.ui.component
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -75,7 +76,7 @@ fun PaymentItem(repayment: Repayment) {
                 }
             }
             Text(
-                text = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(repayment.amount),
+                text = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(repayment.amountCents / 100.0),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = PaidColor

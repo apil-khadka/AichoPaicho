@@ -4,13 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.data.entity.Loan
+import com.aspiring_creators.aichopaicho.data.entity.LoanWithRepayments
 import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
 import com.aspiring_creators.aichopaicho.data.repository.LoanRepository
 import com.aspiring_creators.aichopaicho.ui.component.TypeConstants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -35,31 +35,35 @@ class ContactTransactionViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            combine(
-                contactRepository.getContactById(contactId),
-                loanRepository.getLoansWithRepayments(contactId)
-            ) { contact, loansWithRepayments ->
-                var balance = 0.0
+            try {
+                val contact = contactRepository.getContactById(contactId)
 
-                loansWithRepayments.forEach { item ->
-                    val loan = item.loan
-                    val repaid = item.repayments.sumOf { it.amount }
-                    val remaining = loan.amount - repaid
+                loanRepository.getLoansWithRepayments(contactId).collect { loansWithRepayments ->
+                    var balanceCents = 0L
 
-                    if (loan.typeId == TypeConstants.LENT_ID) {
-                        balance += remaining
-                    } else {
-                        balance -= remaining
+                    loansWithRepayments.forEach { item ->
+                        val loan = item.loan
+                        val repaidCents = item.repayments.sumOf { it.amountCents }
+                        val remainingCents = loan.amountCents - repaidCents
+
+                        if (loan.typeId == TypeConstants.LENT_ID) {
+                            balanceCents += remainingCents
+                        } else {
+                            balanceCents -= remainingCents
+                        }
                     }
-                }
 
-                Triple(contact, loansWithRepayments.map { it.loan }, balance)
-            }.collect { (contact, loans, balance) ->
-                 _uiState.value = _uiState.value.copy(
-                    contact = contact,
-                    loans = loans,
-                    netBalance = balance,
-                    isLoading = false
+                    _uiState.value = _uiState.value.copy(
+                        contact = contact,
+                        loans = loansWithRepayments.map { it.loan },
+                        netBalance = balanceCents / 100.0,
+                        isLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message
                 )
             }
         }

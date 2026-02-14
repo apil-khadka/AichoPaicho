@@ -49,19 +49,19 @@ class ContactListViewModel @Inject constructor(
                     val contactLoans = loans.filter { it.contactId == contact.id }
                     val repaymentMap = repayments.groupBy { it.loanId }
 
-                    var balance = 0.0
+                    var balanceCents = 0L
                     contactLoans.forEach { loan ->
                         val loanRepayments = repaymentMap[loan.id] ?: emptyList()
-                        val repaid = loanRepayments.sumOf { it.amount }
-                        val remaining = loan.amount - repaid
+                        val repaidCents = loanRepayments.sumOf { it.amountCents }
+                        val remainingCents = loan.amountCents - repaidCents
 
                         if (loan.typeId == TypeConstants.LENT_ID) {
-                            balance += remaining
+                            balanceCents += remainingCents
                         } else {
-                            balance -= remaining
+                            balanceCents -= remainingCents
                         }
                     }
-                    contact.id to balance
+                    contact.id to balanceCents / 100.0
                 }
                 Triple(sortedContacts, loans, balances)
             }

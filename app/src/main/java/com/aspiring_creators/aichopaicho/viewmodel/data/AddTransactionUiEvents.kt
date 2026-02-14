@@ -5,6 +5,7 @@ import com.aspiring_creators.aichopaicho.data.entity.Contact
 sealed class AddTransactionUiEvents {
 
     data class ContactSelected(val contact: Contact) : AddTransactionUiEvents()
+    data class LoadContact(val contactId: String) : AddTransactionUiEvents()
     data class AmountEntered(val amount: String) : AddTransactionUiEvents()
     data class DateEntered(val date: Long) : AddTransactionUiEvents()
     data class DescriptionEntered(val description: String) : AddTransactionUiEvents()

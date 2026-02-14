@@ -40,7 +40,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -72,6 +71,7 @@ import com.aspiring_creators.aichopaicho.data.entity.User
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
 import com.aspiring_creators.aichopaicho.viewmodel.ContactPreview
 import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState
+import java.util.Locale
 
 @Composable
 fun UserProfileImage(
@@ -319,7 +319,7 @@ fun RecentTransactionsList(
         loans.forEach { loanWithContact ->
             RecentTransactionItem(
                 loan = loanWithContact.loan,
-                contactName = loanWithContact.contact?.name ?: "Unknown",
+                contactName = loanWithContact.contact?.name ?: stringResource(R.string.unknown_contact),
                 onClick = { onClick(loanWithContact.loan.id) }
             )
         }
@@ -353,7 +353,7 @@ fun RecentTransactionItem(
                 )
             }
             Text(
-                text = "${AppPreferenceUtils.getCurrencyCode(context)} ${loan.amount.toInt()}",
+                text = "${AppPreferenceUtils.getCurrencyCode(context)} ${String.format(Locale.getDefault(), "%.2f", loan.amountCents / 100.0)}",
                 style = MaterialTheme.typography.titleMedium,
                 color = if (loan.typeId == TypeConstants.LENT_ID) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
@@ -635,12 +635,11 @@ fun ContactChip(
     containerColor: Color,
     onContainerColor: Color
 ) {
-    Surface(
+    androidx.compose.material3.Surface(
         modifier = Modifier.clickable { onClick() },
         shape = CircleShape,
         color = containerColor,
-        contentColor = onContainerColor,
-        border = null
+        contentColor = onContainerColor
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

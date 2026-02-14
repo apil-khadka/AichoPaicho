@@ -2,6 +2,8 @@ package com.aspiring_creators.aichopaicho.viewmodel
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import com.aspiring_creators.aichopaicho.AppPreferenceUtils
+import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
 import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
 import com.aspiring_creators.aichopaicho.data.repository.UserRepository
@@ -25,6 +27,7 @@ class SettingsViewModel @Inject constructor(
     val uiState = _uiState.asStateFlow()
 
     fun updateLanguage(language: String) {
+        AppPreferenceUtils.setLanguageCode(context, language)
         _uiState.update { it.copy(selectedLanguage = language) }
     }
 
@@ -59,10 +62,20 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun signInWithGoogle(activity: android.app.Activity) {
-        // Placeholder
+        _uiState.update {
+            it.copy(
+                showSignInDialog = false,
+                errorMessage = "Google Sign-In not implemented yet"
+            )
+        }
     }
 
     fun signOut() {
-        // Placeholder
+        _uiState.update {
+            it.copy(
+                showSignOutDialog = false,
+                errorMessage = "Sign Out not implemented yet"
+            )
+        }
     }
 }

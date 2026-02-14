@@ -131,8 +131,19 @@ fun AppNavigationGraph(
                 )
             }
 
-            composable(Routes.ADD_TRANSACTION_SCREEN) {
+            composable(
+                route = "${Routes.ADD_TRANSACTION_SCREEN}?${Routes.CONTACT_ID}={${Routes.CONTACT_ID}}",
+                arguments = listOf(
+                    navArgument(Routes.CONTACT_ID) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+                val contactId = backStackEntry.arguments?.getString(Routes.CONTACT_ID)
                 AddTransactionScreen(
+                    contactId = contactId,
                     onNavigateBack = {
                         navController.popSafe()
                     }
@@ -167,6 +178,11 @@ fun AppNavigationGraph(
                     },
                     onNavigateToRecord = {
                         navController.navSafe("${Routes.TRANSACTION_DETAIL_SCREEN}/$it"){
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateToAddTransaction = { cid ->
+                        navController.navSafe("${Routes.ADD_TRANSACTION_SCREEN}?${Routes.CONTACT_ID}=$cid") {
                             launchSingleTop = true
                         }
                     }

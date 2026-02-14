@@ -18,7 +18,7 @@ data class Repayment(
     @PrimaryKey val id: String, // UUID
     val userId: String?,
     val loanId: String?,
-    val amount: Double,
+    val amountCents: Long, // Amount in cents
     val date: Long,
     val description: String?,
     @get:PropertyName("deleted")
@@ -30,7 +30,7 @@ data class Repayment(
         id = "",
         userId = null,
         loanId = null,
-        amount = 0.0,
+        amountCents = 0L,
         date = 0L,
         description = null,
         isDeleted = false,

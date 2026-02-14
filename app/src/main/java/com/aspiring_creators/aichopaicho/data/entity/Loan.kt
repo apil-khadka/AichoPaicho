@@ -20,7 +20,7 @@ data class Loan(
     val userId: String?,
     val contactId: String?,
     val typeId: Int, // Lent or Borrowed
-    val amount: Double, // Principal amount
+    val amountCents: Long, // Principal amount in cents
     val date: Long,
     val description: String?,
     @get:PropertyName("deleted")
@@ -33,7 +33,7 @@ data class Loan(
         userId = null,
         contactId = null,
         typeId = 0,
-        amount = 0.0,
+        amountCents = 0L,
         date = 0L,
         description = null,
         isDeleted = false,

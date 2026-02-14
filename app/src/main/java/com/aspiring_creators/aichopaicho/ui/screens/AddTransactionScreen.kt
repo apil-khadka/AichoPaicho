@@ -45,11 +45,18 @@ import com.aspiring_creators.aichopaicho.viewmodel.data.AddTransactionUiEvents
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(
+    contactId: String? = null,
     onNavigateBack: () -> Unit,
     viewModel: AddTransactionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(contactId) {
+        if (contactId != null) {
+            viewModel.onEvent(AddTransactionUiEvents.LoadContact(contactId))
+        }
+    }
 
     LaunchedEffect(uiState.submissionSuccessful) {
         if (uiState.submissionSuccessful) {

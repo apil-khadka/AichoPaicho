@@ -12,13 +12,14 @@ import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
 import com.aspiring_creators.aichopaicho.viewmodel.data.RecordDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import jakarta.inject.Inject
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlin.math.roundToLong
 
 @HiltViewModel
 class TransactionDetailViewModel @Inject constructor(
@@ -52,31 +53,40 @@ class TransactionDetailViewModel @Inject constructor(
 
                     // Observe repayments
                     repaymentRepository.getRepaymentsByLoan(loanId).collectLatest { repayments ->
-                        val totalRepaid = repayments.sumOf { it.amount }
-                        val remaining = loan.amount - totalRepaid
+                        // Use current loan from state to get latest amount, fallback to initial loan
+                        val currentLoan = _uiState.value.loan ?: loan
+                        val totalRepaidCents = repayments.sumOf { it.amountCents }
+                        val remainingCents = currentLoan.amountCents - totalRepaidCents
                         _uiState.value = _uiState.value.copy(
                             repayments = repayments,
-                            remainingBalance = remaining,
+                            remainingBalance = remainingCents / 100.0,
                             isLoading = false
                         )
                     }
                 } else {
-                    _uiState.value = _uiState.value.copy(errorMessage = context.getString(R.string.record_not_found))
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = context.getString(R.string.record_not_found),
+                        isLoading = false
+                    )
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(errorMessage = e.message)
-            } finally {
-               // isLoading handled in collect
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = e.message,
+                    isLoading = false
+                )
             }
         }
     }
 
     fun updateAmount(amount: Double) {
         _uiState.value.loan?.let { loan ->
-            val updatedLoan = loan.copy(amount = amount, updatedAt = System.currentTimeMillis())
-            val totalRepaid = _uiState.value.repayments.sumOf { it.amount }
-            val balance = updatedLoan.amount - totalRepaid
-            _uiState.value = _uiState.value.copy(loan = updatedLoan, remainingBalance = balance)
+            val amountCents = (amount * 100).roundToLong()
+            val updatedLoan = loan.copy(amountCents = amountCents, updatedAt = System.currentTimeMillis())
+
+            val totalRepaidCents = _uiState.value.repayments.sumOf { it.amountCents }
+            val balanceCents = amountCents - totalRepaidCents
+
+            _uiState.value = _uiState.value.copy(loan = updatedLoan, remainingBalance = balanceCents / 100.0)
 
             viewModelScope.launch { loanRepository.update(updatedLoan) }
         }
@@ -111,7 +121,7 @@ class TransactionDetailViewModel @Inject constructor(
                     id = UUID.randomUUID().toString(),
                     loanId = loan.id,
                     userId = loan.userId,
-                    amount = amount,
+                    amountCents = (amount * 100).roundToLong(),
                     date = System.currentTimeMillis(),
                     description = null
                 )

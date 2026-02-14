@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -162,7 +163,7 @@ fun TransactionDetailScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = contact?.name ?: "Unknown Contact",
+                                    text = contact?.name ?: stringResource(R.string.unknown_contact),
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -184,7 +185,7 @@ fun TransactionDetailScreen(
 
                         Text("Original Amount", style = MaterialTheme.typography.bodySmall)
                         Text(
-                            text = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(loan.amount),
+                            text = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(loan.amountCents / 100.0),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold
                         )
