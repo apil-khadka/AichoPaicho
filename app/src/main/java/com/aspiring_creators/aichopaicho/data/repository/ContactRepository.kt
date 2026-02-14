@@ -26,6 +26,10 @@ class ContactRepository @Inject constructor(private val contactDao: ContactDao) 
         return contactDao.getContactByContactId(contactId)
     }
 
+    suspend fun getContactByPhoneNumber(phoneNumber: String): Contact? {
+        return contactDao.findByPhoneNumber(phoneNumber)
+    }
+
     fun getAllContacts(): Flow<List<Contact>> {
         return contactDao.getAllContacts()
     }

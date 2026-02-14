@@ -17,8 +17,11 @@ interface ContactDao {
     @Query("SELECT * FROM contacts WHERE isDeleted = 0")
      fun getAllContacts(): Flow<List<Contact>>
 
-     @Query("SELECT * FROM contacts WHERE contactId = :contactId")
+    @Query("SELECT * FROM contacts WHERE contactId = :contactId")
     suspend fun getContactByContactId(contactId: String): Contact?
+
+    @Query("SELECT * FROM contacts WHERE phone LIKE '%' || :phoneNumber || '%' LIMIT 1")
+    suspend fun findByPhoneNumber(phoneNumber: String): Contact?
 
 
 

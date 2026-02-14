@@ -217,7 +217,7 @@ fun ContactDisplayRow(
     contact: Contact?
 ) {
     val context = LocalContext.current
-    val validContactId = contact?.contactId?.toLongOrNull()
+    val primaryPhoneNumber = contact?.phone?.firstOrNull() // Get the primary phone number
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -232,10 +232,11 @@ fun ContactDisplayRow(
             )
         }
 
-        if (validContactId != null) { // Only show button if contact is valid
+        if (!primaryPhoneNumber.isNullOrBlank()) { // Only show button if a phone number exists
             Button(
                 onClick = {
-                    openContactDetails(context = context, contactId = validContactId)
+                    // Call the portable function from ContactAccessComponent.kt
+                    openContactDetailsByPhoneNumber(context = context, phoneNumber = primaryPhoneNumber)
                 },
                 modifier = Modifier.padding(start = 8.dp) // Add some spacing
             ) {

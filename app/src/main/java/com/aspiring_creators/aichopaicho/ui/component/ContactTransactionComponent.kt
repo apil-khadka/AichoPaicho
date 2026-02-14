@@ -1,5 +1,10 @@
 package com.aspiring_creators.aichopaicho.ui.component
 
+import android.content.ContentUris
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.ContactsContract
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -413,7 +418,7 @@ fun ContactHeadingDisplay(
     contact: Contact?
 ) {
     val context = LocalContext.current
-    val validContactId = contact?.contactId?.toLongOrNull()
+    val primaryPhoneNumber = contact?.phone?.firstOrNull()
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -426,10 +431,10 @@ fun ContactHeadingDisplay(
             // Color will be inherited from TopAppBar
             modifier = Modifier.weight(1f, fill = false) // Allow text to take space but not push button
         )
-        if (validContactId != null) {
+        if (!primaryPhoneNumber.isNullOrBlank()) {
             TextButton(
                 onClick = {
-                    openContactDetails(context = context, contactId = validContactId)
+                    openContactDetailsByPhoneNumber(context = context, phoneNumber = primaryPhoneNumber)
                 },
                 modifier = Modifier.padding(start = 8.dp)
             ) {
@@ -441,6 +446,8 @@ fun ContactHeadingDisplay(
         }
     }
 }
+
+
 
 
 @Preview(showBackground = true)

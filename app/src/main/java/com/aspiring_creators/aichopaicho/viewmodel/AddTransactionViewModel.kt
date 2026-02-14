@@ -44,20 +44,27 @@ class AddTransactionViewModel @Inject constructor(
             val type = typeRepository.getByName(uiState.value.type!!)
             val user = userRepository.getUser()
 
-            val contactExist = contactRepository.getContactByContactId(uiState.value.contact!!.contactId!!)
+            val selectedContactInfo = uiState.value.contact!!
+            val primaryPhoneNumber = selectedContactInfo.phone.firstOrNull()
+
+            var canonicalContact: Contact? = null
+            if (primaryPhoneNumber != null) {
+                canonicalContact = contactRepository.getContactByPhoneNumber(primaryPhoneNumber)
+            }
+            
             val contactToSave: Contact
-            if(contactExist == null) {
+            if (canonicalContact == null) {
+                // No canonical contact exists, create a new one owned by the current user.
                 contactToSave = Contact(
                     id = UUID.randomUUID().toString(),
-                    name = uiState.value.contact!!.name,
-                    phone = uiState.value.contact!!.phone,
-                    contactId = uiState.value.contact!!.contactId,
-                    userId = user.id
+                    name = selectedContactInfo.name,
+                    phone = selectedContactInfo.phone,
+                    contactId = selectedContactInfo.contactId, // Can still save this for reference
+                    userId = user.id // The current user becomes the owner/creator
                 )
-
-                contactRepository.checkAndInsert(contactToSave)
+                contactRepository.insertContact(contactToSave) // Use the simple insert
             } else {
-                contactToSave = contactExist
+                contactToSave = canonicalContact
             }
 
             val recordToSave = Record(
