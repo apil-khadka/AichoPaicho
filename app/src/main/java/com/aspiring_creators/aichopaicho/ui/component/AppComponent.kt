@@ -10,14 +10,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
@@ -59,24 +61,24 @@ val crimsonTextFamily = FontFamily(
 @Composable
 fun LogoTopBar(logo: Int, title: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ){
-        Spacer(modifier = Modifier.size(36.dp))
         Icon(
             painter = painterResource(id = logo),
             contentDescription = "Logo",
-            tint = Color.Unspecified,
-            modifier = Modifier.size(90.dp)
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(64.dp)
         )
-        Spacer(modifier = Modifier.size(36.dp))
+        Spacer(modifier = Modifier.size(16.dp))
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.headlineMedium,
             fontFamily = crimsonTextFamily,
-            modifier = Modifier.padding(start = 8.dp)
-
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -92,8 +94,8 @@ fun LogoTopBarPreview() {
 @Composable
 fun TextComponent(
     value: String,
-    modifier: Modifier = Modifier, // Added modifier parameter
-    style: TextStyle = MaterialTheme.typography.bodyLarge, // Use TextStyle
+    modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.bodyLarge,
     color: Color = MaterialTheme.colorScheme.onSurface,
     textAlign: TextAlign = TextAlign.Center,
     lineHeight: TextUnit = TextUnit.Unspecified,
@@ -101,7 +103,7 @@ fun TextComponent(
 ) {
     Text(
         text = value,
-        modifier = modifier.padding(10.dp),
+        modifier = modifier.padding(8.dp),
         fontFamily = crimsonTextFamily,
         color = color,
         style = style,
@@ -115,7 +117,7 @@ fun TextComponent(
 @Composable
 fun TextComponentPreview() {
      AichoPaichoTheme {
-        TextComponent(value = "Welcome to Aicho Paicho dfg dfg", style = MaterialTheme.typography.headlineSmall)
+        TextComponent(value = "Welcome to Aicho Paicho", style = MaterialTheme.typography.headlineSmall)
     }
 }
 
@@ -134,16 +136,20 @@ fun ButtonComponent(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 8.dp)
+            .height(56.dp), // Improved touch target
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
         ),
-        enabled = enabled ,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+        shape = RoundedCornerShape(16.dp), // Modern rounded shape
+        enabled = enabled
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
             if (logo != null && logo != 0) {
                 Icon(
@@ -158,14 +164,14 @@ fun ButtonComponent(
                     modifier = Modifier.size(24.dp)
                 )
             }
-            if(logo != null || vectorLogo != null) Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+            if(logo != null || vectorLogo != null) Spacer(modifier = Modifier.size(8.dp))
 
             if (text != null) {
                 Text(
                     text = text,
-                    style = MaterialTheme.typography.labelLarge, // M3 style for button text
-                    fontFamily = crimsonTextFamily // Keep custom font if desired
-                    // color = MaterialTheme.colorScheme.onPrimary will be inherited
+                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp),
+                    fontFamily = crimsonTextFamily,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
@@ -184,29 +190,36 @@ fun ButtonComponentPreview() {
 }
 
 @Composable
-fun QuickActionButton( // This is a FAB
+fun QuickActionButton(
     onClick: () -> Unit,
     contentDescription: String?,
     modifier: Modifier = Modifier,
     text: String
 ) {
-        FloatingActionButton(
-            onClick = onClick,
-            modifier = modifier,
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    ElevatedCard(
+        onClick = onClick,
+        modifier = modifier
+            .height(100.dp), // Fixed height for consistency
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(12.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Row(modifier = Modifier.padding(horizontal = 16.dp)) // Add padding for text inside FAB
-            {
-                Text(
-                    text = text, // Removed leading spaces, padding handles it
-                    textAlign = TextAlign.Center,
-                    fontFamily = crimsonTextFamily, // Keep custom font
-                    style = MaterialTheme.typography.labelLarge, // M3 style for FAB text
-                    maxLines = 2, // Keep maxLines
-                )
-            }
+            Text(
+                text = text,
+                textAlign = TextAlign.Center,
+                fontFamily = crimsonTextFamily,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                maxLines = 2
+            )
         }
+    }
 }
 
 
@@ -214,17 +227,19 @@ fun QuickActionButton( // This is a FAB
 @Composable
 fun ExtendedQuickActionButtonPreview() {
     AichoPaichoTheme {
-        QuickActionButton(
-            onClick = { /* Handle action */ },
-            contentDescription = "Add new item",
-            text = "Create\nItem", // Keep multi-line text
-            modifier = Modifier.padding(2.dp)
-        )
+        Row(modifier = Modifier.padding(16.dp)) {
+            QuickActionButton(
+                onClick = { /* Handle action */ },
+                contentDescription = "Add new item",
+                text = "Create\nTransaction",
+                modifier = Modifier.weight(1f).padding(4.dp)
+            )
+        }
     }
 }
 
 @Composable
-fun SnackbarComponent( // Looks good, uses M3 theme roles correctly
+fun SnackbarComponent(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
@@ -236,19 +251,22 @@ fun SnackbarComponent( // Looks good, uses M3 theme roles correctly
             containerColor = MaterialTheme.colorScheme.inverseSurface,
             contentColor = MaterialTheme.colorScheme.inverseOnSurface,
             actionOnNewLine = true,
-            shape = RoundedCornerShape(8.dp), // M3 uses typically smaller corner radius (e.g. 4.dp or 8.dp)
+            shape = RoundedCornerShape(12.dp),
             action = {
                 data.visuals.actionLabel?.let { actionLabel ->
                     TextButton(onClick = { data.performAction() }) {
                         Text(
                             text = actionLabel,
-                            color = MaterialTheme.colorScheme.inversePrimary // Correct for action
+                            color = MaterialTheme.colorScheme.inversePrimary
                         )
                     }
                 }
             }
         ) {
-            Text(text = data.visuals.message)
+            Text(
+                text = data.visuals.message,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
@@ -261,14 +279,17 @@ fun LoadingContent(text: String) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp) // Added spacing
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            // Spacer(modifier = Modifier.height(16.dp)) // Handled by Arrangement.spacedBy
-            TextComponent(
-                value = text,
-                style = MaterialTheme.typography.bodyLarge, // Use M3 typography
-                color = MaterialTheme.colorScheme.onSurface // Explicitly use onSurface or rely on TextComponent's default
+            CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 4.dp,
+                modifier = Modifier.size(48.dp)
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -287,17 +308,20 @@ fun LoadingContextPreview() {
     onSignOut: (() -> Unit)?
 ) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp) // Added spacing
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            TextComponent(
-                value = stringResource(R.string.not_signed_in),
-                style = MaterialTheme.typography.headlineSmall, // Use M3 typography
-                color = MaterialTheme.colorScheme.onSurface // Explicitly use onSurface or rely on TextComponent's default
+            Text(
+                text = stringResource(R.string.not_signed_in),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
             )
             onSignOut?.let { signOut ->
                 ButtonComponent(
@@ -326,17 +350,16 @@ fun LabelComponent(
 ) {
     Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium, // M3 shape
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(contentPadding),
-            style = MaterialTheme.typography.labelLarge.copy( // Start with M3 style
-                fontFamily = crimsonTextFamily, // Apply custom font
-                fontWeight = FontWeight.Bold // Override fontWeight if needed for this specific label
-            )
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            fontFamily = crimsonTextFamily
         )
     }
 }
@@ -362,8 +385,8 @@ fun SegmentedLentBorrowedToggle(
     Box(
         modifier = modifier
             .background(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), // Use surfaceVariant
-                RoundedCornerShape(8.dp)
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(12.dp)
             )
             .padding(4.dp)
     ) {
@@ -374,7 +397,7 @@ fun SegmentedLentBorrowedToggle(
                     .weight(1f)
                     .background(
                         color = if (isLent) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = RoundedCornerShape(6.dp)
+                        shape = RoundedCornerShape(8.dp)
                     )
                     .clickable {
                         isLent = true
@@ -385,9 +408,9 @@ fun SegmentedLentBorrowedToggle(
             ) {
                 Text(
                     text = TypeConstants.TYPE_LENT,
-                    color = if (isLent) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), // Use onPrimary or onSurface
-                    fontWeight = if (isLent) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 16.sp
+                    color = if (isLent) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall
                 )
             }
 
@@ -397,7 +420,7 @@ fun SegmentedLentBorrowedToggle(
                     .weight(1f)
                     .background(
                         color = if (!isLent) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = RoundedCornerShape(6.dp)
+                        shape = RoundedCornerShape(8.dp)
                     )
                     .clickable {
                         isLent = false
@@ -408,9 +431,9 @@ fun SegmentedLentBorrowedToggle(
             ) {
                 Text(
                     text = TypeConstants.TYPE_BORROWED,
-                    color = if (!isLent) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), // Use onPrimary or onSurface
-                    fontWeight = if (!isLent) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 16.sp
+                    color = if (!isLent) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall
                 )
             }
         }
@@ -432,11 +455,6 @@ fun SegmentedLentBorrowedTogglePreview() {
 }
 
 
-
-
-
-
-
 object TypeConstants{
     const val TYPE_LENT = "Lent"
     const val LENT_ID = 1
@@ -446,8 +464,7 @@ object TypeConstants{
         return when(value) {
             LENT_ID -> TYPE_LENT
             BORROWED_ID -> TYPE_BORROWED
-            else -> "Unknown" // Added default case
+            else -> "Unknown"
         }
     }
 }
-

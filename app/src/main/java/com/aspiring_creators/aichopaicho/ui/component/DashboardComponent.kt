@@ -33,14 +33,15 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card // Used by UserDashboardToast, NetBalanceCard
-import androidx.compose.material3.CardDefaults // Used by Card
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text // Standard Text, used alongside TextComponent
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +50,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -72,7 +75,7 @@ import com.aspiring_creators.aichopaicho.viewmodel.data.ContactPreview
 import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState
 
 @Composable
-fun UserProfileImage( // No changes from previous plan, looks good
+fun UserProfileImage(
     photoUrl: String?,
     userName: String?,
     modifier: Modifier = Modifier
@@ -123,7 +126,7 @@ fun UserProfileImagePreview() {
 }
 
 @Composable
-fun ErrorContent( // Uses TextComponent and ButtonComponent from AppComponent.kt
+fun ErrorContent(
     errorMessage: String,
     onRetry: () -> Unit
 ) {
@@ -137,14 +140,13 @@ fun ErrorContent( // Uses TextComponent and ButtonComponent from AppComponent.kt
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            TextComponent( // Using TextComponent from AppComponent.kt
+            TextComponent(
                 value = stringResource(R.string.error_detail, errorMessage),
-                // textSize = 18.sp, // TextComponent default is 12.sp, use its default or pass explicit M3 typography based size
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ButtonComponent( // Using ButtonComponent from AppComponent.kt
+            ButtonComponent(
                 vectorLogo = Icons.Default.Refresh,
                 text = stringResource(R.string.retry),
                 onClick = onRetry,
@@ -166,19 +168,20 @@ fun ErrorContentPreview() {
 }
 
 @Composable
-fun UserDashboardToast(uiState: DashboardScreenUiState) { // User Welcome Card
+fun UserDashboardToast(uiState: DashboardScreenUiState) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             UserProfileImage(
@@ -188,23 +191,22 @@ fun UserDashboardToast(uiState: DashboardScreenUiState) { // User Welcome Card
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text( // Standard Text for consistency within this card
+                Text(
                     text = stringResource(R.string.welcome_back),
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text( // Standard Text
+                Text(
                     text = uiState.user?.name ?: stringResource(R.string.user_uc),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 uiState.user?.email?.let { email ->
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text( // Standard Text
+                    Text(
                         text = email,
                         style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -230,7 +232,7 @@ fun UserDashboardToastPreview() {
 }
 
 @Composable
-fun DashboardContent( // Uses QuickActionButton from AppComponent.kt
+fun DashboardContent(
     uiState: DashboardScreenUiState,
     onNavigateToAddTransaction: (() -> Unit)?,
     onNavigateToViewTransactions: (() -> Unit)?,
@@ -241,47 +243,51 @@ fun DashboardContent( // Uses QuickActionButton from AppComponent.kt
     ) {
         UserDashboardToast(uiState)
         Spacer(modifier = Modifier.height(24.dp))
-        Text( // Standard Text for section header
+        Text(
             text = stringResource(R.string.quick_actions),
             style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(bottom = 12.dp, start = 8.dp, end = 8.dp)
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 16.dp, start = 4.dp)
         )
-        FlowRow(
+        Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            maxItemsInEachRow = 2 // Keeps the 2-item row structure
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             onNavigateToAddTransaction?.let { navigate ->
-                QuickActionButton( // Using QuickActionButton from AppComponent.kt
-                    text = stringResource(R.string.new_txn),
-                    onClick = navigate,
-                    contentDescription = stringResource(R.string.add_new_transaction),
-                    modifier = Modifier.weight(1f)
-                )
+                Box(modifier = Modifier.weight(1f)) {
+                    QuickActionButton(
+                        text = stringResource(R.string.new_txn),
+                        onClick = navigate,
+                        contentDescription = stringResource(R.string.add_new_transaction),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
             onNavigateToViewTransactions?.let { navigate ->
-                QuickActionButton( // Using QuickActionButton from AppComponent.kt
-                    text = stringResource(R.string.view_txns),
-                    onClick = navigate,
-                    contentDescription = stringResource(R.string.view_transactions),
-                    modifier = Modifier.weight(1f)
-                )
+                 Box(modifier = Modifier.weight(1f)) {
+                     QuickActionButton(
+                         text = stringResource(R.string.view_txns),
+                         onClick = navigate,
+                         contentDescription = stringResource(R.string.view_transactions),
+                         modifier = Modifier.fillMaxWidth()
+                     )
+                 }
             }
             onNavigateToSettings?.let { navigate ->
-                QuickActionButton( // Using QuickActionButton from AppComponent.kt
-                    text = stringResource(R.string.settings),
-                    onClick = navigate,
-                    contentDescription = stringResource(R.string.open_settings),
-                    modifier = Modifier.weight(1f)
-                )
+                 Box(modifier = Modifier.weight(1f)) {
+                     QuickActionButton(
+                         text = stringResource(R.string.settings),
+                         onClick = navigate,
+                         contentDescription = stringResource(R.string.open_settings),
+                         modifier = Modifier.fillMaxWidth()
+                     )
+                 }
             }
         }
         uiState.errorMessage?.let { error ->
             Spacer(modifier = Modifier.height(16.dp))
-            Text( // Standard Text for error
+            Text(
                 text = error,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
@@ -306,41 +312,49 @@ fun NetBalanceCard(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    // Gradient Background
+    val brush = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.surface
+        )
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp) // Keep padding from DashboardScreen in mind
+            .padding(vertical = 8.dp)
             .animateContentSize(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
                     stiffness = Spring.StiffnessLow
                 )
             ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), // Slightly less elevation than before
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant, // Themed container
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant // Themed content
-        )
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
-        Column {
+        Column(
+            modifier = Modifier.background(brush)
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = !expanded }
-                    .padding(5.dp),
+                    .padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
                     Text(
                         stringResource(R.string.net_balance),
-                        style = MaterialTheme.typography.titleMedium
-                        // Color from Card's contentColor
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "${AppPreferenceUtils.getCurrencyCode(context)} ${summary.netTotal.toInt()}",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.displaySmall, // Larger, more prominent
                         fontWeight = FontWeight.Bold,
                         color = if (summary.netTotal >= 0) {
                             MaterialTheme.colorScheme.primary
@@ -351,14 +365,29 @@ fun NetBalanceCard(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    BalanceMiniItem(stringResource(R.string.lent), summary.totalLent, true)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    BalanceMiniItem(stringResource(R.string.borrowed), summary.totalBorrowed, false)
+                    // Minimized view details
+                    Column(horizontalAlignment = Alignment.End) {
+                         Text(
+                             text = stringResource(R.string.lent) + ": " + summary.totalLent.toInt(),
+                             style = MaterialTheme.typography.labelMedium,
+                             color = MaterialTheme.colorScheme.primary
+                         )
+                         Text(
+                             text = stringResource(R.string.borrowed) + ": " + summary.totalBorrowed.toInt(),
+                             style = MaterialTheme.typography.labelMedium,
+                             color = MaterialTheme.colorScheme.error
+                         )
+                    }
+
                     Spacer(modifier = Modifier.width(12.dp))
                     Icon(
                         imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                         contentDescription = if (expanded) "Collapse" else "Expand",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant // Keep as is, good contrast
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.5f), CircleShape)
+                            .padding(4.dp)
                     )
                 }
             }
@@ -366,29 +395,23 @@ fun NetBalanceCard(
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    ),
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
                     expandFrom = Alignment.Top
                 ) + fadeIn(animationSpec = tween(300)),
                 exit = shrinkVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    ),
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
                     shrinkTowards = Alignment.Top
                 ) + fadeOut(animationSpec = tween(200))
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 8.dp, end = 8.dp, bottom = 10.dp, top = 2.dp)
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
                     HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 12.dp),
-                        thickness = DividerDefaults.Thickness,
-                        color = MaterialTheme.colorScheme.outlineVariant // Themed divider
+                        modifier = Modifier.padding(bottom = 16.dp),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
 
                     Row(
@@ -399,7 +422,6 @@ fun NetBalanceCard(
                             label = stringResource(R.string.lent),
                             amount = summary.totalLent,
                             isPositive = true,
-                            icon = Icons.Default.KeyboardArrowUp,
                             count = summary.lentContactsCount,
                             contacts = lentContacts,
                             onNavigateToContactList = { onNavigateToContactList(TypeConstants.TYPE_LENT) },
@@ -407,13 +429,12 @@ fun NetBalanceCard(
                             modifier = Modifier.weight(1f)
                         )
 
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(24.dp))
 
                         BalanceItemExtended(
                             label = stringResource(R.string.borrowed),
                             amount = summary.totalBorrowed,
                             isPositive = false,
-                            icon = Icons.Default.KeyboardArrowDown,
                             count = summary.borrowedContactsCount,
                             contacts = borrowedContacts,
                             onNavigateToContactList = { onNavigateToContactList(TypeConstants.TYPE_BORROWED) },
@@ -421,37 +442,9 @@ fun NetBalanceCard(
                             modifier = Modifier.weight(1f)
                         )
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun BalanceMiniItem(label: String, amount: Double, isPositive: Boolean) {
-    val tint = if (isPositive) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.error
-    }
-    val context = LocalContext.current
-
-    Column(horizontalAlignment = Alignment.End) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = if (isPositive) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = tint,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "${AppPreferenceUtils.getCurrencyCode(context)} ${amount.toInt()}",
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
-                color = tint
-            )
         }
     }
 }
@@ -461,7 +454,6 @@ fun BalanceItemExtended(
     label: String,
     amount: Double,
     isPositive: Boolean,
-    icon: ImageVector,
     count: Int,
     contacts: List<ContactPreview> = emptyList(),
     onNavigateToContactList: () -> Unit,
@@ -474,44 +466,33 @@ fun BalanceItemExtended(
     val context = LocalContext.current
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.Start,
         modifier = modifier
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = amountColor, // Match amount color
-                modifier = Modifier.size(6.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant // Good for secondary info
-            )
-        }
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 1.sp
+        )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = "${AppPreferenceUtils.getCurrencyCode(context)} ${amount.toInt()}",
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
             color = amountColor
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        FilledTonalButton( // Using FilledTonalButton for less emphasis than FilledButton
+        FilledTonalButton(
             onClick = onNavigateToContactList,
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier
-                .height(50.dp)
+                .height(48.dp)
                 .fillMaxWidth(),
             colors = ButtonDefaults.filledTonalButtonColors(
                 containerColor = buttonContainerColor,
@@ -550,7 +531,6 @@ fun BalanceItemExtended(
                     ContactChip(
                         contact = c,
                         onClick = { onContactClick(c.id) },
-                        // Use tertiary for contact chips to differentiate from primary/error actions
                         baseColor = MaterialTheme.colorScheme.tertiary,
                         onBaseColor = MaterialTheme.colorScheme.onTertiary,
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
