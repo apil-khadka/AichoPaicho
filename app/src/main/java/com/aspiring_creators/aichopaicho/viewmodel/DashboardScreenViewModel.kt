@@ -5,11 +5,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aspiring_creators.aichopaicho.R
-import com.aspiring_creators.aichopaicho.data.entity.User
+import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
+import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
 import com.aspiring_creators.aichopaicho.data.repository.UserRecordSummaryRepository
 import com.aspiring_creators.aichopaicho.data.repository.UserRepository
-import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
-import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
 import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState
 import com.aspiring_creators.aichopaicho.viewmodel.data.UpcomingDueItem
 import com.google.firebase.auth.FirebaseAuth

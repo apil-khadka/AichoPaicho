@@ -2,7 +2,6 @@ package com.aspiring_creators.aichopaicho.viewmodel.data
 
 import com.aspiring_creators.aichopaicho.data.entity.User
 import com.aspiring_creators.aichopaicho.data.entity.UserRecordSummary
-import com.aspiring_creators.aichopaicho.viewmodel.data.UpcomingDueItem
 
 data class DashboardScreenUiState(
     val isLoading: Boolean = false,

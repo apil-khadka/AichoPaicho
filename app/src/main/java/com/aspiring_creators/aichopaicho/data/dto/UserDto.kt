@@ -1,7 +1,6 @@
 package com.aspiring_creators.aichopaicho.data.dto
 
 import android.net.Uri
-import com.aspiring_creators.aichopaicho.data.entity.User
 import com.google.firebase.auth.FirebaseUser
 
 

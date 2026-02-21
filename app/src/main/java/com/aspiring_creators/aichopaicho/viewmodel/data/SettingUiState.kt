@@ -1,6 +1,5 @@
 package com.aspiring_creators.aichopaicho.viewmodel.data
 
-import android.view.textclassifier.TextLanguage
 import com.aspiring_creators.aichopaicho.data.entity.User
 
 data class SettingsUiState(

@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
-import kotlin.collections.get
 
 @HiltViewModel
 class ViewTransactionViewModel @Inject constructor(

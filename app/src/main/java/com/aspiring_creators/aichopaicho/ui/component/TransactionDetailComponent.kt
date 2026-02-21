@@ -38,7 +38,6 @@ import com.aspiring_creators.aichopaicho.data.entity.Record
 import com.aspiring_creators.aichopaicho.data.entity.RecordWithRepayments
 import com.aspiring_creators.aichopaicho.data.entity.Repayment
 import com.aspiring_creators.aichopaicho.data.entity.Type
-import com.aspiring_creators.aichopaicho.ui.component.DateInputField
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
 import java.text.SimpleDateFormat
 import java.util.Date

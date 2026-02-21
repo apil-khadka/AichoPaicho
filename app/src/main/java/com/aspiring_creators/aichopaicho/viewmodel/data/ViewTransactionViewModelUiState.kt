@@ -4,7 +4,6 @@ import com.aspiring_creators.aichopaicho.data.entity.Contact
 import com.aspiring_creators.aichopaicho.data.entity.RecordWithRepayments
 import com.aspiring_creators.aichopaicho.data.entity.Type
 import com.aspiring_creators.aichopaicho.data.entity.UserRecordSummary
-import com.aspiring_creators.aichopaicho.viewmodel.data.ContactPreview
 
 
 data class ViewTransactionViewModelUiState(

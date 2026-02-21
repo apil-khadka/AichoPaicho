@@ -2,8 +2,6 @@ package com.aspiring_creators.aichopaicho.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.aspiring_creators.aichopaicho.data.local.ScreenView
-import com.aspiring_creators.aichopaicho.data.local.ScreenViewDao
 
 @Database(
     entities = [ScreenView::class],

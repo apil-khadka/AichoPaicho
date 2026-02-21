@@ -3,7 +3,6 @@ package com.aspiring_creators.aichopaicho.viewmodel
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.local.ScreenViewRepository
 import com.aspiring_creators.aichopaicho.ui.navigation.Routes
@@ -13,9 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
-
 
 
 @HiltViewModel

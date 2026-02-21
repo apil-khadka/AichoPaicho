@@ -11,8 +11,8 @@ import androidx.lifecycle.viewModelScope
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.BackgroundSyncWorker
 import com.aspiring_creators.aichopaicho.data.entity.User
-import com.aspiring_creators.aichopaicho.data.mapper.toUserEntity
 import com.aspiring_creators.aichopaicho.data.local.ScreenViewRepository
+import com.aspiring_creators.aichopaicho.data.mapper.toUserEntity
 import com.aspiring_creators.aichopaicho.data.repository.UserRepository
 import com.aspiring_creators.aichopaicho.ui.navigation.Routes
 import com.aspiring_creators.aichopaicho.viewmodel.data.WelcomeScreenUiState
@@ -25,10 +25,8 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine

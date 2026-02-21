@@ -4,20 +4,20 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aspiring_creators.aichopaicho.R
+import com.aspiring_creators.aichopaicho.data.entity.*
 import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
 import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
 import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
+import com.aspiring_creators.aichopaicho.ui.component.TypeConstants
 import com.aspiring_creators.aichopaicho.viewmodel.data.ContactTransactionUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
-import com.aspiring_creators.aichopaicho.data.entity.*
-import com.aspiring_creators.aichopaicho.ui.component.TypeConstants
-import dagger.hilt.android.qualifiers.ApplicationContext
 
 
 @HiltViewModel

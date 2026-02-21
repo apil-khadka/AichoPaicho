@@ -4,9 +4,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aspiring_creators.aichopaicho.data.entity.Contact
+import com.aspiring_creators.aichopaicho.data.entity.Record
+import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
 import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
+import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
+import com.aspiring_creators.aichopaicho.data.repository.UserRepository
 import com.aspiring_creators.aichopaicho.viewmodel.data.AddTransactionUiEvents
 import com.aspiring_creators.aichopaicho.viewmodel.data.AddTransactionUiState
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,11 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.aspiring_creators.aichopaicho.data.entity.Record
-import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
-import com.aspiring_creators.aichopaicho.data.repository.TypeRepository
-import com.aspiring_creators.aichopaicho.data.repository.UserRepository
-import com.google.firebase.auth.FirebaseAuth
 import java.util.UUID
 
 @HiltViewModel

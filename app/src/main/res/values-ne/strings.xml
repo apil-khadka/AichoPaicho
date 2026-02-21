@@ -148,4 +148,24 @@
     <string name="transaction_not_found">कारोबार फेला परेन वा लोड गर्न सकिएन।</string>
     <string name="no_transactions_match">कुनै पनि कारोबार तपाईंको फिल्टरसँग मेल खाँदैन।</string>
     <string name="never_forget_a_loan_or_a_debt">कुनै ऋण वा उधारो कहिल्यै नबिर्सनुहोस्</string>
+    <string name="welcome_subtitle">दिएको र लिएको रकम स्पष्ट रूपमा ट्र्याक गर्नुहोस्।</string>
+    <string name="welcome_sign_in_benefit_title">आफ्नो डाटा सुरक्षित राख्न साइन इन गर्नुहोस्</string>
+    <string name="welcome_sign_in_benefit_body">आफ्ना रेकर्डहरू डिभाइसहरूमा सिङ्क गर्नुहोस् र सुरक्षित ब्याकअप राख्नुहोस्।</string>
+    <string name="welcome_local_only_note">साइन इन नगरेसम्म तपाईंको डाटा यही उपकरणमा रहन्छ।</string>
+    <string name="continue_with_google">गुगलसँग जारी राख्नुहोस्</string>
+    <string name="skip_sign_in_note">पछि सेटिङहरूबाट साइन इन गरेर ब्याकअप र सिङ्क गर्न सक्नुहुन्छ।</string>
+    <string name="contact_privacy_note">हामीले तपाईंको सम्पर्कहरू तपाईंले कारोबार गरेका व्यक्तिलाई छनोट गर्न प्रयोग गर्छौं। ब्याकअप/सिङ्क सक्षम भएमा, बहु‑डिभाइस पहुँचका लागि नाम र नम्बर सुरक्षित रूपमा भण्डारण हुन्छन्।</string>
+    <string name="contact_sync_requires_sign_in">ब्याकअप र सिङ्कका लागि साइन इन आवश्यक छ।</string>
+    <string name="due_date">देय मिति</string>
+    <string name="due_date_optional">देय मिति (वैकल्पिक)</string>
+    <string name="clear_due_date">देय मिति हटाउनुहोस्</string>
+    <string name="due">देय</string>
+    <string name="overdue">म्याद नाघेको</string>
+    <string name="upcoming_due">आगामी देय</string>
+    <string name="no_upcoming_due">आगामी देय मिति छैन।</string>
+    <string name="all">सबै</string>
+    <string name="amount_enter_number">कृपया मान्य अंक प्रविष्ट गर्नुहोस्</string>
+    <string name="amount_invalid_range">‘बाट’ ‘सम्म’ भन्दा ठूलो हुनु हुँदैन।</string>
+    <string name="sign_in_to_backup_your_data_without_loss">तपाईं अहिले अफलाइन हुनुहुन्छ। आफ्नो डाटा सुरक्षित रूपमा ब्याकअप गर्न र कुनै पनि उपकरणबाट पहुँच गर्न साइन इन गर्नुहोस्।</string>
+    <string name="go_to_settings_to_sign_in">साइन इन गर्न सेटिङहरूमा जानुहोस्</string>
 </resources>

@@ -1,7 +1,6 @@
 package com.aspiring_creators.aichopaicho.viewmodel
 
 import android.content.Context
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aspiring_creators.aichopaicho.R

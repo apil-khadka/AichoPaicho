@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,9 +40,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.ui.component.LogoTopBar
-import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme // Added for Preview
+import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
 import com.aspiring_creators.aichopaicho.viewmodel.WelcomeViewModel
 import kotlinx.coroutines.launch
+
 // import kotlin.math.log // Unused import
 
 @Composable

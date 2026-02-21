@@ -2,10 +2,10 @@ package com.aspiring_creators.aichopaicho.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import androidx.core.content.edit
 
 @Singleton
 class PreferencesRepository @Inject constructor(

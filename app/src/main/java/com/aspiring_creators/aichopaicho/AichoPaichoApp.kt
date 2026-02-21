@@ -1,7 +1,6 @@
 package com.aspiring_creators.aichopaicho
 
 import android.app.Application
-import android.content.Context
 import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration

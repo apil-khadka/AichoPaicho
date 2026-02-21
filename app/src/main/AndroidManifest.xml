@@ -13,7 +13,7 @@
     </queries>
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <application
-        android:name=".AichoPaichoApp"
+        android:name="com.aspiring_creators.dev.nyxigale.aichopaicho.AichoPaichoApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -23,7 +23,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AichoPaicho">
         <activity
-            android:name=".MainActivity"
+            android:name="com.aspiring_creators.dev.nyxigale.aichopaicho.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.AichoPaicho">
             <intent-filter>

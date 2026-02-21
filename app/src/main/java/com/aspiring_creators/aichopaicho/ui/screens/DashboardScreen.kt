@@ -23,26 +23,24 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aspiring_creators.aichopaicho.R
-import com.aspiring_creators.aichopaicho.data.entity.User // For Preview
+import com.aspiring_creators.aichopaicho.data.entity.User
 import com.aspiring_creators.aichopaicho.data.entity.UserRecordSummary
 import com.aspiring_creators.aichopaicho.ui.component.DashboardContent
-import com.aspiring_creators.aichopaicho.ui.component.LoadingContent // From AppComponent
-import com.aspiring_creators.aichopaicho.ui.component.NetBalanceCard // From DashboardComponent
-import com.aspiring_creators.aichopaicho.ui.component.NotSignedInContent // From AppComponent
+import com.aspiring_creators.aichopaicho.ui.component.LoadingContent
+import com.aspiring_creators.aichopaicho.ui.component.NetBalanceCard
+import com.aspiring_creators.aichopaicho.ui.component.NotSignedInContent
 import com.aspiring_creators.aichopaicho.ui.component.SnackbarComponent
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
 import com.aspiring_creators.aichopaicho.viewmodel.DashboardScreenViewModel
-import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState // For Preview
+import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
