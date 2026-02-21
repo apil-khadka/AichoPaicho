@@ -31,6 +31,9 @@ Date: 2026-02-21
 - Added clearer privacy/data-use disclosure in Permission and Settings screens for contacts + cloud sync.
 - Added runtime notification permission UX in Settings for due reminders (request + app notification settings shortcut).
 - Added optional hide-amount mode with Settings toggle and masked amounts across dashboard/transaction screens.
+- Removed broad contacts permission flow:
+- switched Add Transaction to intent-based phone contact picker and removed `READ_CONTACTS` from manifest.
+- streamlined onboarding to go directly from Welcome to Dashboard.
 
 ## Project Analysis Snapshot
 - Strengths:

@@ -29,14 +29,11 @@ class AppNavigationViewModel @Inject constructor(
 
     private fun determineStartDestination() {
         viewModelScope.launch {
-
             if (screenViewRepository.getScreenView(Routes.WELCOME_SCREEN) == true) {
-                if (screenViewRepository.getScreenView(Routes.PERMISSION_CONTACTS_SCREEN) == true)
-                    _startDestination.value =  Routes.DASHBOARD_SCREEN
-                else
-                    _startDestination.value = Routes.PERMISSION_CONTACTS_SCREEN
-            } else
+                _startDestination.value = Routes.DASHBOARD_SCREEN
+            } else {
                 _startDestination.value = Routes.WELCOME_SCREEN
+            }
         }
     }
 }

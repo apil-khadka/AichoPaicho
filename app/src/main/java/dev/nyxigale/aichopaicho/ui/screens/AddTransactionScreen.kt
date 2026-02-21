@@ -1,6 +1,8 @@
 package dev.nyxigale.aichopaicho.ui.screens
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.provider.ContactsContract
@@ -81,8 +83,9 @@ fun AddTransactionScreen(
     val contentMaxWidth = if (isWideLayout) 900.dp else Dp.Unspecified
 
     val contactPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickContact()
-    ) { contactUri ->
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val contactUri = if (result.resultCode == Activity.RESULT_OK) result.data?.data else null
         contactUri?.let { uri ->
             val pickedContact = getContactFromUri(context, uri)
             if (pickedContact != null) {
@@ -178,7 +181,14 @@ fun AddTransactionScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             OutlinedButton(
-                                onClick = { contactPickerLauncher.launch(null) },
+                                onClick = {
+                                    contactPickerLauncher.launch(
+                                        Intent(
+                                            Intent.ACTION_PICK,
+                                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI
+                                        )
+                                    )
+                                },
                                 modifier = Modifier.weight(1f),
                                 enabled = !uiState.isLoading
                             ) {
@@ -353,49 +363,39 @@ fun AddTransactionScreen(
 
 private fun getContactFromUri(context: Context, contactUri: Uri): Contact? {
     val projection = arrayOf(
-        ContactsContract.Contacts._ID,
-        ContactsContract.Contacts.DISPLAY_NAME
+        ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
+        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+        ContactsContract.CommonDataKinds.Phone.NUMBER
     )
 
-    val cursor = context.contentResolver.query(contactUri, projection, null, null, null)
-    cursor?.use {
-        if (!it.moveToFirst()) return null
+    return try {
+        val cursor = context.contentResolver.query(contactUri, projection, null, null, null)
+        cursor?.use {
+            if (!it.moveToFirst()) return null
 
-        val contactId = it.getString(it.getColumnIndexOrThrow(ContactsContract.Contacts._ID))
-        val displayName = it.getString(it.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME)) ?: ""
+            val contactId = it.getString(
+                it.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.CONTACT_ID)
+            )
+            val displayName = it.getString(
+                it.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+            ) ?: ""
+            val phoneNumber = it.getString(
+                it.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)
+            )?.trim()
 
-        val phoneCursor = context.contentResolver.query(
-            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-            arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
-            "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
-            arrayOf(contactId),
-            null
-        )
+            if (displayName.isBlank() || phoneNumber.isNullOrBlank()) return null
 
-        val phoneNumbers = mutableListOf<String?>()
-        phoneCursor?.use { pCursor ->
-            while (pCursor.moveToNext()) {
-                val number = pCursor.getString(
-                    pCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)
-                )?.trim()
-                if (!number.isNullOrBlank()) {
-                    phoneNumbers.add(number)
-                }
-            }
+            Contact(
+                id = UUID.randomUUID().toString(),
+                name = displayName,
+                userId = null,
+                phone = listOf(phoneNumber),
+                contactId = contactId
+            )
         }
-
-        if (displayName.isBlank() || phoneNumbers.isEmpty()) return null
-
-        return Contact(
-            id = UUID.randomUUID().toString(),
-            name = displayName,
-            userId = null,
-            phone = phoneNumbers,
-            contactId = contactId
-        )
+    } catch (_: SecurityException) {
+        null
     }
-
-    return null
 }
 
 @Preview(showBackground = true)

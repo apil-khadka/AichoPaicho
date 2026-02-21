@@ -21,7 +21,6 @@ import dev.nyxigale.aichopaicho.ui.screens.AddTransactionScreen
 import dev.nyxigale.aichopaicho.ui.screens.ContactListScreen
 import dev.nyxigale.aichopaicho.ui.screens.ContactTransactionScreen
 import dev.nyxigale.aichopaicho.ui.screens.DashboardScreen
-import dev.nyxigale.aichopaicho.ui.screens.PermissionScreen
 import dev.nyxigale.aichopaicho.ui.screens.SettingsScreen
 import dev.nyxigale.aichopaicho.ui.screens.SyncCenterScreen
 import dev.nyxigale.aichopaicho.ui.screens.TransactionDetailScreen
@@ -74,24 +73,10 @@ fun AppNavigationGraph(
         ) {
             composable(Routes.WELCOME_SCREEN) {
                 WelcomeScreen(
-                    onNavigateToPermissions = {
-                        navController.navSafe(Routes.PERMISSION_CONTACTS_SCREEN) {
-                            launchSingleTop = true
-                        }
-                    }
-                )
-            }
-
-            composable(Routes.PERMISSION_CONTACTS_SCREEN) {
-                PermissionScreen(
                     onNavigateToDashboard = {
                         navController.navSafe(Routes.DASHBOARD_SCREEN) {
-                            popUpTo(Routes.PERMISSION_CONTACTS_SCREEN) { inclusive = true }
                             launchSingleTop = true
                         }
-                    },
-                    onNavigateBack = {
-                        navController.popSafe()
                     }
                 )
             }

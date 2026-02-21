@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun WelcomeScreen(
-    onNavigateToPermissions: () -> Unit,
+    onNavigateToDashboard: () -> Unit,
     welcomeViewModel: WelcomeViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -59,7 +59,7 @@ fun WelcomeScreen(
     // Auto-navigate if user is already authenticated
     LaunchedEffect(Unit) {
         if (welcomeViewModel.shouldAutoNavigate()) {
-            onNavigateToPermissions()
+            onNavigateToDashboard()
         }
     }
 
@@ -177,7 +177,7 @@ fun WelcomeScreen(
                         scope.launch {
                             val result = welcomeViewModel.signInWithGoogle(activity, false)
                             if (result.isSuccess) {
-                                onNavigateToPermissions()
+                                onNavigateToDashboard()
                             }
                         }
                     },
@@ -210,7 +210,7 @@ fun WelcomeScreen(
                         scope.launch {
                             val result = welcomeViewModel.skipSignIn()
                             if (result.isSuccess) {
-                                onNavigateToPermissions()
+                                onNavigateToDashboard()
                             }
                         }
                     },
@@ -251,6 +251,6 @@ fun WelcomeScreen(
 @Composable
 fun WelcomeScreenPreview() {
     AichoPaichoTheme { // Wrap preview in your theme
-        WelcomeScreen(onNavigateToPermissions = {})
+        WelcomeScreen(onNavigateToDashboard = {})
     }
 }

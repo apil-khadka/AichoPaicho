@@ -9,6 +9,8 @@ Date: 2026-02-21
 - Screenshot documentation refresh.
 - P0 product-quality implementation wave:
 - due reminders, recurring templates, sync center, real sync progress, CSV import/export, unsafe compiler flag removal.
+- Contact privacy simplification:
+- intent-only contact picking without broad contacts permission.
 
 ## Changes Completed
 1. AGP new DSL migration
@@ -74,6 +76,12 @@ Date: 2026-02-21
 - Added Settings toggle to enable/disable amount masking in UI.
 - Added shared amount privacy formatter utilities with preference observer support.
 - Applied masking to key amount displays across dashboard, transaction list, contact transaction, and transaction detail screens.
+
+11. Contact picker permission model hardening
+- Removed `READ_CONTACTS` from app manifest.
+- Switched Add Transaction contact selection to intent-based phone picker (`ACTION_PICK` on `CommonDataKinds.Phone`).
+- Updated onboarding navigation to go directly from Welcome to Dashboard (removed mandatory contact-permission step from primary flow).
+- Reworked contact detail quick action to open the dialer intent from stored phone number, avoiding device-contact lookup.
 
 ## Files Updated For This Work
 - `app/build.gradle.kts`

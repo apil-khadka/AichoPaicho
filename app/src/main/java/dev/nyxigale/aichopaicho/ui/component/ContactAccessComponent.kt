@@ -676,42 +676,11 @@ fun ContactItemPreview() {
 
 fun openContactDetailsByPhoneNumber(context: Context, phoneNumber: String?) {
     if (phoneNumber.isNullOrBlank()) {
-        println("Phone number is invalid.")
-        // Optionally: Toast.makeText(context, "No phone number available for this contact", Toast.LENGTH_SHORT).show()
         return
     }
 
-    var contactId: Long? = null
-    val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber))
-    val projection = arrayOf(ContactsContract.PhoneLookup._ID)
-
-    try {
-        val cursor = context.contentResolver.query(uri, projection, null, null, null)
-        cursor?.use {
-            if (it.moveToFirst()) {
-                val idColumn = it.getColumnIndex(ContactsContract.PhoneLookup._ID)
-                if (idColumn != -1) {
-                    contactId = it.getLong(idColumn)
-                }
-            }
-        }
-    } catch (e: Exception) {
-        println("Error querying for contact by phone number: ${e.message}")
-        // Optionally: Toast.makeText(context, "Error finding contact", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-
-    if (contactId != null) {
-        val contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId!!)
-        val intent = Intent(Intent.ACTION_VIEW, contactUri)
-        if (intent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(intent)
-        } else {
-            println("No app found to open contact details.")
-        }
-    } else {
-        println("Contact with phone number $phoneNumber not found on this device.")
-        // Optionally: Toast.makeText(context, "Contact not found on this device", Toast.LENGTH_SHORT).show()
+    val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${Uri.encode(phoneNumber)}"))
+    if (dialIntent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(dialIntent)
     }
 }

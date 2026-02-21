@@ -15,7 +15,7 @@ class ScreenCheck @Inject constructor(private val screenViewRepository: ScreenVi
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    val screenToCheck: List<String> = listOf(Routes.WELCOME_SCREEN, Routes.OFFLINE_INIT_SCREEN, Routes.PERMISSION_CONTACTS_SCREEN)
+    val screenToCheck: List<String> = listOf(Routes.WELCOME_SCREEN, Routes.OFFLINE_INIT_SCREEN)
 
     // Private mutable state for multiple screens
     private val _screensShownStatus = MutableStateFlow<Map<String, Boolean>>(emptyMap())
