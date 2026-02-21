@@ -1,6 +1,8 @@
 package dev.nyxigale.aichopaicho.ui.screens
 
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +51,8 @@ import dev.nyxigale.aichopaicho.ui.component.AboutSection
 import dev.nyxigale.aichopaicho.ui.component.AppInformation
 import dev.nyxigale.aichopaicho.ui.component.BackupSyncSettings
 import dev.nyxigale.aichopaicho.ui.component.CurrencyDropdown
+import dev.nyxigale.aichopaicho.ui.component.DataPortabilitySettings
+import dev.nyxigale.aichopaicho.ui.component.DueReminderSettings
 import dev.nyxigale.aichopaicho.ui.component.LanguageDropDown
 import dev.nyxigale.aichopaicho.ui.component.SettingsCard
 import dev.nyxigale.aichopaicho.ui.component.UserProfileCard
@@ -59,6 +63,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToSyncCenter: () -> Unit,
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
@@ -70,6 +75,16 @@ fun SettingsScreen(
         mapOf("en" to "English", "ne" to "नेपाली (Nepali)")
     }
     var languageDropdownExpanded by remember { mutableStateOf(false) }
+    val exportFolderLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        uri?.let { settingsViewModel.exportCsvData(it) }
+    }
+    val importFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { settingsViewModel.importCsvData(it) }
+    }
 
 
     Column(
@@ -155,7 +170,43 @@ fun SettingsScreen(
                         lastSyncTime = uiState.lastSyncTime,
                         onStartSync = settingsViewModel::startSync
                     )
+                    if (uiState.syncFailedCount > 0) {
+                        Text(
+                            text = stringResource(R.string.sync_failed_summary, uiState.syncFailedCount),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        TextButton(onClick = settingsViewModel::retryFailedSyncItems) {
+                            Text(stringResource(R.string.retry_failed_items))
+                        }
+                    }
+                    TextButton(onClick = onNavigateToSyncCenter) {
+                        Text(stringResource(R.string.open_sync_center))
+                    }
                 }
+            }
+
+            SettingsCard(
+                title = stringResource(R.string.reminders),
+                icon = Icons.Default.ThumbUp
+            ) {
+                DueReminderSettings(
+                    isEnabled = uiState.isDueReminderEnabled,
+                    onToggle = settingsViewModel::toggleDueReminderEnabled
+                )
+            }
+
+            SettingsCard(
+                title = stringResource(R.string.data_portability),
+                icon = Icons.Outlined.AddCircle
+            ) {
+                DataPortabilitySettings(
+                    isBusy = uiState.isCsvOperationRunning,
+                    statusMessage = uiState.csvOperationMessage,
+                    statusLocation = uiState.csvOperationLocation,
+                    onExportCsv = { exportFolderLauncher.launch(null) },
+                    onImportCsv = { importFileLauncher.launch(arrayOf("text/*", "application/csv", "*/*")) }
+                )
             }
 
             // App Information

@@ -37,6 +37,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import dev.nyxigale.aichopaicho.data.BackgroundSyncWorker
+import dev.nyxigale.aichopaicho.data.DueReminderWorker
+import dev.nyxigale.aichopaicho.data.RecurringTemplateWorker
 import dev.nyxigale.aichopaicho.ui.navigation.AppNavigationGraph
 import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -52,6 +54,8 @@ class MainActivity : ComponentActivity() {
             )
         )
         BackgroundSyncWorker.schedulePeriodicSync(applicationContext)
+        DueReminderWorker.schedulePeriodic(applicationContext)
+        RecurringTemplateWorker.schedulePeriodic(applicationContext)
         setContent {
             AichoPaichoTheme {
                 AichoPaicho()

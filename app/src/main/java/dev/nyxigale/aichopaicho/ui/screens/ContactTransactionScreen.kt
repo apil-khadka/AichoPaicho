@@ -15,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,8 +25,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -38,6 +41,7 @@ import dev.nyxigale.aichopaicho.ui.component.ContactSummaryCard
 import dev.nyxigale.aichopaicho.ui.component.EmptyRecordsCard
 import dev.nyxigale.aichopaicho.ui.component.SnackbarComponent
 import dev.nyxigale.aichopaicho.viewmodel.ContactTransactionViewModel
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +54,8 @@ fun ContactTransactionScreen(
 ) {
     val uiState by contactTransactionViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(contactId) {
         if (contactId.isBlank()){ // Ensure contactId is not blank
@@ -161,12 +167,44 @@ fun ContactTransactionScreen(
                                 recordWithRepayments = recordWithRepayments,
                                 type = uiState.types[recordWithRepayments.record.typeId],
                                 onRecordClick = { onNavigateToRecord(recordWithRepayments.record.id) },
-                                onDeleteRecord = { contactTransactionViewModel.deleteRecord(recordWithRepayments.record.id) },
+                                onDeleteRecord = {
+                                    val deletedRecord = recordWithRepayments.record
+                                    contactTransactionViewModel.deleteRecord(deletedRecord.id)
+                                    scope.launch {
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = context.getString(R.string.transaction_deleted),
+                                            actionLabel = context.getString(R.string.undo)
+                                        )
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            contactTransactionViewModel.restoreDeletedRecord(deletedRecord)
+                                            snackbarHostState.showSnackbar(context.getString(R.string.transaction_restored))
+                                        }
+                                    }
+                                },
                                 onToggleComplete = { checked ->
+                                    val originalValue = recordWithRepayments.record.isComplete
                                     contactTransactionViewModel.toggleRecordCompletion(
                                         recordWithRepayments.record.id,
                                         checked
                                     )
+                                    scope.launch {
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = context.getString(
+                                                if (checked) {
+                                                    R.string.transaction_marked_complete
+                                                } else {
+                                                    R.string.transaction_marked_incomplete
+                                                }
+                                            ),
+                                            actionLabel = context.getString(R.string.undo)
+                                        )
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            contactTransactionViewModel.toggleRecordCompletion(
+                                                recordWithRepayments.record.id,
+                                                originalValue
+                                            )
+                                        }
+                                    }
                                 }
                             )
                         }

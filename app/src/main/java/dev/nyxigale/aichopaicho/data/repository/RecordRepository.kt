@@ -60,4 +60,8 @@ class RecordRepository @Inject constructor(private val recordDao: RecordDao) {
     suspend fun updateUserId(oldUserId: String, newUserId: String) {
         recordDao.updateUserId(oldUserId, newUserId)
     }
+
+    suspend fun getOpenDueRecordsUntil(endTime: Long): List<Record> {
+        return recordDao.getOpenDueRecordsUntil(endTime)
+    }
 }

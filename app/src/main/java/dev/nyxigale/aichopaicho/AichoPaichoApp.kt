@@ -7,6 +7,7 @@ import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.microsoft.clarity.Clarity
 import com.microsoft.clarity.ClarityConfig
+import dev.nyxigale.aichopaicho.data.notification.NotificationChannels
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -34,6 +35,7 @@ class AichoPaichoApp : Application(), Configuration.Provider {
         super.onCreate()
         // Clarity requires initialization after WorkManager when using custom WorkManager setup.
         WorkManager.getInstance(applicationContext)
+        NotificationChannels.createAll(applicationContext)
 
         val clarityInitialized = Clarity.initialize(
             applicationContext,

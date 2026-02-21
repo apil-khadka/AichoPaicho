@@ -76,6 +76,9 @@
     <string name="privacy_policy">Privacy Policy</string>
     <string name="terms_of_service">Terms of Service</string>
     <string name="contact_support">Contact Support</string>
+    <string name="privacy_policy_url" translatable="false">https://aichopaicho.nyxigale.dev/legal/privacy</string>
+    <string name="terms_of_service_url" translatable="false">https://aichopaicho.nyxigale.dev/legal/terms</string>
+    <string name="support_website_url" translatable="false">https://aichopaicho.nyxigale.dev/</string>
     <string name="transaction_details">Transaction Details</string>
     <string name="completed">Completed</string>
     <string name="type">Type</string>
@@ -169,4 +172,44 @@
     <string name="skip_sign_in_note">You can sign in later from Settings to back up and sync.</string>
     <string name="sign_in_to_backup_your_data_without_loss">You are currently offline. Sign in to securely back up your data and access it from any device without loss.</string>
     <string name="go_to_settings_to_sign_in">Go to Settings to Sign In</string>
+    <string name="recurring">Recurring</string>
+    <string name="make_recurring">Make recurring transaction</string>
+    <string name="daily">Daily</string>
+    <string name="weekly">Weekly</string>
+    <string name="monthly">Monthly</string>
+    <string name="custom">Custom</string>
+    <string name="every_n_days">Every N days</string>
+    <string name="error_select_contact">Select a contact first.</string>
+    <string name="error_write_something">Write something before saving the transaction.</string>
+    <string name="error_enter_amount">Enter an amount before saving.</string>
+    <string name="error_enter_valid_amount">Enter a valid amount greater than 0.</string>
+    <string name="error_select_date">Select a transaction date.</string>
+    <string name="error_custom_recurrence_days">Enter custom recurrence days (greater than 0).</string>
+    <string name="error_transaction_type_not_found">Selected transaction type was not found.</string>
+    <string name="undo">Undo</string>
+    <string name="transaction_marked_complete">Transaction marked complete</string>
+    <string name="transaction_marked_incomplete">Transaction marked incomplete</string>
+    <string name="transaction_restored">Transaction restored</string>
+    <string name="choose_export_folder">Choose folder for CSV export</string>
+    <string name="choose_import_file">Choose CSV file to import</string>
+    <string name="enable_due_reminders">Enable due reminders</string>
+    <string name="export_csv">Export CSV</string>
+    <string name="import_csv">Import CSV</string>
+    <string name="sync_failed_summary">Failed items: %1$d</string>
+    <string name="retry_failed_items">Retry failed items</string>
+    <string name="open_sync_center">Open sync center</string>
+    <string name="reminders">Reminders</string>
+    <string name="data_portability">Data portability</string>
+    <string name="no_failed_items_to_retry">No failed items to retry.</string>
+    <string name="sync_requires_signed_in_backup_enabled">Sign in and enable backup to sync.</string>
+    <string name="sync_center">Sync Center</string>
+    <string name="sync_status">Sync status</string>
+    <string name="idle">Idle</string>
+    <string name="last_sync_value">Last sync: %1$s</string>
+    <string name="sync_summary">Sync summary</string>
+    <string name="sync_queued_value">Queued: %1$d</string>
+    <string name="sync_success_value">Success: %1$d</string>
+    <string name="sync_failed_value">Failed: %1$d</string>
+    <string name="start_sync_now">Start sync now</string>
+    <string name="failed_items">Failed items</string>
 </resources>

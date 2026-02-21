@@ -42,11 +42,6 @@ android {
     }
 
 }
-kotlin{
-    compilerOptions{
-        freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
-    }
-}
 
 dependencies {
 
@@ -92,6 +87,7 @@ dependencies {
 
     //work manager
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.documentfile)
     // coil for image
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)

@@ -1,24 +1,24 @@
 package dev.nyxigale.aichopaicho.ui.screens
 
-// import androidx.compose.foundation.layout.width // Not strictly needed for Spacer, size can be used
-// import androidx.compose.material3.SnackbarHost // Replaced
-// import androidx.compose.runtime.rememberCoroutineScope // Not used for snackbar here
-// import dev.nyxigale.aichopaicho.R // For R.drawable.logo_back, R.color.textColor (will be removed)
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,23 +40,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import dev.nyxigale.aichopaicho.R
 import dev.nyxigale.aichopaicho.ui.component.AmountInputField
 import dev.nyxigale.aichopaicho.ui.component.ContactPickerField
 import dev.nyxigale.aichopaicho.ui.component.DateInputField
-import dev.nyxigale.aichopaicho.ui.component.LabelComponent
 import dev.nyxigale.aichopaicho.ui.component.MultiLineTextInputField
 import dev.nyxigale.aichopaicho.ui.component.QuickActionButton
 import dev.nyxigale.aichopaicho.ui.component.SegmentedLentBorrowedToggle
 import dev.nyxigale.aichopaicho.ui.component.SnackbarComponent
-import dev.nyxigale.aichopaicho.ui.component.TextComponent
 import dev.nyxigale.aichopaicho.ui.component.TypeConstants
 import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
 import dev.nyxigale.aichopaicho.viewmodel.AddTransactionViewModel
 import dev.nyxigale.aichopaicho.viewmodel.data.AddTransactionUiEvents
-
+import dev.nyxigale.aichopaicho.viewmodel.data.RecurrenceType
 
 @Composable
 fun AddTransactionScreen(
@@ -68,7 +66,7 @@ fun AddTransactionScreen(
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { errorMessage ->
-            addTransactionViewModel.clearErrorMessage() // Clear after showing
+            addTransactionViewModel.clearErrorMessage()
             snackbarHostState.showSnackbar(errorMessage)
         }
     }
@@ -76,207 +74,245 @@ fun AddTransactionScreen(
     LaunchedEffect(uiState.submissionSuccessful) {
         if (uiState.submissionSuccessful) {
             snackbarHostState.showSnackbar(context.getString(R.string.transaction_added_successfully))
+            addTransactionViewModel.clearSubmissionSuccessFlag()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (uiState.type == null) {
+            addTransactionViewModel.onEvent(AddTransactionUiEvents.TypeSelected(TypeConstants.TYPE_LENT))
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) } // Themed snackbar
+        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
     ) { paddingValues ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            color = MaterialTheme.colorScheme.background // Use theme background
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize() // Fill the available size
-                    .padding(16.dp), // Add overall padding for the content
-                verticalArrangement = Arrangement.spacedBy(12.dp) // Spacing between rows
+                    .fillMaxSize()
+                    .padding(16.dp)
             ) {
-
                 Row(
-                    modifier = Modifier.fillMaxWidth(), // Allow title to take full width
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     onNavigateBack?.let { navigateBack ->
-                        IconButton( // Using IconButton for better semantics and theming
-                            onClick = navigateBack,
-                            enabled = !uiState.isLoading
-                        ) {
+                        IconButton(onClick = navigateBack, enabled = !uiState.isLoading) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.primary // Themed icon
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
-                        Spacer(modifier = Modifier.size(8.dp)) // Reduced spacer
+                        Spacer(modifier = Modifier.size(8.dp))
                     }
-
-                    TextComponent(
-                        value = stringResource(R.string.add_new_transaction),
-                        textSize = 24.sp,
-
+                    Text(
+                        text = stringResource(R.string.add_new_transaction),
+                        style = MaterialTheme.typography.headlineSmall
                     )
                 }
 
-                if (uiState.errorMessage != null) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer
-                        ),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Text(
-                            text = uiState.errorMessage ?: "",
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                } else if (uiState.submissionSuccessful) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        ),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Text(
-                            text = stringResource(R.string.transaction_added_successfully),
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Type
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    LabelComponent(text = stringResource(R.string.type))
-                    Spacer(modifier = Modifier.size(16.dp)) // Consistent spacing
+                    if (uiState.errorMessage != null) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        ) {
+                            Text(
+                                text = uiState.errorMessage ?: "",
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    Text(text = stringResource(R.string.type), style = MaterialTheme.typography.labelLarge)
                     SegmentedLentBorrowedToggle(
                         onToggle = { type ->
-                            addTransactionViewModel.onEvent(
-                                AddTransactionUiEvents.TypeSelected(type)
-                            )
+                            addTransactionViewModel.onEvent(AddTransactionUiEvents.TypeSelected(type))
                         }
                     )
-                }
-                // Initialize type selection
-                LaunchedEffect(Unit) {
-                    if (uiState.type == null) { // Initialize only if not already set
-                        addTransactionViewModel.onEvent(
-                            AddTransactionUiEvents.TypeSelected(TypeConstants.TYPE_LENT)
-                        )
-                    }
-                }
 
+                    HorizontalDivider()
 
-                // Name
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LabelComponent(text = stringResource(R.string.name))
-                    Spacer(modifier = Modifier.size(16.dp))
+                    Text(text = stringResource(R.string.contact), style = MaterialTheme.typography.labelLarge)
                     ContactPickerField(
-                        label = stringResource(R.string.contact_name), // Placeholder for OutlinedTextField
+                        label = stringResource(R.string.contact_name),
                         selectedContact = uiState.contact,
                         onContactSelected = { contact ->
-                            addTransactionViewModel.onEvent(
-                                AddTransactionUiEvents.ContactSelected(contact)
-                            )
+                            addTransactionViewModel.onEvent(AddTransactionUiEvents.ContactSelected(contact))
                         },
-                        modifier = Modifier.weight(1f) // Allow field to take available space
+                        modifier = Modifier.fillMaxWidth()
                     )
-                }
 
-                // Amount
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LabelComponent(text = stringResource(R.string.amount))
-                    Spacer(modifier = Modifier.size(16.dp))
+                    Text(text = stringResource(R.string.amount), style = MaterialTheme.typography.labelLarge)
                     AmountInputField(
-                        label = stringResource(R.string.amount), // Placeholder
-                        value = uiState.amount?.toString() ?: "",
+                        label = stringResource(R.string.amount),
+                        value = uiState.amountInput,
                         onAmountTextChange = { amountStr ->
-                            addTransactionViewModel.onEvent(
-                                AddTransactionUiEvents.AmountEntered(amountStr)
-                            )
+                            addTransactionViewModel.onEvent(AddTransactionUiEvents.AmountEntered(amountStr))
                         },
-                        isError = uiState.errorMessage != null, // Show error if present
-                        errorMessage = uiState.errorMessage,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     )
-                }
 
-                // Date
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LabelComponent(text = stringResource(R.string.date))
-                    Spacer(modifier = Modifier.size(16.dp))
+                    Text(text = stringResource(R.string.date), style = MaterialTheme.typography.labelLarge)
                     DateInputField(
-                        label = stringResource(R.string.date), // Placeholder
+                        label = stringResource(R.string.date),
                         selectedDate = uiState.date,
                         onDateSelected = { date ->
                             addTransactionViewModel.onEvent(
-                                AddTransactionUiEvents.DateEntered(date ?: System.currentTimeMillis()) // Provide default if null
+                                AddTransactionUiEvents.DateEntered(date ?: System.currentTimeMillis())
                             )
                         },
                         initializeWithCurrentDate = true,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     )
-                }
 
-                // Due Date (Optional)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LabelComponent(text = stringResource(R.string.due_date))
-                    Spacer(modifier = Modifier.size(16.dp))
+                    Text(text = stringResource(R.string.due_date), style = MaterialTheme.typography.labelLarge)
                     DateInputField(
                         label = stringResource(R.string.due_date_optional),
                         selectedDate = uiState.dueDate,
                         onDateSelected = { date ->
-                            addTransactionViewModel.onEvent(
-                                AddTransactionUiEvents.DueDateEntered(date)
-                            )
+                            addTransactionViewModel.onEvent(AddTransactionUiEvents.DueDateEntered(date))
                         },
                         initializeWithCurrentDate = false,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     )
-                }
-                if (uiState.dueDate != null) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(
-                            onClick = {
-                                addTransactionViewModel.onEvent(AddTransactionUiEvents.DueDateEntered(null))
+
+                    if (uiState.dueDate != null) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(
+                                onClick = {
+                                    addTransactionViewModel.onEvent(AddTransactionUiEvents.DueDateEntered(null))
+                                }
+                            ) {
+                                Text(stringResource(R.string.clear_due_date))
                             }
-                        ) {
-                            Text(stringResource(R.string.clear_due_date))
                         }
                     }
-                }
 
-                // Description
-                Row(verticalAlignment = Alignment.Top) { // Align label to top for multiline
-                    LabelComponent(text = stringResource(R.string.description))
-                    Spacer(modifier = Modifier.size(16.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.make_recurring),
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                                Switch(
+                                    checked = uiState.isRecurringEnabled,
+                                    onCheckedChange = { isEnabled ->
+                                        addTransactionViewModel.onEvent(
+                                            AddTransactionUiEvents.RecurringEnabledChanged(isEnabled)
+                                        )
+                                    }
+                                )
+                            }
+
+                            if (uiState.isRecurringEnabled) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    listOf(RecurrenceType.DAILY, RecurrenceType.WEEKLY).forEach { recurrenceType ->
+                                        FilterChip(
+                                            selected = uiState.recurrenceType == recurrenceType,
+                                            onClick = {
+                                                addTransactionViewModel.onEvent(
+                                                    AddTransactionUiEvents.RecurrenceSelected(recurrenceType)
+                                                )
+                                            },
+                                            label = {
+                                                Text(
+                                                    when (recurrenceType) {
+                                                        RecurrenceType.DAILY -> stringResource(R.string.daily)
+                                                        RecurrenceType.WEEKLY -> stringResource(R.string.weekly)
+                                                        else -> recurrenceType.name
+                                                    }
+                                                )
+                                            }
+                                        )
+                                    }
+                                }
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    listOf(RecurrenceType.MONTHLY, RecurrenceType.CUSTOM).forEach { recurrenceType ->
+                                        FilterChip(
+                                            selected = uiState.recurrenceType == recurrenceType,
+                                            onClick = {
+                                                addTransactionViewModel.onEvent(
+                                                    AddTransactionUiEvents.RecurrenceSelected(recurrenceType)
+                                                )
+                                            },
+                                            label = {
+                                                Text(
+                                                    when (recurrenceType) {
+                                                        RecurrenceType.MONTHLY -> stringResource(R.string.monthly)
+                                                        RecurrenceType.CUSTOM -> stringResource(R.string.custom)
+                                                        else -> recurrenceType.name
+                                                    }
+                                                )
+                                            }
+                                        )
+                                    }
+                                }
+
+                                if (uiState.recurrenceType == RecurrenceType.CUSTOM) {
+                                    AmountInputField(
+                                        label = stringResource(R.string.every_n_days),
+                                        value = uiState.customRecurrenceDays,
+                                        onAmountTextChange = { input ->
+                                            addTransactionViewModel.onEvent(
+                                                AddTransactionUiEvents.CustomRecurrenceDaysEntered(input)
+                                            )
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Text(text = stringResource(R.string.description), style = MaterialTheme.typography.labelLarge)
                     MultiLineTextInputField(
-                        label = stringResource(R.string.description_optional), // Placeholder
+                        label = stringResource(R.string.description_optional),
                         value = uiState.description ?: "",
                         onValueChange = { description ->
-                            addTransactionViewModel.onEvent(
-                                AddTransactionUiEvents.DescriptionEntered(description)
-                            )
+                            addTransactionViewModel.onEvent(AddTransactionUiEvents.DescriptionEntered(description))
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                Spacer(modifier = Modifier.weight(1f)) // Push buttons to bottom
-
                 if (uiState.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) // Themed
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 } else {
                     QuickActionButton(
@@ -285,20 +321,22 @@ fun AddTransactionScreen(
                             addTransactionViewModel.onEvent(AddTransactionUiEvents.Submit)
                         },
                         contentDescription = "Save Transaction Button",
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.size(8.dp)) // Spacing between buttons
-
                 onNavigateBack?.let { navigateBack ->
-                    OutlinedButton( // Using OutlinedButton for secondary action
+                    OutlinedButton(
                         onClick = {
                             if (!uiState.isLoading) navigateBack()
                         },
-                        modifier = Modifier.fillMaxWidth(), // Make button full width
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
                         enabled = !uiState.isLoading,
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary) //Themed
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Text(stringResource(R.string.cancel))
                     }
@@ -311,7 +349,7 @@ fun AddTransactionScreen(
 @Preview(showBackground = true)
 @Composable
 fun AddTransactionPreview() {
-    AichoPaichoTheme { // Wrapped in theme
+    AichoPaichoTheme {
         AddTransactionScreen(onNavigateBack = {})
     }
 }

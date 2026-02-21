@@ -52,4 +52,9 @@ interface RecordDao {
     @Query("UPDATE records SET userId = :newUserId WHERE userId = :oldUserId")
    suspend  fun updateUserId(oldUserId: String, newUserId: String)
 
+    @Query(
+        "SELECT * FROM records WHERE dueDate IS NOT NULL AND dueDate <= :endTime AND isDeleted = 0 AND isComplete = 0 ORDER BY dueDate ASC"
+    )
+    suspend fun getOpenDueRecordsUntil(endTime: Long): List<Record>
+
 }

@@ -17,4 +17,7 @@ interface RepaymentDao {
 
     @Query("SELECT * FROM repayments WHERE id = :repaymentId")
     suspend fun getRepaymentById(repaymentId: String): Repayment?
+
+    @Query("SELECT * FROM repayments ORDER BY date DESC")
+    suspend fun getAllRepayments(): List<Repayment>
 }

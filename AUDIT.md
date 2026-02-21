@@ -7,7 +7,8 @@ Date: 2026-02-21
 - Third-party plugin compatibility upgrades.
 - Microsoft Clarity integration.
 - Screenshot documentation refresh.
-- Feature inventory snapshot.
+- P0 product-quality implementation wave:
+- due reminders, recurring templates, sync center, real sync progress, CSV import/export, unsafe compiler flag removal.
 
 ## Changes Completed
 1. AGP new DSL migration
@@ -22,28 +23,92 @@ Date: 2026-02-21
 - Initialized Clarity in `AichoPaichoApp` with project ID `vkq46hwvk6`.
 - Ensured WorkManager is initialized before Clarity startup in app initialization flow.
 
-3. Screenshot docs update
-- Replaced old screenshot references in `SCREENSHOTS.md` with current files from `Pic/`.
-- Added labeled screenshot sections for onboarding, dashboard, transactions, contacts, and settings views.
+3. Due reminders implementation
+- Added `DueReminderWorker` for periodic due-date checks and notifications.
+- Added notification channel setup in app startup (`NotificationChannels`).
+- Added `POST_NOTIFICATIONS` permission in `AndroidManifest.xml`.
+- Added due reminder preference toggle in settings state and ViewModel logic.
 
-4. Existing branch updates already present
-- Branch already contains additional data/UI changes under `app/src/main/java/dev/nyxigale/aichopaicho/...` (DAO, DTO, entity, repository, theme, screens, components, viewmodel data). Those files were not rewritten by this audit update step.
+4. Recurring templates implementation
+- Added Room entity `RecurringTemplate` and DAO/repository plumbing.
+- Added `RecurringTemplateWorker` to materialize due templates into `Record` entries.
+- Extended add-transaction flow to support recurrence options:
+- none/daily/weekly/monthly/custom interval.
+- Added database migration `4 -> 5` for recurring templates table and indexes.
+
+5. Sync center and real progress
+- Refactored sync pipeline to return structured `SyncReport` with per-entity failure details.
+- Added `SyncCenterRepository` + sync state models to persist and expose:
+- queued count, success count, failed count, failed item list, stage, progress, last sync.
+- Updated `BackgroundSyncWorker` to publish real WorkManager progress (`setProgress`) and sync-center stages.
+- Added `SyncCenterScreen` + `SyncCenterViewModel` with retry failed items flow.
+- Connected navigation route for sync center and integrated actions from settings.
+
+6. CSV export/import
+- Added `CsvTransferService` to export/import:
+- `contacts.csv`, `records.csv`, `repayments.csv`.
+- Added settings UI actions for CSV export/import with operation status and location.
+
+7. Compiler and settings metadata cleanup
+- Removed unsafe Kotlin compiler argument:
+- `-XXLanguage:+PropertyParamAnnotationDefaultTargetMode`.
+- Replaced unresolved `BuildConfig` usage in `SettingsViewModel` with runtime package metadata via `PackageManager` + `PackageInfoCompat`.
+
+8. Legal/support link updates
+- Updated settings About section actions to open live website pages.
+- Wired URLs:
+- Privacy policy: `https://aichopaicho.nyxigale.dev/legal/privacy`
+- Terms of service: `https://aichopaicho.nyxigale.dev/legal/terms`
+- Support/site: `https://aichopaicho.nyxigale.dev/`
 
 ## Files Updated For This Work
-- `build.gradle.kts`
 - `app/build.gradle.kts`
-- `gradle/libs.versions.toml`
-- `gradle.properties`
+- `app/src/main/AndroidManifest.xml`
 - `app/src/main/java/dev/nyxigale/aichopaicho/AichoPaichoApp.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/MainActivity.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/BackgroundSyncWorker.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/DueReminderWorker.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/RecurringTemplateWorker.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/notification/NotificationChannels.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/database/AppDatabase.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/di/DatabaseModule.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/dao/RecordDao.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/dao/RepaymentDao.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/dao/RecurringTemplateDao.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/entity/RecurringTemplate.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/repository/RecordRepository.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/repository/RepaymentRepository.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/repository/PreferenceRepository.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/repository/SyncRepository.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/repository/SyncCenterRepository.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/repository/RecurringTemplateRepository.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/repository/CsvTransferService.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/sync/SyncModels.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/data/sync/SyncCenterState.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/navigation/Routes.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/navigation/AppNavigationGraph.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/screens/SettingScreen.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/screens/AddTransactionScreen.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/screens/SyncCenterScreen.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/component/SettingComponent.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/SettingsViewModel.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/AddTransactionViewModel.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/SyncCenterViewModel.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/data/SettingUiState.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/data/AddTransactionUiState.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/data/AddTransactionUiEvents.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/data/RecurrenceType.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/data/SyncCenterUiState.kt`
+- `app/src/main/res/values/strings.xml`
 - `SCREENSHOTS.md`
+- `task.md`
 - `AUDIT.md`
 
 ## Validation Notes
-- User-confirmed successful build after migration:
-- `:app:compileDebugKotlin` completed successfully.
-- Remaining warning is from explicit unsafe compiler arg in `app/build.gradle.kts`:
-- `-XXLanguage:+PropertyParamAnnotationDefaultTargetMode`
-- No test suite execution was recorded in this audit step.
+- `BuildConfig` unresolved reference issue in `SettingsViewModel` was fixed by switching to package metadata lookup.
+- Full Gradle assemble/test validation for this feature wave could not be executed in the sandbox due wrapper/network restrictions and interrupted escalation.
+- Validation should be completed in Android Studio / local host environment:
+- run `:app:assembleDebug`, basic navigation smoke tests, and worker-related behavior checks.
 
 ## Current Feature Inventory
 - User onboarding and welcome flow.
@@ -57,6 +122,10 @@ Date: 2026-02-21
 - Cloud sync/backup with Firestore.
 - Offline-first local persistence via Room.
 - Background synchronization via WorkManager.
+- Sync center screen with retry failed items support.
+- Due reminder notifications (periodic worker + notification channel).
+- Recurring transaction template generation.
+- CSV export/import for contacts/records/repayments.
 - Hilt-based dependency injection.
 - Jetpack Compose UI and navigation graph.
 - Microsoft Clarity session analytics integration.

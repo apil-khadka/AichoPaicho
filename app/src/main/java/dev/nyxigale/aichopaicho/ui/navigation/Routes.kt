@@ -24,5 +24,6 @@ object Routes {
     const val TRANSACTION_DETAIL_SCREEN = "transaction_detail_screen"
 
     const val CONTACT_TRANSACTION_SCREEN = "contact_transaction_screen"
+    const val SYNC_CENTER_SCREEN = "sync_center_screen"
 
 }

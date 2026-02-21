@@ -169,6 +169,21 @@ class ContactTransactionViewModel @Inject constructor(
         }
     }
 
+    fun restoreDeletedRecord(record: Record) {
+        viewModelScope.launch {
+            try {
+                recordRepository.updateRecord(
+                    record.copy(
+                        isDeleted = false,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                )
+            } catch (e: Exception) {
+                setErrorMessage(context.getString(R.string.failed_to_update_record, e.message))
+            }
+        }
+    }
+
     fun setErrorMessage(value: String?) {
         _uiState.value = _uiState.value.copy(errorMessage = value)
     }

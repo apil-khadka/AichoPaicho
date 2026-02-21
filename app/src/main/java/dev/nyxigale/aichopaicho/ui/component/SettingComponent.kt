@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -48,6 +49,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -398,6 +400,77 @@ fun BackupSyncSettings(
 }
 
 @Composable
+fun DueReminderSettings(
+    isEnabled: Boolean,
+    onToggle: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(stringResource(R.string.enable_due_reminders))
+        Switch(
+            checked = isEnabled,
+            onCheckedChange = { onToggle() }
+        )
+    }
+}
+
+@Composable
+fun DataPortabilitySettings(
+    isBusy: Boolean,
+    statusMessage: String?,
+    statusLocation: String?,
+    onExportCsv: () -> Unit,
+    onImportCsv: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = onExportCsv,
+                enabled = !isBusy,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.choose_export_folder))
+            }
+            Button(
+                onClick = onImportCsv,
+                enabled = !isBusy,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.choose_import_file))
+            }
+        }
+
+        if (isBusy) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            }
+        }
+
+        statusMessage?.let {
+            Text(
+                text = it,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        statusLocation?.let {
+            Text(
+                text = it,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
 fun AppInformation(
     version: String,
     buildNumber: String
@@ -422,26 +495,31 @@ fun AppInformation(
 
 @Composable
 fun AboutSection() {
+    val uriHandler = LocalUriHandler.current
+    val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
+    val termsOfServiceUrl = stringResource(R.string.terms_of_service_url)
+    val supportWebsiteUrl = stringResource(R.string.support_website_url)
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(R.string.privacy_policy),
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* Open privacy policy */ }
+                .clickable { uriHandler.openUri(privacyPolicyUrl) }
                 .padding(vertical = 8.dp)
         )
         Text(
             text = stringResource(R.string.terms_of_service),
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* Open terms */ }
+                .clickable { uriHandler.openUri(termsOfServiceUrl) }
                 .padding(vertical = 8.dp)
         )
         Text(
             text = stringResource(R.string.contact_support),
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* Open support */ }
+                .clickable { uriHandler.openUri(supportWebsiteUrl) }
                 .padding(vertical = 8.dp)
         )
     }

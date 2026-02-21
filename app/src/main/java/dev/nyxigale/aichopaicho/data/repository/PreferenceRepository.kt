@@ -46,4 +46,12 @@ class PreferencesRepository @Inject constructor(
     fun setAutoSyncInterval(interval: Long) {
         prefs.edit { putLong("auto_sync_interval", interval) }
     }
+
+    fun isDueReminderEnabled(): Boolean {
+        return prefs.getBoolean("due_reminder_enabled", true)
+    }
+
+    fun setDueReminderEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean("due_reminder_enabled", enabled) }
+    }
 }

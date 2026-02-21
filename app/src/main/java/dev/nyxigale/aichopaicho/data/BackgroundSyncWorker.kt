@@ -2,20 +2,23 @@ package dev.nyxigale.aichopaicho.data
 
 import android.content.Context
 import androidx.hilt.work.HiltWorker
-import androidx.work.BackoffPolicy // Added import
-import androidx.work.Constraints // Added import
-import androidx.work.CoroutineWorker // Added import
-import androidx.work.ExistingPeriodicWorkPolicy // Added import
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.Data
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType // Added import
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder // Added import
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
 import dev.nyxigale.aichopaicho.data.repository.PreferencesRepository
+import dev.nyxigale.aichopaicho.data.repository.SyncCenterRepository
 import dev.nyxigale.aichopaicho.data.repository.SyncRepository
 import dev.nyxigale.aichopaicho.data.repository.UserRepository
+import dev.nyxigale.aichopaicho.data.sync.SyncReport
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
@@ -26,33 +29,46 @@ class BackgroundSyncWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val syncRepository: SyncRepository,
     private val userRepository: UserRepository,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val syncCenterRepository: SyncCenterRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
+        var report = SyncReport.EMPTY
         return try {
             val user = userRepository.getUser()
 
-            // Only sync if user is not null, online, and backup is enabled
             if (!user.isOffline && preferencesRepository.isBackupEnabled()) {
-                println("BackgroundSyncWorker: Starting upload phase (with server timestamps)...")
-                syncRepository.syncContacts()
-                syncRepository.syncRecords()
-                syncRepository.syncRepayments() // Added sync for the new table
-                syncRepository.syncUserData()
-                println("BackgroundSyncWorker: Starting upload phase (with server timestamps)...")
+                val queuedCount = syncRepository.estimateQueueCount()
+                syncCenterRepository.beginSync(queuedCount)
+                updateProgress(5, "Preparing sync")
 
+                updateProgress(15, "Uploading contacts")
+                report += syncRepository.syncContacts()
 
-                println("BackgroundSyncWorker: Starting download and timestamp-based merge phase...")
+                updateProgress(35, "Uploading records")
+                report += syncRepository.syncRecords()
+
+                updateProgress(55, "Uploading repayments")
+                report += syncRepository.syncRepayments()
+
+                updateProgress(70, "Uploading user data")
+                report += syncRepository.syncUserData()
+
+                updateProgress(85, "Downloading cloud changes")
                 syncRepository.downloadAndMergeData()
-                println("BackgroundSyncWorker: Download and merge phase completed.")
 
-                preferencesRepository.setLastSyncTime(System.currentTimeMillis())
+                val finishedAt = System.currentTimeMillis()
+                preferencesRepository.setLastSyncTime(finishedAt)
+                syncCenterRepository.completeSync(report, finishedAt)
+                updateProgress(100, "Sync complete")
                 Result.success()
             } else {
+                syncCenterRepository.markIdle("Sync skipped")
                 Result.success()
             }
-        } catch (e: Exception) {
+        } catch (error: Exception) {
+            syncCenterRepository.markSyncFailed(report, error.message)
             if (runAttemptCount < 3) {
                 Result.retry()
             } else {
@@ -61,9 +77,21 @@ class BackgroundSyncWorker @AssistedInject constructor(
         }
     }
 
+    private suspend fun updateProgress(percent: Int, stage: String) {
+        syncCenterRepository.updateInProgress(percent, stage)
+        setProgress(
+            Data.Builder()
+                .putInt(PROGRESS_PERCENT, percent)
+                .putString(PROGRESS_STAGE, stage)
+                .build()
+        )
+    }
+
     companion object {
         const val WORK_NAME = "background_sync"
         const val ONE_TIME_SYNC_WORK_NAME = "background_sync_on_login"
+        const val PROGRESS_PERCENT = "progress_percent"
+        const val PROGRESS_STAGE = "progress_stage"
 
 
         fun schedulePeriodicSync(context: Context) {
@@ -75,18 +103,18 @@ class BackgroundSyncWorker @AssistedInject constructor(
             val syncWorkRequest = PeriodicWorkRequestBuilder<BackgroundSyncWorker>(
                 24, TimeUnit.HOURS,
                 2, TimeUnit.HOURS
-                 )
+            )
                 .setConstraints(constraints)
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,
-                    WorkRequest.MIN_BACKOFF_MILLIS, // Use constant for minimum backoff
+                    WorkRequest.MIN_BACKOFF_MILLIS,
                     TimeUnit.MILLISECONDS
                 )
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP, // Or REPLACE if you want new parameters to take effect
+                ExistingPeriodicWorkPolicy.KEEP,
                 syncWorkRequest
             )
         }
@@ -111,12 +139,10 @@ class BackgroundSyncWorker @AssistedInject constructor(
                 ExistingWorkPolicy.REPLACE,
                 oneTimeSyncRequest
             )
-            println("BackgroundSyncWorker: One-time sync on login scheduled.")
         }
 
         fun cancelSync(context: Context) {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
-            // Optionally cancel the one-time sync too if needed, though it usually runs quickly
             WorkManager.getInstance(context).cancelUniqueWork(ONE_TIME_SYNC_WORK_NAME)
         }
     }

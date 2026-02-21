@@ -19,4 +19,8 @@ class RepaymentRepository @Inject constructor(private val repaymentDao: Repaymen
     suspend fun getRepaymentById(repaymentId: String): Repayment? {
         return repaymentDao.getRepaymentById(repaymentId)
     }
+
+    suspend fun getAllRepayments(): List<Repayment> {
+        return repaymentDao.getAllRepayments()
+    }
 }

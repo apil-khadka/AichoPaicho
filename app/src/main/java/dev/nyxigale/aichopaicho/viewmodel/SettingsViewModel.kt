@@ -2,6 +2,7 @@ package dev.nyxigale.aichopaicho.viewmodel
 
 import android.app.Activity
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.core.app.ActivityCompat.recreate
 import androidx.credentials.CredentialManager
@@ -9,17 +10,8 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.nyxigale.aichopaicho.AppLocaleManager
-import dev.nyxigale.aichopaicho.AppPreferenceUtils
-import dev.nyxigale.aichopaicho.R
-import dev.nyxigale.aichopaicho.data.BackgroundSyncWorker
-import dev.nyxigale.aichopaicho.data.entity.User
-import dev.nyxigale.aichopaicho.data.repository.ContactRepository
-import dev.nyxigale.aichopaicho.data.repository.PreferencesRepository
-import dev.nyxigale.aichopaicho.data.repository.RecordRepository
-import dev.nyxigale.aichopaicho.data.repository.SyncRepository
-import dev.nyxigale.aichopaicho.data.repository.UserRepository
-import dev.nyxigale.aichopaicho.viewmodel.data.SettingsUiState
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.google.android.gms.tasks.Task
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -28,12 +20,28 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.nyxigale.aichopaicho.AppLocaleManager
+import dev.nyxigale.aichopaicho.AppPreferenceUtils
+import dev.nyxigale.aichopaicho.R
+import dev.nyxigale.aichopaicho.data.BackgroundSyncWorker
+import dev.nyxigale.aichopaicho.data.DueReminderWorker
+import dev.nyxigale.aichopaicho.data.entity.User
+import dev.nyxigale.aichopaicho.data.repository.ContactRepository
+import dev.nyxigale.aichopaicho.data.repository.CsvTransferService
+import dev.nyxigale.aichopaicho.data.repository.PreferencesRepository
+import dev.nyxigale.aichopaicho.data.repository.RecordRepository
+import dev.nyxigale.aichopaicho.data.repository.SyncCenterRepository
+import dev.nyxigale.aichopaicho.data.repository.SyncRepository
+import dev.nyxigale.aichopaicho.data.repository.UserRepository
+import dev.nyxigale.aichopaicho.data.sync.SyncReport
+import dev.nyxigale.aichopaicho.viewmodel.data.SettingsUiState
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import androidx.core.content.pm.PackageInfoCompat
 import java.util.Currency
 import java.util.UUID
 import kotlin.coroutines.resume
@@ -46,39 +54,90 @@ class SettingsViewModel @Inject constructor(
     private val contactRepository: ContactRepository,
     private val firebaseAuth: FirebaseAuth,
     private val syncRepository: SyncRepository,
+    private val syncCenterRepository: SyncCenterRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val csvTransferService: CsvTransferService,
     @ApplicationContext private val context: Context
-
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
+    private val workManager: WorkManager = WorkManager.getInstance(context)
+
     init {
         loadInitialData()
+        observeSyncCenterState()
+        observeWorkProgress()
     }
 
     private fun loadInitialData() {
         viewModelScope.launch {
             try {
                 val user = userRepository.getUser()
-                val appVersion = getAppVersion()
-                val lastSync = getLastSyncTime()
                 val languageCode = AppPreferenceUtils.getLanguageCode(context)
-                val currencies = Currency.getAvailableCurrencies().map{it.currencyCode}
-               val selectedCurrency: String =  preferencesRepository.getCurrency()
+                val currencies = Currency.getAvailableCurrencies().map { it.currencyCode }
+                val selectedCurrency = preferencesRepository.getCurrency()
+                val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                val versionName = packageInfo.versionName ?: context.getString(R.string.Version_number)
+                val versionCode = PackageInfoCompat.getLongVersionCode(packageInfo).toString()
+
                 _uiState.value = _uiState.value.copy(
                     user = user,
-                    appVersion = appVersion,
-                    lastSyncTime = lastSync ,
+                    appVersion = versionName,
+                    buildNumber = versionCode,
+                    lastSyncTime = preferencesRepository.getLastSyncTime(),
                     availableCurrencies = currencies,
                     selectedCurrency = selectedCurrency,
-                    selectedLanguage = languageCode
+                    selectedLanguage = languageCode,
+                    isBackupEnabled = preferencesRepository.isBackupEnabled(),
+                    isDueReminderEnabled = preferencesRepository.isDueReminderEnabled()
                 )
-
-            } catch (e: Exception) {
-                setErrorMessage(context.getString(R.string.failed_to_load_settings, e.message))
+            } catch (error: Exception) {
+                setErrorMessage(context.getString(R.string.failed_to_load_settings, error.message))
             }
+        }
+    }
+
+    private fun observeSyncCenterState() {
+        viewModelScope.launch {
+            syncCenterRepository.state.collect { state ->
+                _uiState.value = _uiState.value.copy(
+                    isSyncing = state.isSyncing,
+                    syncProgress = state.currentProgress / 100f,
+                    syncMessage = state.currentStage.ifBlank {
+                        state.lastSyncMessage.orEmpty()
+                    },
+                    lastSyncTime = state.lastSyncTime ?: _uiState.value.lastSyncTime,
+                    syncQueuedCount = state.queuedCount,
+                    syncSuccessCount = state.successCount,
+                    syncFailedCount = state.failedCount,
+                    hasFailedSyncItems = state.failedItems.isNotEmpty()
+                )
+            }
+        }
+    }
+
+    private fun observeWorkProgress() {
+        viewModelScope.launch {
+            workManager.getWorkInfosForUniqueWorkFlow(BackgroundSyncWorker.ONE_TIME_SYNC_WORK_NAME)
+                .collect { infos ->
+                    val info = infos.firstOrNull() ?: return@collect
+                    val progress = info.progress.getInt(BackgroundSyncWorker.PROGRESS_PERCENT, -1)
+                    val stage = info.progress.getString(BackgroundSyncWorker.PROGRESS_STAGE).orEmpty()
+
+                    if (progress >= 0) {
+                        _uiState.value = _uiState.value.copy(
+                            isSyncing = info.state == WorkInfo.State.RUNNING || info.state == WorkInfo.State.ENQUEUED,
+                            syncProgress = progress / 100f,
+                            syncMessage = stage.ifBlank { _uiState.value.syncMessage }
+                        )
+                    }
+
+                    if (info.state == WorkInfo.State.SUCCEEDED) {
+                        _uiState.value = _uiState.value.copy(lastSyncTime = preferencesRepository.getLastSyncTime())
+                    }
+                }
         }
     }
 
@@ -87,11 +146,10 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(selectedCurrency = currentCurrency)
     }
 
-    fun updateLanguage(activity: Activity,language: String){
+    fun updateLanguage(activity: Activity, language: String) {
         AppPreferenceUtils.setLanguageCode(context, language)
-        AppLocaleManager.setAppLocale(context , language)
+        AppLocaleManager.setAppLocale(context, language)
         _uiState.value = _uiState.value.copy(selectedLanguage = language)
-
         recreate(activity)
     }
 
@@ -111,20 +169,39 @@ class SettingsViewModel @Inject constructor(
 
     fun updateBackupEnabled(enabled: Boolean) {
         _uiState.value = _uiState.value.copy(isBackupEnabled = enabled)
-        // Save to preferences
         viewModelScope.launch {
-            saveBackupPreference(enabled)
+            preferencesRepository.setBackupEnabled(enabled)
+            if (enabled) {
+                BackgroundSyncWorker.schedulePeriodicSync(context)
+            } else {
+                BackgroundSyncWorker.cancelSync(context)
+                syncCenterRepository.markIdle("Backup disabled")
+            }
         }
     }
+
     fun toggleBackupEnabled() {
-        val newBackupEnabled = !_uiState.value.isBackupEnabled
-        updateBackupEnabled(newBackupEnabled)
+        updateBackupEnabled(!_uiState.value.isBackupEnabled)
+    }
+
+    fun toggleDueReminderEnabled() {
+        val enabled = !_uiState.value.isDueReminderEnabled
+        _uiState.value = _uiState.value.copy(isDueReminderEnabled = enabled)
+        viewModelScope.launch {
+            preferencesRepository.setDueReminderEnabled(enabled)
+            if (enabled) {
+                DueReminderWorker.schedulePeriodic(context)
+            } else {
+                DueReminderWorker.cancel(context)
+            }
+        }
     }
 
     fun showSignInDialog() {
         _uiState.value = _uiState.value.copy(showSignInDialog = true)
     }
-    fun selectCurrency(currency:String, context: Context){
+
+    fun selectCurrency(currency: String, context: Context) {
         _uiState.value = _uiState.value.copy(
             selectedCurrency = currency,
             showCurrencyDropdown = false
@@ -144,22 +221,17 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(showSignOutDialog = false)
     }
 
-
-    suspend fun signInWithGoogle(activity: Activity, isReturningUser: Boolean = false): Unit {
-         try {
+    suspend fun signInWithGoogle(activity: Activity, isReturningUser: Boolean = false) {
+        try {
             setErrorMessage("")
 
-            // Check if already signed in
             firebaseAuth.currentUser?.let { currentUser ->
                 val localUser = userRepository.getUser()
                 if (localUser.id == currentUser.uid) {
-                    run {
-                         Result.success(currentUser)
-                    }
+                    return
                 }
             }
 
-            // Perform Google Sign In
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setFilterByAuthorizedAccounts(isReturningUser)
                 .setServerClientId(activity.getString(R.string.web_client))
@@ -169,35 +241,28 @@ class SettingsViewModel @Inject constructor(
                 .addCredentialOption(googleIdOption)
                 .build()
 
-            val credentialManager = CredentialManager.Companion.create(activity)
+            val credentialManager = CredentialManager.create(activity)
             val result = credentialManager.getCredential(request = request, context = activity)
-
             val firebaseUser = handleSignIn(result)
 
-            // Save user to database
             firebaseUser?.let {
-
                 transferLocalDataToFirebaseUser(firebaseUser)
                 hideSignInDialog()
             }
 
-             BackgroundSyncWorker.scheduleOneTimeSyncOnLogin(activity.applicationContext)
-
-            Result.success(firebaseUser!!)
-
-        } catch (e: Exception) {
-            Log.e("SettingViewModel", "Sign in failed", e)
-            setErrorMessage(e.message ?: context.getString(R.string.sign_in_failed))
-            Result.failure(e)
-        } finally {
+            BackgroundSyncWorker.scheduleOneTimeSyncOnLogin(activity.applicationContext)
+        } catch (error: Exception) {
+            Log.e("SettingsViewModel", "Sign in failed", error)
+            setErrorMessage(error.message ?: context.getString(R.string.sign_in_failed))
         }
     }
+
     private suspend fun handleSignIn(result: GetCredentialResponse): FirebaseUser? {
         val credential = result.credential
 
-        when (credential.type) {
-            GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL -> {
-                val googleIdTokenCredential = GoogleIdTokenCredential.Companion.createFrom(credential.data)
+        return when (credential.type) {
+            GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL -> {
+                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                 val idToken = googleIdTokenCredential.idToken
 
                 if (idToken.isEmpty()) {
@@ -206,15 +271,13 @@ class SettingsViewModel @Inject constructor(
 
                 val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
                 val authResult = firebaseAuth.signInWithCredential(firebaseCredential).await()
-
-                return authResult.user
+                authResult.user
             }
+
             else -> {
                 throw IllegalArgumentException(
-                    context.getString(
-                        R.string.unsupported_credential_type,
-                        credential.type
-                    ))
+                    context.getString(R.string.unsupported_credential_type, credential.type)
+                )
             }
         }
     }
@@ -235,7 +298,6 @@ class SettingsViewModel @Inject constructor(
         try {
             val currentUser = _uiState.value.user
             currentUser?.let { user ->
-                // Update user with Firebase UID
                 val updatedUser = user.copy(
                     id = firebaseUser.uid,
                     isOffline = false,
@@ -244,18 +306,15 @@ class SettingsViewModel @Inject constructor(
                     photoUrl = firebaseUser.photoUrl
                 )
 
-                // Update all related data with new user ID
                 userRepository.upsert(updatedUser)
                 updateUserIdAcrossAllTables(user.id, firebaseUser.uid)
                 userRepository.deleteUserCompletely(user.id)
 
-
                 _uiState.value = _uiState.value.copy(user = updatedUser)
-
                 startSync()
             }
-        } catch (e: Exception) {
-            setErrorMessage(context.getString(R.string.data_transfer_failed, e.message))
+        } catch (error: Exception) {
+            setErrorMessage(context.getString(R.string.data_transfer_failed, error.message))
         }
     }
 
@@ -266,13 +325,9 @@ class SettingsViewModel @Inject constructor(
 
                 val currentUser = _uiState.value.user
                 currentUser?.let { user ->
-                    // Delete all user data (hard delete)
                     userRepository.deleteUserCompletely(user.id)
-
-                    // Sign out from Firebase
                     firebaseAuth.signOut()
 
-                    // Create new offline user
                     val newOfflineUser = createNewOfflineUser()
                     userRepository.upsert(newOfflineUser)
 
@@ -281,8 +336,8 @@ class SettingsViewModel @Inject constructor(
                         showSignOutDialog = false
                     )
                 }
-            } catch (e: Exception) {
-                setErrorMessage(context.getString(R.string.sign_out_failed, e.message))
+            } catch (error: Exception) {
+                setErrorMessage(context.getString(R.string.sign_out_failed, error.message))
             } finally {
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
@@ -303,37 +358,54 @@ class SettingsViewModel @Inject constructor(
         if (!_uiState.value.isBackupEnabled || _uiState.value.user?.isOffline == true) {
             return
         }
-        _uiState.value = _uiState.value.copy(
-            isSyncing = true,
-            syncProgress = 0f,
-            syncMessage = context.getString(R.string.starting_backup)
-        )
         BackgroundSyncWorker.scheduleOneTimeSyncOnLogin(context)
-        _uiState.value = _uiState.value.copy(
-            syncProgress = 0.25f,
-            syncMessage = context.getString(R.string.backing_up_contacts)
-        )
-
-        _uiState.value = _uiState.value.copy(
-            syncProgress = 1f,
-            syncMessage = context.getString(R.string.backup_completed_successfully)
-        )
-    }
-    private fun getAppVersion(): String {
-        // You'll implement this to get actual app version
-        return context.getString(R.string.Version_number)
     }
 
-    private suspend fun getLastSyncTime(): Long? {
-       return preferencesRepository.getLastSyncTime()
+    fun retryFailedSyncItems() {
+        viewModelScope.launch {
+            val failedItems = syncCenterRepository.state.value.failedItems
+            if (failedItems.isEmpty()) {
+                setErrorMessage(context.getString(R.string.no_failed_items_to_retry))
+                return@launch
+            }
+
+            try {
+                syncCenterRepository.beginSync(failedItems.size)
+                val report = syncRepository.retryFailedItems(failedItems)
+                val finishedAt = System.currentTimeMillis()
+                if (report.failed == 0) {
+                    preferencesRepository.setLastSyncTime(finishedAt)
+                }
+                syncCenterRepository.completeSync(report, finishedAt)
+                _uiState.value = _uiState.value.copy(lastSyncTime = preferencesRepository.getLastSyncTime())
+            } catch (error: Exception) {
+                syncCenterRepository.markSyncFailed(SyncReport.EMPTY, error.message)
+            }
+        }
     }
 
-    private suspend fun saveLastSyncTime(timestamp: Long) {
-        preferencesRepository.setLastSyncTime(timestamp)
+    fun exportCsvData(folderUri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isCsvOperationRunning = true, csvOperationMessage = null)
+            val result = csvTransferService.exportCsvBundleToFolder(folderUri)
+            _uiState.value = _uiState.value.copy(
+                isCsvOperationRunning = false,
+                csvOperationMessage = result.message,
+                csvOperationLocation = result.location
+            )
+        }
     }
 
-    private suspend fun saveBackupPreference(enabled: Boolean) {
-       preferencesRepository.setBackupEnabled(enabled)
+    fun importCsvData(fileUri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isCsvOperationRunning = true, csvOperationMessage = null)
+            val result = csvTransferService.importFromCsvFile(fileUri)
+            _uiState.value = _uiState.value.copy(
+                isCsvOperationRunning = false,
+                csvOperationMessage = result.message,
+                csvOperationLocation = result.location
+            )
+        }
     }
 
     private fun setErrorMessage(message: String) {
@@ -344,7 +416,7 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
 
-    private suspend fun SettingsViewModel.updateUserIdAcrossAllTables(id: String, firebaseUid: String) {
+    private suspend fun updateUserIdAcrossAllTables(id: String, firebaseUid: String) {
         recordRepository.updateUserId(id, firebaseUid)
         contactRepository.updateUserId(id, firebaseUid)
     }

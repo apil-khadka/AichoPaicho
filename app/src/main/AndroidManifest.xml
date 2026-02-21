@@ -12,6 +12,7 @@
         </intent>
     </queries>
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:name="dev.nyxigale.aichopaicho.AichoPaichoApp"
         android:allowBackup="true"

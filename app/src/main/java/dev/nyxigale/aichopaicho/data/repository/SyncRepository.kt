@@ -1,12 +1,16 @@
 package dev.nyxigale.aichopaicho.data.repository
 
-import dev.nyxigale.aichopaicho.data.entity.Contact
-import dev.nyxigale.aichopaicho.data.entity.Record
-import dev.nyxigale.aichopaicho.data.entity.Repayment
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import dev.nyxigale.aichopaicho.data.entity.Contact
+import dev.nyxigale.aichopaicho.data.entity.Record
+import dev.nyxigale.aichopaicho.data.entity.Repayment
+import dev.nyxigale.aichopaicho.data.sync.SyncEntityType
+import dev.nyxigale.aichopaicho.data.sync.SyncFailureItem
+import dev.nyxigale.aichopaicho.data.sync.SyncReport
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.first
@@ -18,240 +22,222 @@ class SyncRepository @Inject constructor(
     private val userRepository: UserRepository,
     private val contactRepository: ContactRepository,
     private val recordRepository: RecordRepository,
-    private val repaymentRepository: RepaymentRepository, // Added
+    private val repaymentRepository: RepaymentRepository,
     private val firebaseAuth: FirebaseAuth,
 ) {
+    suspend fun estimateQueueCount(): Int {
+        return runCatching {
+            val contactsCount = contactRepository.getAllContacts().first().size
+            val records = recordRepository.getAllRecords().first()
+            val repaymentsCount = records.sumOf { record ->
+                repaymentRepository.getRepaymentsForRecord(record.id).first().size
+            }
+            contactsCount + records.size + repaymentsCount + 1
+        }.getOrElse { error ->
+            Log.e(TAG, "Failed to estimate queue count", error)
+            0
+        }
+    }
 
-    suspend fun syncContacts() {
-        try {
-            val contacts = contactRepository.getAllContacts()
-            val user = userRepository.getUser()
+    suspend fun syncAllUploads(): SyncReport {
+        return syncContacts() + syncRecords() + syncRepayments() + syncUserData()
+    }
 
-            val listOfContacts = contacts.first()
-            listOfContacts.forEach { contact ->
-                try {
-                    val contactData = hashMapOf(
-                        "id" to contact.id,
-                        "name" to contact.name,
-                        "phone" to contact.phone,
-                        "userId" to contact.userId,
-                        "contactId" to contact.contactId,
-                        "deleted" to contact.isDeleted, // Matches @PropertyName
-                        "createdAt" to contact.createdAt,
-                        "updatedAt" to FieldValue.serverTimestamp()
+    suspend fun syncContacts(): SyncReport {
+        val user = userRepository.getUser()
+        if (user.id.isBlank()) {
+            return SyncReport.EMPTY
+        }
+        val contacts = runCatching { contactRepository.getAllContacts().first() }
+            .getOrElse { error ->
+                Log.e(TAG, "Failed to read contacts for sync", error)
+                return SyncReport(
+                    attempted = 1,
+                    succeeded = 0,
+                    failed = 1,
+                    failedItems = listOf(
+                        SyncFailureItem(
+                            entityType = SyncEntityType.CONTACT,
+                            entityId = "contacts-read",
+                            reason = error.message
+                        )
                     )
+                )
+            }
 
-                    firestore.collection("users")
-                        .document(user.id)
-                        .collection("contacts")
-                        .document(contact.id)
-                        .set(contactData, SetOptions.merge())
-                        .await()
-                } catch (e: Exception) {
-                    println("Error syncing contact ${contact.id}: ${e.message}")
+        var report = SyncReport.EMPTY
+        contacts.forEach { contact ->
+            report += syncSingleContactReport(user.id, contact)
+        }
+        return report
+    }
+
+    suspend fun syncRecords(): SyncReport {
+        val user = userRepository.getUser()
+        if (user.id.isBlank()) {
+            return SyncReport.EMPTY
+        }
+        val records = runCatching { recordRepository.getAllRecords().first() }
+            .getOrElse { error ->
+                Log.e(TAG, "Failed to read records for sync", error)
+                return SyncReport(
+                    attempted = 1,
+                    succeeded = 0,
+                    failed = 1,
+                    failedItems = listOf(
+                        SyncFailureItem(
+                            entityType = SyncEntityType.RECORD,
+                            entityId = "records-read",
+                            reason = error.message
+                        )
+                    )
+                )
+            }
+
+        var report = SyncReport.EMPTY
+        records.forEach { record ->
+            report += syncSingleRecordReport(user.id, record)
+        }
+        return report
+    }
+
+    suspend fun syncRepayments(): SyncReport {
+        val user = userRepository.getUser()
+        if (user.id.isBlank()) {
+            return SyncReport.EMPTY
+        }
+
+        val records = runCatching { recordRepository.getAllRecords().first() }
+            .getOrElse { error ->
+                Log.e(TAG, "Failed to read records for repayment sync", error)
+                return SyncReport(
+                    attempted = 1,
+                    succeeded = 0,
+                    failed = 1,
+                    failedItems = listOf(
+                        SyncFailureItem(
+                            entityType = SyncEntityType.REPAYMENT,
+                            entityId = "repayments-read",
+                            reason = error.message
+                        )
+                    )
+                )
+            }
+
+        var report = SyncReport.EMPTY
+        records.forEach { record ->
+            val repayments = runCatching {
+                repaymentRepository.getRepaymentsForRecord(record.id).first()
+            }.getOrElse { error ->
+                report += SyncReport(
+                    attempted = 1,
+                    succeeded = 0,
+                    failed = 1,
+                    failedItems = listOf(
+                        SyncFailureItem(
+                            entityType = SyncEntityType.REPAYMENT,
+                            entityId = "record:${record.id}",
+                            reason = error.message
+                        )
+                    )
+                )
+                emptyList()
+            }
+
+            repayments.forEach { repayment ->
+                report += syncSingleRepaymentReport(user.id, repayment)
+            }
+        }
+        return report
+    }
+
+    suspend fun syncUserData(): SyncReport {
+        val user = userRepository.getUser()
+        if (user.id.isBlank()) {
+            return SyncReport.EMPTY
+        }
+        return try {
+            firestore.collection("users")
+                .document(user.id)
+                .set(user, SetOptions.merge())
+                .await()
+            SyncReport(attempted = 1, succeeded = 1, failed = 0)
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed syncing user data", error)
+            SyncReport(
+                attempted = 1,
+                succeeded = 0,
+                failed = 1,
+                failedItems = listOf(
+                    SyncFailureItem(
+                        entityType = SyncEntityType.USER,
+                        entityId = user.id,
+                        reason = error.message
+                    )
+                )
+            )
+        }
+    }
+
+    suspend fun retryFailedItems(failedItems: List<SyncFailureItem>): SyncReport {
+        val user = userRepository.getUser()
+        if (user.id.isBlank()) {
+            return SyncReport.EMPTY
+        }
+
+        var report = SyncReport.EMPTY
+        failedItems.distinctBy { it.key() }.forEach { failedItem ->
+            when (failedItem.entityType) {
+                SyncEntityType.CONTACT -> {
+                    report += syncSingleContactByIdReport(user.id, failedItem.entityId)
+                }
+
+                SyncEntityType.RECORD -> {
+                    report += syncSingleRecordByIdReport(user.id, failedItem.entityId)
+                }
+
+                SyncEntityType.REPAYMENT -> {
+                    report += syncSingleRepaymentByIdReport(user.id, failedItem.entityId)
+                }
+
+                SyncEntityType.USER -> {
+                    report += syncUserData()
                 }
             }
-        } catch (e: Exception) {
-            println("Error fetching contacts for sync: ${e.message}")
         }
+        return report
     }
 
     suspend fun syncSingleContact(contactId: String) {
-        try {
-            val contact = contactRepository.getContactById(contactId)
-            val user = userRepository.getUser()
-            try {
-                contact?.let { c ->
-                    val contactData = hashMapOf(
-                        "id" to c.id,
-                        "name" to c.name,
-                        "phone" to c.phone,
-                        "userId" to c.userId,
-                        "contactId" to c.contactId,
-                        "deleted" to c.isDeleted, // Matches @PropertyName
-                        "createdAt" to c.createdAt,
-                        "updatedAt" to FieldValue.serverTimestamp()
-                    )
-
-                    firestore.collection("users")
-                        .document(user.id)
-                        .collection("contacts")
-                        .document(c.id)
-                        .set(contactData, SetOptions.merge())
-                        .await()
-                }
-            } catch (e: Exception) {
-                println("Error syncing contact ${contact?.id}: ${e.message}")
-            }
-        } catch (e: Exception) {
-            println("Error fetching contacts for sync: ${e.message}")
-        }
+        val user = userRepository.getUser()
+        if (user.id.isBlank()) return
+        syncSingleContactByIdReport(user.id, contactId)
     }
-
-    suspend fun syncRecords() {
-        try {
-            val records = recordRepository.getAllRecords()
-            val user = userRepository.getUser()
-
-            val  listOfRecords = records.first()
-            listOfRecords.forEach { record ->
-                try {
-                    val recordData = hashMapOf(
-                        "id" to record.id,
-                        "userId" to record.userId,
-                        "contactId" to record.contactId,
-                        "date" to record.date,
-                        "dueDate" to record.dueDate,
-                        "deleted" to record.isDeleted, // Matches @PropertyName
-                        "complete" to record.isComplete, // Matches @PropertyName
-                        "description" to record.description,
-                        "typeId" to record.typeId,
-                        "amount" to record.amount,
-                        "createdAt" to record.createdAt,
-                        "updatedAt" to FieldValue.serverTimestamp()
-                    )
-
-                    firestore.collection("users")
-                        .document(user.id)
-                        .collection("records")
-                        .document(record.id)
-                        .set(recordData, SetOptions.merge())
-                        .await()
-                } catch (e: Exception) {
-                    println("Error syncing record ${record.id}: ${e.message}")
-                }
-            }
-        } catch (e: Exception) {
-            println("Error fetching records for sync: ${e.message}")
-        }
-    }
-    
-    suspend fun syncRepayments() {
-        try {
-            val user = userRepository.getUser()
-            val allRecords = recordRepository.getAllRecords().first()
-
-            allRecords.forEach { record ->
-                val repayments = repaymentRepository.getRepaymentsForRecord(record.id).first()
-                repayments.forEach { repayment ->
-                    try {
-                        val repaymentData = hashMapOf(
-                            "id" to repayment.id,
-                            "recordId" to repayment.recordId,
-                            "amount" to repayment.amount,
-                            "date" to repayment.date,
-                            "description" to repayment.description,
-                            "createdAt" to repayment.createdAt,
-                            "updatedAt" to FieldValue.serverTimestamp()
-                        )
-
-                        firestore.collection("users").document(user.id)
-                            .collection("records").document(repayment.recordId)
-                            .collection("repayments").document(repayment.id)
-                            .set(repaymentData, SetOptions.merge())
-                            .await()
-                    } catch (e: Exception) {
-                        println("Error syncing repayment ${repayment.id}: ${e.message}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            println("Error fetching data for repayments sync: ${e.message}")
-        }
-    }
-
 
     suspend fun syncSingleRecord(recordId: String) {
-        try {
-            val record = recordRepository.getRecordById(recordId)
-            val user = userRepository.getUser()
-
-            try {
-                record?.let { r ->
-                    val recordData = hashMapOf(
-                        "id" to r.id,
-                        "userId" to r.userId,
-                        "contactId" to r.contactId,
-                        "date" to r.date,
-                        "dueDate" to r.dueDate,
-                        "deleted" to r.isDeleted, // Matches @PropertyName
-                        "complete" to r.isComplete, // Matches @PropertyName
-                        "description" to r.description,
-                        "typeId" to r.typeId,
-                        "amount" to r.amount,
-                        "createdAt" to r.createdAt,
-                        "updatedAt" to FieldValue.serverTimestamp()
-                    )
-
-                    firestore.collection("users")
-                        .document(user.id)
-                        .collection("records")
-                        .document(r.id)
-                        .set(recordData, SetOptions.merge())
-                        .await()
-                }
-            } catch (e: Exception) {
-                println("Error syncing record ${record?.id}: ${e.message}")
-            }
-        } catch (e: Exception) {
-            println("Error fetching records for sync: ${e.message}")
-        }
+        val user = userRepository.getUser()
+        if (user.id.isBlank()) return
+        syncSingleRecordByIdReport(user.id, recordId)
     }
-    
+
     suspend fun syncSingleRepayment(repaymentId: String) {
-        try {
-            val repayment = repaymentRepository.getRepaymentById(repaymentId)
-            val user = userRepository.getUser()
-
-            repayment?.let { r ->
-                val repaymentData = hashMapOf(
-                    "id" to r.id,
-                    "recordId" to r.recordId,
-                    "amount" to r.amount,
-                    "date" to r.date,
-                    "description" to r.description,
-                    "createdAt" to r.createdAt,
-                    "updatedAt" to FieldValue.serverTimestamp()
-                )
-
-                firestore.collection("users").document(user.id)
-                    .collection("records").document(r.recordId)
-                    .collection("repayments").document(r.id)
-                    .set(repaymentData, SetOptions.merge())
-                    .await()
-            }
-        } catch (e: Exception) {
-            println("Error syncing single repayment ${repaymentId}: ${e.message}")
-        }
-    }
-
-
-    suspend fun syncUserData() {
-        try {
-            val user = userRepository.getUser()
-            firestore.collection("users")
-                .document(user.id)
-                .set(user, SetOptions.merge()) 
-                .await()
-        } catch (e: Exception) {
-            println("Error syncing user data: ${e.message}")
-        }
+        val user = userRepository.getUser()
+        if (user.id.isBlank()) return
+        syncSingleRepaymentByIdReport(user.id, repaymentId)
     }
 
     suspend fun downloadAndMergeData() {
         try {
             val user = userRepository.getUser()
             if (user.id.isBlank()) {
-                println("User ID is blank. Skipping download.")
+                Log.d(TAG, "User ID is blank. Skipping download.")
                 return
-            } else {
-                if (firebaseAuth.currentUser?.uid != user.id) {
-                    println("Current Firebase Auth user does not match local user. Skipping download.")
-                    return
-                }
+            }
+            if (firebaseAuth.currentUser?.uid != user.id) {
+                Log.d(TAG, "Current Firebase Auth user does not match local user. Skipping download.")
+                return
             }
 
-            // Download contacts
             try {
                 val contactsSnapshot = firestore.collection("users")
                     .document(user.id)
@@ -270,10 +256,11 @@ class SyncRepository @Inject constructor(
                         val firestoreIsDeleted = doc.getBoolean("deleted") ?: false
                         val firestoreCreatedAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
                         val firestoreUpdatedAtTimestamp = doc.getTimestamp("updatedAt")
-                        val firestoreUpdatedAt = firestoreUpdatedAtTimestamp?.toDate()?.time ?: System.currentTimeMillis()
+                        val firestoreUpdatedAt =
+                            firestoreUpdatedAtTimestamp?.toDate()?.time ?: System.currentTimeMillis()
 
                         if (firestoreId.isEmpty()) {
-                            println("Parsed contact from Firestore with empty ID: ${doc.id}, skipping.")
+                            Log.w(TAG, "Parsed contact with empty ID from Firestore doc=${doc.id}, skipping")
                             continue
                         }
 
@@ -291,29 +278,22 @@ class SyncRepository @Inject constructor(
                         val localContact = contactRepository.getContactById(firestoreContact.id)
                         if (localContact == null) {
                             contactRepository.insertContact(firestoreContact)
-                            println("Inserted new contact from Firestore: ${firestoreContact.id}")
-                        } else {
-                            if (firestoreContact.updatedAt > localContact.updatedAt) {
-                                contactRepository.updateContact(firestoreContact)
-                                println("Updated local contact from Firestore: ${firestoreContact.id}")
-                            } else if (localContact.updatedAt > firestoreContact.updatedAt) {
-                                println("Local contact ${localContact.id} is newer. Re-uploading.")
-                                syncSingleContact(localContact.id)
-                            } else {
-                                println("Contact ${localContact.id} timestamps match or already synced.")
-                            }
+                            Log.d(TAG, "Inserted new contact from Firestore: ${firestoreContact.id}")
+                        } else if (firestoreContact.updatedAt > localContact.updatedAt) {
+                            contactRepository.updateContact(firestoreContact)
+                            Log.d(TAG, "Updated local contact from Firestore: ${firestoreContact.id}")
+                        } else if (localContact.updatedAt > firestoreContact.updatedAt) {
+                            Log.d(TAG, "Local contact ${localContact.id} is newer. Re-uploading.")
+                            syncSingleContact(localContact.id)
                         }
-                    } catch (e: Exception) {
-                         println("Error processing contact document ${doc.id}: ${e.message}")
-                         e.printStackTrace()
+                    } catch (error: Exception) {
+                        Log.e(TAG, "Error processing contact document ${doc.id}", error)
                     }
                 }
-            } catch (e: Exception) {
-                println("Error downloading contacts: ${e.message}")
-                e.printStackTrace()
+            } catch (error: Exception) {
+                Log.e(TAG, "Error downloading contacts", error)
             }
 
-            // Download records
             try {
                 val recordsSnapshot = firestore.collection("users")
                     .document(user.id)
@@ -322,7 +302,7 @@ class SyncRepository @Inject constructor(
                     .await()
 
                 for (doc in recordsSnapshot.documents) {
-                   try {
+                    try {
                         val firestoreId = doc.getString("id") ?: ""
                         val firestoreUserId = doc.getString("userId")
                         val firestoreContactId = doc.getString("contactId")
@@ -335,10 +315,11 @@ class SyncRepository @Inject constructor(
                         val firestoreDescription = doc.getString("description")
                         val firestoreCreatedAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
                         val firestoreUpdatedAtTimestamp = doc.getTimestamp("updatedAt")
-                        val firestoreUpdatedAt = firestoreUpdatedAtTimestamp?.toDate()?.time ?: System.currentTimeMillis()
+                        val firestoreUpdatedAt =
+                            firestoreUpdatedAtTimestamp?.toDate()?.time ?: System.currentTimeMillis()
 
                         if (firestoreId.isEmpty()) {
-                            println("Parsed record from Firestore with empty ID: ${doc.id}, skipping.")
+                            Log.w(TAG, "Parsed record with empty ID from Firestore doc=${doc.id}, skipping")
                             continue
                         }
 
@@ -360,63 +341,249 @@ class SyncRepository @Inject constructor(
                         val localRecord = recordRepository.getRecordById(firestoreRecord.id)
                         if (localRecord == null) {
                             recordRepository.insertRecord(firestoreRecord)
-                            println("Inserted new record from Firestore: ${firestoreRecord.id}")
-                        } else {
-                            if (firestoreRecord.updatedAt > localRecord.updatedAt) {
-                                recordRepository.updateRecord(firestoreRecord)
-                                println("Updated local record from Firestore: ${firestoreRecord.id}")
-                            } else if (localRecord.updatedAt > firestoreRecord.updatedAt) {
-                                println("Local record ${localRecord.id} is newer. Re-uploading.")
-                                syncSingleRecord(localRecord.id)
-                            } else {
-                                println("Record ${localRecord.id} timestamps match or already synced.")
-                            }
+                            Log.d(TAG, "Inserted new record from Firestore: ${firestoreRecord.id}")
+                        } else if (firestoreRecord.updatedAt > localRecord.updatedAt) {
+                            recordRepository.updateRecord(firestoreRecord)
+                            Log.d(TAG, "Updated local record from Firestore: ${firestoreRecord.id}")
+                        } else if (localRecord.updatedAt > firestoreRecord.updatedAt) {
+                            Log.d(TAG, "Local record ${localRecord.id} is newer. Re-uploading.")
+                            syncSingleRecord(localRecord.id)
                         }
 
-                        // Download repayments for this record
-                        val repaymentsSnapshot = firestore.collection("users").document(user.id)
-                            .collection("records").document(firestoreId)
-                            .collection("repayments").get().await()
+                        val repaymentsSnapshot = firestore.collection("users")
+                            .document(user.id)
+                            .collection("records")
+                            .document(firestoreId)
+                            .collection("repayments")
+                            .get()
+                            .await()
 
                         for (repaymentDoc in repaymentsSnapshot.documents) {
                             val firestoreRepaymentId = repaymentDoc.getString("id") ?: ""
-                             if (firestoreRepaymentId.isEmpty()) {
-                                println("Parsed repayment from Firestore with empty ID: ${repaymentDoc.id}, skipping.")
+                            if (firestoreRepaymentId.isEmpty()) {
+                                Log.w(TAG, "Parsed repayment with empty ID from Firestore doc=${repaymentDoc.id}, skipping")
                                 continue
                             }
-                            val firestoreRepaymentObject = repaymentDoc.toObject(Repayment::class.java)
+
+                            val firestoreRepaymentObject =
+                                repaymentDoc.toObject(Repayment::class.java)
                             if (firestoreRepaymentObject == null) {
-                                println("Could not parse repayment document ${repaymentDoc.id}, skipping.")
+                                Log.w(TAG, "Could not parse repayment ${repaymentDoc.id}, skipping")
                                 continue
                             }
+
                             val firestoreRepayment = firestoreRepaymentObject.copy(
-                                updatedAt = (repaymentDoc.getTimestamp("updatedAt")?.toDate()?.time ?: System.currentTimeMillis())
+                                updatedAt = repaymentDoc.getTimestamp("updatedAt")
+                                    ?.toDate()
+                                    ?.time
+                                    ?: System.currentTimeMillis()
                             )
-                            
-                            val localRepayment = repaymentRepository.getRepaymentById(firestoreRepaymentId)
+
+                            val localRepayment =
+                                repaymentRepository.getRepaymentById(firestoreRepaymentId)
                             if (localRepayment == null) {
                                 repaymentRepository.insertRepayment(firestoreRepayment)
-                            } else {
-                                if (firestoreRepayment.updatedAt > localRepayment.updatedAt) {
-                                    repaymentRepository.insertRepayment(firestoreRepayment) // insert is upsert (replace)
-                                } else if (localRepayment.updatedAt > firestoreRepayment.updatedAt) {
-                                    syncSingleRepayment(localRepayment.id)
-                                }
+                            } else if (firestoreRepayment.updatedAt > localRepayment.updatedAt) {
+                                repaymentRepository.insertRepayment(firestoreRepayment)
+                            } else if (localRepayment.updatedAt > firestoreRepayment.updatedAt) {
+                                syncSingleRepayment(localRepayment.id)
                             }
                         }
-
-                    } catch (e: Exception) {
-                         println("Error processing record document ${doc.id}: ${e.message}")
-                         e.printStackTrace()
+                    } catch (error: Exception) {
+                        Log.e(TAG, "Error processing record document ${doc.id}", error)
                     }
                 }
-            } catch (e: Exception) {
-                println("Error downloading records: ${e.message}")
-                e.printStackTrace()
+            } catch (error: Exception) {
+                Log.e(TAG, "Error downloading records", error)
             }
-        } catch (e: Exception) {
-            println("Error in downloadAndMergeData: ${e.message}")
-            e.printStackTrace()
+        } catch (error: Exception) {
+            Log.e(TAG, "Error in downloadAndMergeData", error)
         }
+    }
+
+    private suspend fun syncSingleContactByIdReport(userId: String, contactId: String): SyncReport {
+        val contact = contactRepository.getContactById(contactId)
+        return if (contact == null) {
+            SyncReport(
+                attempted = 1,
+                succeeded = 0,
+                failed = 1,
+                failedItems = listOf(
+                    SyncFailureItem(
+                        entityType = SyncEntityType.CONTACT,
+                        entityId = contactId,
+                        reason = "Contact not found locally"
+                    )
+                )
+            )
+        } else {
+            syncSingleContactReport(userId, contact)
+        }
+    }
+
+    private suspend fun syncSingleRecordByIdReport(userId: String, recordId: String): SyncReport {
+        val record = recordRepository.getRecordById(recordId)
+        return if (record == null) {
+            SyncReport(
+                attempted = 1,
+                succeeded = 0,
+                failed = 1,
+                failedItems = listOf(
+                    SyncFailureItem(
+                        entityType = SyncEntityType.RECORD,
+                        entityId = recordId,
+                        reason = "Record not found locally"
+                    )
+                )
+            )
+        } else {
+            syncSingleRecordReport(userId, record)
+        }
+    }
+
+    private suspend fun syncSingleRepaymentByIdReport(
+        userId: String,
+        repaymentId: String
+    ): SyncReport {
+        val repayment = repaymentRepository.getRepaymentById(repaymentId)
+        return if (repayment == null) {
+            SyncReport(
+                attempted = 1,
+                succeeded = 0,
+                failed = 1,
+                failedItems = listOf(
+                    SyncFailureItem(
+                        entityType = SyncEntityType.REPAYMENT,
+                        entityId = repaymentId,
+                        reason = "Repayment not found locally"
+                    )
+                )
+            )
+        } else {
+            syncSingleRepaymentReport(userId, repayment)
+        }
+    }
+
+    private suspend fun syncSingleContactReport(userId: String, contact: Contact): SyncReport {
+        return try {
+            val contactData = hashMapOf(
+                "id" to contact.id,
+                "name" to contact.name,
+                "phone" to contact.phone,
+                "userId" to contact.userId,
+                "contactId" to contact.contactId,
+                "deleted" to contact.isDeleted,
+                "createdAt" to contact.createdAt,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+
+            firestore.collection("users")
+                .document(userId)
+                .collection("contacts")
+                .document(contact.id)
+                .set(contactData, SetOptions.merge())
+                .await()
+
+            SyncReport(attempted = 1, succeeded = 1, failed = 0)
+        } catch (error: Exception) {
+            Log.e(TAG, "Error syncing contact ${contact.id}", error)
+            SyncReport(
+                attempted = 1,
+                succeeded = 0,
+                failed = 1,
+                failedItems = listOf(
+                    SyncFailureItem(
+                        entityType = SyncEntityType.CONTACT,
+                        entityId = contact.id,
+                        reason = error.message
+                    )
+                )
+            )
+        }
+    }
+
+    private suspend fun syncSingleRecordReport(userId: String, record: Record): SyncReport {
+        return try {
+            val recordData = hashMapOf(
+                "id" to record.id,
+                "userId" to record.userId,
+                "contactId" to record.contactId,
+                "date" to record.date,
+                "dueDate" to record.dueDate,
+                "deleted" to record.isDeleted,
+                "complete" to record.isComplete,
+                "description" to record.description,
+                "typeId" to record.typeId,
+                "amount" to record.amount,
+                "createdAt" to record.createdAt,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+
+            firestore.collection("users")
+                .document(userId)
+                .collection("records")
+                .document(record.id)
+                .set(recordData, SetOptions.merge())
+                .await()
+
+            SyncReport(attempted = 1, succeeded = 1, failed = 0)
+        } catch (error: Exception) {
+            Log.e(TAG, "Error syncing record ${record.id}", error)
+            SyncReport(
+                attempted = 1,
+                succeeded = 0,
+                failed = 1,
+                failedItems = listOf(
+                    SyncFailureItem(
+                        entityType = SyncEntityType.RECORD,
+                        entityId = record.id,
+                        reason = error.message
+                    )
+                )
+            )
+        }
+    }
+
+    private suspend fun syncSingleRepaymentReport(userId: String, repayment: Repayment): SyncReport {
+        return try {
+            val repaymentData = hashMapOf(
+                "id" to repayment.id,
+                "recordId" to repayment.recordId,
+                "amount" to repayment.amount,
+                "date" to repayment.date,
+                "description" to repayment.description,
+                "createdAt" to repayment.createdAt,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+
+            firestore.collection("users")
+                .document(userId)
+                .collection("records")
+                .document(repayment.recordId)
+                .collection("repayments")
+                .document(repayment.id)
+                .set(repaymentData, SetOptions.merge())
+                .await()
+
+            SyncReport(attempted = 1, succeeded = 1, failed = 0)
+        } catch (error: Exception) {
+            Log.e(TAG, "Error syncing repayment ${repayment.id}", error)
+            SyncReport(
+                attempted = 1,
+                succeeded = 0,
+                failed = 1,
+                failedItems = listOf(
+                    SyncFailureItem(
+                        entityType = SyncEntityType.REPAYMENT,
+                        entityId = repayment.id,
+                        reason = error.message
+                    )
+                )
+            )
+        }
+    }
+
+    companion object {
+        private const val TAG = "SyncRepository"
     }
 }
