@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,10 +14,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -31,19 +35,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-// import androidx.compose.ui.res.colorResource // No longer needed
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aspiring_creators.aichopaicho.R
-import com.aspiring_creators.aichopaicho.ui.component.ButtonComponent
 import com.aspiring_creators.aichopaicho.ui.component.LogoTopBar
 import com.aspiring_creators.aichopaicho.ui.component.SnackbarComponent // Assuming SnackbarComponent is used by snackbarHostState
-import com.aspiring_creators.aichopaicho.ui.component.TextComponent
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme // Added for Preview
 import com.aspiring_creators.aichopaicho.viewmodel.PermissionViewModel
 import kotlinx.coroutines.launch
@@ -99,56 +100,58 @@ fun PermissionScreen(
     }
 
     Scaffold(
-        snackbarHost = {
-            // Use your themed SnackbarComponent if you have one, or stick to Material's SnackbarHost
-            // For this example, assuming SnackbarComponent is set up to be themed
-            SnackbarComponent(snackbarHostState = snackbarHostState)
-        }
+        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
     ) { paddingValues ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp), // Added overall padding
-            color = MaterialTheme.colorScheme.background // Use theme background
+                .padding(paddingValues),
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 20.dp, vertical = 28.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 LogoTopBar(
-                    logo = R.drawable.logo_contacts, // Consider a theme-able icon if needed
+                    logo = R.drawable.logo_contacts,
                     title = stringResource(R.string.allow_contact_access)
                 )
 
-                Spacer(modifier = Modifier.size(60.dp)) // Adjusted Spacing
+                Spacer(modifier = Modifier.size(28.dp))
 
-                TextComponent(
-                    value = stringResource(R.string.ask_contact_access),
-                    textSize = 24.sp, // Adjusted size
+                Text(
+                    text = stringResource(R.string.ask_contact_access),
+                    style = MaterialTheme.typography.titleLarge,
                     textAlign = TextAlign.Center,
-                    lineHeight = 30.sp
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Spacer(modifier = Modifier.size(60.dp)) // Adjusted Spacing
+                Spacer(modifier = Modifier.size(12.dp))
+
+                Text(
+                    text = stringResource(R.string.contact_privacy_note),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.size(20.dp))
 
                 uiState.errorMessage?.let { error ->
                     Text(
                         text = error,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(bottom = 16.dp), // Add padding below error
+                        style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center
                     )
+                    Spacer(modifier = Modifier.size(12.dp))
                 }
 
-                ButtonComponent(
-                    logo = R.drawable.logo_contacts, // Icon for contacts
-                    text = if (contactsPermissionGranted) stringResource(R.string.permission_granted) else stringResource(
-                        R.string.grant_contact_access
-                    ),
+                Button(
                     onClick = {
                         when {
                             contactsPermissionGranted -> {
@@ -166,14 +169,33 @@ fun PermissionScreen(
                         }
                     },
                     enabled = !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth(0.8f) // Consistent button width
-                )
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                        disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    )
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo_contacts),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.size(10.dp))
+                    Text(
+                        text = if (contactsPermissionGranted)
+                            stringResource(R.string.permission_granted)
+                        else
+                            stringResource(R.string.grant_contact_access),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
 
-                Spacer(modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.size(12.dp))
 
-                ButtonComponent(
-                    logo = R.drawable.logo_skip, // Icon for skip
-                    text = stringResource(R.string.skip_for_now),
+                OutlinedButton(
                     onClick = {
                         scope.launch {
                             snackbarHostState.showSnackbar(context.getString(R.string.grant_permission_later))
@@ -184,20 +206,18 @@ fun PermissionScreen(
                         }
                     },
                     enabled = !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth(0.8f) // Consistent button width
-                )
-
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.skip_for_now),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
 
                 if (uiState.isLoading) {
-                    Spacer(modifier = Modifier.size(24.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) // Use theme primary
-                    }
+                    Spacer(modifier = Modifier.size(20.dp))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
         }

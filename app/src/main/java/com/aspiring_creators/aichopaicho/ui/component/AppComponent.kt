@@ -40,9 +40,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -51,12 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
-
-val crimsonTextFamily = FontFamily(
-    Font(R.font.crimson_regular, FontWeight.Normal),
-    Font(R.font.crimson_bold, FontWeight.Bold),
-    Font(R.font.crimson_italic, FontWeight.Normal, FontStyle.Italic)
-)
 
 @Composable
 fun LogoTopBar(logo: Int, title: String) {
@@ -77,7 +68,6 @@ fun LogoTopBar(logo: Int, title: String) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
-            fontFamily = crimsonTextFamily,
             color = MaterialTheme.colorScheme.onSurface
         )
     }
@@ -104,7 +94,6 @@ fun TextComponent(
     Text(
         text = value,
         modifier = modifier.padding(8.dp),
-        fontFamily = crimsonTextFamily,
         color = color,
         style = style,
         textAlign = textAlign,
@@ -170,7 +159,6 @@ fun ButtonComponent(
                 Text(
                     text = text,
                     style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp),
-                    fontFamily = crimsonTextFamily,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -214,7 +202,6 @@ fun QuickActionButton(
             Text(
                 text = text,
                 textAlign = TextAlign.Center,
-                fontFamily = crimsonTextFamily,
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 maxLines = 2
             )
@@ -305,7 +292,7 @@ fun LoadingContextPreview() {
 
 @Composable
  fun NotSignedInContent(
-    onSignOut: (() -> Unit)?
+    onSignInClick: (() -> Unit)?
 ) {
     Box(
         modifier = Modifier
@@ -315,7 +302,7 @@ fun LoadingContextPreview() {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
                 text = stringResource(R.string.not_signed_in),
@@ -323,11 +310,17 @@ fun LoadingContextPreview() {
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
-            onSignOut?.let { signOut ->
+            Text(
+                text = stringResource(R.string.sign_in_to_backup),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            onSignInClick?.let { signIn ->
                 ButtonComponent(
                     logo = R.drawable.logo_sign_in,
                     text = stringResource(R.string.go_to_sign_in),
-                    onClick = signOut
+                    onClick = signIn
                 )
             }
         }
@@ -338,7 +331,7 @@ fun LoadingContextPreview() {
 @Composable
 fun NotSignedInContentPreview() {
     AichoPaichoTheme {
-        NotSignedInContent(onSignOut = {})
+        NotSignedInContent(onSignInClick = {})
     }
 }
 
@@ -358,8 +351,7 @@ fun LabelComponent(
             text = text,
             modifier = Modifier.padding(contentPadding),
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            fontFamily = crimsonTextFamily
+            fontWeight = FontWeight.Bold
         )
     }
 }

@@ -3,6 +3,7 @@
     <string name="web_client" translatable="false">105880179467-riu4tm6vme03n75g57bib742gcdpls05.apps.googleusercontent.com</string>
     <string name="description">Description</string>
     <string name="ask_contact_access">Give us access to your contacts to quickly add friends and family when you record a transaction. We never store or share your information.</string>
+    <string name="contact_privacy_note">We only use your contacts to pick who you transacted with. No other contact data is read or synced to the server.</string>
     <string name="allow_contact_access">Allow Contact Access</string>
     <string name="Version_number">1.0.0</string>
     <string name="sign_in_google">Sign in with Google</string>
@@ -13,7 +14,7 @@
     <string name="select_contact">Select Contact</string>
     <string name="search_contacts">Search contacts</string>
     <string name="search">Search</string>
-    <string name="loading_contacts">Loading contacts...</string>
+    <string name="loading_contacts">Loading contacts…</string>
     <string name="failed_load_contacts">Failed to load contacts</string>
     <string name="no_contacts_matching">No contacts found matching \"%1$s\"</string>
     <string name="no_contacts">No contacts found on device.</string>
@@ -149,4 +150,12 @@
     <string name="transaction_not_found">Transaction not found or could not be loaded.</string>
     <string name="no_transactions_match">No transactions match your filters.</string>
     <string name="never_forget_a_loan_or_a_debt">Never forget a loan or a debt</string>
+    <string name="welcome_subtitle">Track what you lent and borrowed with clarity.</string>
+    <string name="welcome_sign_in_benefit_title">Sign in to protect your data</string>
+    <string name="welcome_sign_in_benefit_body">Sync your records across devices and keep a secure backup.</string>
+    <string name="welcome_local_only_note">Your data stays on this device unless you sign in.</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="skip_sign_in_note">You can sign in later from Settings to back up and sync.</string>
+    <string name="sign_in_to_backup_your_data_without_loss">You are currently offline. Sign in to securely back up your data and access it from any device without loss.</string>
+    <string name="go_to_settings_to_sign_in">Go to Settings to Sign In</string>
 </resources>

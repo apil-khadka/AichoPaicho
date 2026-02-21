@@ -32,7 +32,7 @@ class DashboardScreenViewModel @Inject constructor(
 
     private val authStateListener = FirebaseAuth.AuthStateListener {
         // Auth state changed, re-evaluate everything.
-        refreshUiState()
+        refresh()
     }
 
     init {
@@ -46,7 +46,7 @@ class DashboardScreenViewModel @Inject constructor(
         firebaseAuth.removeAuthStateListener(authStateListener)
     }
 
-    private fun refreshUiState() {
+    fun refresh() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             try {

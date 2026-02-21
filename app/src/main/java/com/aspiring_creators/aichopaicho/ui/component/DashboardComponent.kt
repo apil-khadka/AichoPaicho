@@ -42,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
@@ -242,6 +244,32 @@ fun DashboardContent(
         modifier = Modifier.fillMaxWidth()
     ) {
         UserDashboardToast(uiState)
+
+        // NEW SECTION FOR OFFLINE USER MESSAGE
+        if (uiState.user?.isOffline == true && uiState.isSignedIn == false) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.sign_in_to_backup_your_data_without_loss),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                onNavigateToSettings?.let { navigate ->
+                    TextButton(onClick = navigate) {
+                        Text(stringResource(R.string.go_to_settings_to_sign_in))
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        // END NEW SECTION
+
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = stringResource(R.string.quick_actions),
@@ -365,19 +393,6 @@ fun NetBalanceCard(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Minimized view details
-                    Column(horizontalAlignment = Alignment.End) {
-                         Text(
-                             text = stringResource(R.string.lent) + ": " + summary.totalLent.toInt(),
-                             style = MaterialTheme.typography.labelMedium,
-                             color = MaterialTheme.colorScheme.primary
-                         )
-                         Text(
-                             text = stringResource(R.string.borrowed) + ": " + summary.totalBorrowed.toInt(),
-                             style = MaterialTheme.typography.labelMedium,
-                             color = MaterialTheme.colorScheme.error
-                         )
-                    }
 
                     Spacer(modifier = Modifier.width(12.dp))
                     Icon(

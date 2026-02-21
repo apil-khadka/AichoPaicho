@@ -5,20 +5,31 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.User // For Preview
 import com.aspiring_creators.aichopaicho.data.entity.UserRecordSummary
@@ -40,8 +51,21 @@ fun DashboardScreen(
     onNavigateToContactList: (String) -> Unit,
     dashboardScreenViewModel: DashboardScreenViewModel = hiltViewModel()
 ) {
-    val uiState by dashboardScreenViewModel.uiState.collectAsState()
+    val uiState by dashboardScreenViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                dashboardScreenViewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // Handles general screen errors via Snackbar
     LaunchedEffect(uiState.errorMessage) {
@@ -52,6 +76,31 @@ fun DashboardScreen(
     }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
+                actions = {
+                    onNavigateToSettings?.let { navigate ->
+                        IconButton(onClick = navigate) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = stringResource(R.string.settings),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        },
         snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
     ) { paddingValues ->
         Surface(
@@ -80,7 +129,7 @@ fun DashboardScreen(
                             LoadingContent(text = stringResource(R.string.loading_dashboard))
                         }
                         uiState.user == null -> {
-                            NotSignedInContent(onSignOut = onSignOut)
+                            NotSignedInContent(onSignInClick = onNavigateToSettings)
                         }
                         else -> {
                             DashboardContent(

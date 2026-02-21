@@ -129,7 +129,7 @@ class ViewTransactionViewModel @Inject constructor(
         val currentState = _uiState.value
         return records.filter { recordWithRepayments ->
             // Filter by completion status
-            if (!currentState.showCompleted && recordWithRepayments.isSettled) return@filter false
+            if (currentState.showCompleted && !recordWithRepayments.isSettled) return@filter false
 
             // Filter by type
             currentState.selectedType?.let { typeId ->
