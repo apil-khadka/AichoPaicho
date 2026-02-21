@@ -11,11 +11,11 @@ plugins {
 }
 
 android {
-    namespace = "com.nyxigale.aichopaicho"
+    namespace = "dev.nyxigale.aichopaicho"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.nyxigale.aichopaicho"
+        applicationId = "dev.nyxigale.aichopaicho"
         minSdk = 26
         targetSdk = 36
         versionCode = 2

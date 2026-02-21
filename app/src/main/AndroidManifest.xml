@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.aspiring_creators.aichopaicho"
+    package="dev.nyxigale.aichopaicho"
     android:versionCode="1"
     android:versionName="1.0"
 
@@ -13,7 +13,7 @@
     </queries>
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <application
-        android:name="com.aspiring_creators.dev.nyxigale.aichopaicho.AichoPaichoApp"
+        android:name="dev.nyxigale.aichopaicho.AichoPaichoApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -23,7 +23,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AichoPaicho">
         <activity
-            android:name="com.aspiring_creators.dev.nyxigale.aichopaicho.MainActivity"
+            android:name="dev.nyxigale.aichopaicho.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.AichoPaicho">
             <intent-filter>

@@ -92,7 +92,7 @@ To use online synchronization features (Firebase Firestore and Authentication), 
 
 *   **Create a Firebase Project**: Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
 *   **Add an Android App**: Within your Firebase project, add a new Android app.
-    *   Use `com.aspiring_creators.aichopaicho` as the package name.
+    *   Use `dev.nyxigale.aichopaicho` as the package name.
     *   You can skip the SHA-1 certificate hash for now if you are just testing, or add it if you intend to use Google Sign-In.
 *   **Download `google-services.json`**: After registering the app, download the `google-services.json` file.
 *   **Place `google-services.json`**: Copy the downloaded `google-services.json` file into the `app/` directory of your Android Studio project (e.g., `AichoPaicho/app/google-services.json`).

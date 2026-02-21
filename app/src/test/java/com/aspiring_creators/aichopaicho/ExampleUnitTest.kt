@@ -1,4 +1,4 @@
-package com.aspiring_creators.aichopaicho
+package dev.nyxigale.aichopaicho
 
 import org.junit.Test
 
