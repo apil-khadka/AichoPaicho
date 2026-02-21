@@ -63,6 +63,7 @@ import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.error
+import coil3.request.placeholder
 import dev.nyxigale.aichopaicho.AppPreferenceUtils
 import dev.nyxigale.aichopaicho.R
 import dev.nyxigale.aichopaicho.data.entity.*
