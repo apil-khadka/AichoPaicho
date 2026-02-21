@@ -8,12 +8,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.DateRange
@@ -32,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -215,9 +217,6 @@ fun TransactionTopBar(
         ) {
             DateRangePicker(
                 state = dateRangePickerState,
-                // You can also customize DateRangePicker colors if needed,
-                // often the dialog colors are enough.
-                // colors = DatePickerDefaults.colors(...)
                 title = {
                     Text(
                         text = stringResource(R.string.select_date_range),
@@ -371,83 +370,100 @@ fun TransactionFilterSection(
     showCompleted: Boolean,
     onShowCompletedChanged: (Boolean) -> Unit
 ) {
+    val fromAmount = fromQuery.toDoubleOrNull()
+    val toAmount = moneyToQuery.toDoubleOrNull()
+    val fromError = fromQuery.isNotBlank() && fromAmount == null
+    val toError = moneyToQuery.isNotBlank() && toAmount == null
+    val rangeError = fromAmount != null && toAmount != null && fromAmount > toAmount
+    val hasAmountError = fromError || toError || rangeError
     var expanded by remember { mutableStateOf(false) }
+    val summary = buildString {
+        when (selectedType) {
+            TypeConstants.LENT_ID -> append("${stringResource(R.string.lent)} • ")
+            TypeConstants.BORROWED_ID -> append("${stringResource(R.string.borrowed)} • ")
+        }
+        if (fromQuery.isNotBlank()) append("${stringResource(R.string.from)} $fromQuery • ")
+        if (moneyToQuery.isNotBlank()) append("${stringResource(R.string.to)} $moneyToQuery • ")
+        if (showCompleted) append("${stringResource(R.string.show_completed)} • ")
+    }.removeSuffix(" • ").trim()
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .animateContentSize(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            // Compact header: label + filter button
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded }
-                    .padding(vertical = 6.dp),
+                    .clickable { expanded = !expanded },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.List,
-                        contentDescription = "Filter",
+                        contentDescription = stringResource(R.string.filter),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.filter),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    // brief summary of active filters in single line (compact)
-                    val summary = buildString {
-                        if (selectedType == TypeConstants.LENT_ID) append("• ${stringResource(R.string.lent)} ")
-                        else if (selectedType == TypeConstants.BORROWED_ID) append("• ${stringResource(R.string.borrowed)} ")
-                        if (fromQuery.isNotBlank()) append("• ${stringResource(R.string.from)}=$fromQuery ")
-                        if (moneyToQuery.isNotBlank()) append("• ≤ $moneyToQuery")
-                        if (showCompleted) append(" • ${stringResource(R.string.completed)}")
-                    }
-                    if (summary.isNotEmpty()) {
-                        Text(
-                            text = summary.trim(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = {
+                        onTypeSelected(null)
+                        onFromQueryChanged("")
+                        onMoneyToQueryChanged("")
+                        onShowCompletedChanged(false)
+                    }) {
+                        Text(stringResource(R.string.clear))
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        modifier = Modifier.rotate(if (expanded) 90f else 0f),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
-                    modifier = Modifier.rotate(if (expanded) 90f else 0f)
+            if (summary.isNotEmpty()) {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Expanded area (compact controls)
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
                 exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 6.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Type chips + small actions (horizontal & compact)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = stringResource(R.string.type),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        FilterChip(
+                            selected = selectedType == null,
+                            onClick = { onTypeSelected(null) },
+                            label = { Text(stringResource(R.string.all)) },
+                            modifier = Modifier.weight(1f)
+                        )
                         FilterChip(
                             selected = selectedType == TypeConstants.LENT_ID,
                             onClick = { onTypeSelected(if (selectedType == TypeConstants.LENT_ID) null else TypeConstants.LENT_ID) },
@@ -460,19 +476,14 @@ fun TransactionFilterSection(
                             label = { Text(TypeConstants.TYPE_BORROWED) },
                             modifier = Modifier.weight(1f)
                         )
-
-                        // small clear button
-                            TextButton(onClick = {
-                                onTypeSelected(null)
-                                onFromQueryChanged("")
-                                onMoneyToQueryChanged("")
-                                onShowCompletedChanged(false)
-                            }) {
-                                Text(stringResource(R.string.clear), style = MaterialTheme.typography.bodySmall)
-                            }
                     }
 
-                    // Amount + From fields arranged compactly
+                    Text(
+                        text = stringResource(R.string.amount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -482,6 +493,13 @@ fun TransactionFilterSection(
                             onValueChange = onFromQueryChanged,
                             label = { Text(stringResource(R.string.from)) },
                             singleLine = true,
+                            isError = fromError || rangeError,
+                            supportingText = {
+                                if (fromError) {
+                                    Text(stringResource(R.string.amount_enter_number))
+                                }
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f)
                         )
                         OutlinedTextField(
@@ -489,35 +507,43 @@ fun TransactionFilterSection(
                             onValueChange = onMoneyToQueryChanged,
                             label = { Text(stringResource(R.string.to)) },
                             singleLine = true,
+                            isError = toError || rangeError,
+                            supportingText = {
+                                if (toError) {
+                                    Text(stringResource(R.string.amount_enter_number))
+                                }
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f)
                         )
-                        // Apply button
-                        FilledTonalButton(
-                            onClick = { onMoneyFilterApplyClicked() },
-                            modifier = Modifier.height(56.dp)
-                        ) {
-                            Text(stringResource(R.string.apply))
-                        }
                     }
 
-                    // Show completed toggle in a compact row
+                    if (rangeError) {
+                        Text(
+                            text = stringResource(R.string.amount_invalid_range),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Switch(
-                                checked = showCompleted,
-                                onCheckedChange = onShowCompletedChanged,
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                            Text(stringResource(R.string.show_completed))
-                        }
-
-                        // collapse button
-                        TextButton(onClick = { expanded = false }) {
-                            Text(stringResource(R.string.done))
+                        FilterChip(
+                            selected = showCompleted,
+                            onClick = { onShowCompletedChanged(!showCompleted) },
+                            label = { Text(stringResource(R.string.show_completed)) }
+                        )
+                        FilledTonalButton(
+                            onClick = {
+                                onMoneyFilterApplyClicked()
+                                expanded = false
+                            },
+                            enabled = !hasAmountError
+                        ) {
+                            Text(stringResource(R.string.apply))
                         }
                     }
                 }
@@ -537,8 +563,11 @@ fun TransactionCard(
 ) {
     val record = recordWithRepayments.record
     val dateFormatter = remember { SimpleDateFormat("dd/M/yy", Locale.getDefault()) }
+    val dueFormatter = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
     val isLent = record.typeId == TypeConstants.LENT_ID
     val accent = if (isLent) Color(0xFF2E7D32) else Color(0xFFC62828)
+    val now = System.currentTimeMillis()
+    val isOverdue = record.dueDate != null && record.dueDate < now && !recordWithRepayments.isSettled
 
     Card(
         modifier = Modifier
@@ -608,6 +637,19 @@ fun TransactionCard(
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                record.dueDate?.let { due ->
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (isOverdue) {
+                            "${stringResource(R.string.overdue)} ${dueFormatter.format(Date(due))}"
+                        } else {
+                            "${stringResource(R.string.due)} ${dueFormatter.format(Date(due))}"
+                        },
+                        fontSize = 12.sp,
+                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -662,7 +704,20 @@ fun TransactionFilterSectionPreview() {
 @Preview(showBackground = true, widthDp = 360)
 @Composable
 fun TransactionCardPreview() {
-    val sampleRecord = Record("","","89474dfsdf-dfsdf",1,2323,System.currentTimeMillis(),false,false,"",0,0)
+    val sampleRecord = Record(
+        id = "sample",
+        userId = "",
+        contactId = "89474dfsdf-dfsdf",
+        typeId = 1,
+        amount = 2323,
+        date = System.currentTimeMillis(),
+        dueDate = null,
+        isComplete = false,
+        isDeleted = false,
+        description = "",
+        createdAt = 0,
+        updatedAt = 0
+    )
     val sampleRecordWithRepayments = RecordWithRepayments(sampleRecord, emptyList())
     TransactionCard(
         recordWithRepayments = sampleRecordWithRepayments,

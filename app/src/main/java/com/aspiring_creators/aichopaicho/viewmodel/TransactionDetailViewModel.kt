@@ -131,6 +131,14 @@ class TransactionDetailViewModel @Inject constructor(
         }
     }
 
+    fun updateDueDate(dueDate: Long?) {
+        _uiState.value.recordWithRepayments?.let {
+            _uiState.value = _uiState.value.copy(
+                recordWithRepayments = it.copy(record = it.record.copy(dueDate = dueDate, updatedAt = System.currentTimeMillis()))
+            )
+        }
+    }
+
     fun saveRecord() {
         _uiState.value.recordWithRepayments?.record?.let { record ->
             viewModelScope.launch {

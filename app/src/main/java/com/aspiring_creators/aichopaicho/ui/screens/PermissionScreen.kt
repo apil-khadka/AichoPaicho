@@ -116,108 +116,105 @@ fun PermissionScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                LogoTopBar(
-                    logo = R.drawable.logo_contacts,
-                    title = stringResource(R.string.allow_contact_access)
-                )
-
-                Spacer(modifier = Modifier.size(28.dp))
-
-                Text(
-                    text = stringResource(R.string.ask_contact_access),
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.size(12.dp))
-
-                Text(
-                    text = stringResource(R.string.contact_privacy_note),
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.size(20.dp))
-
-                uiState.errorMessage?.let { error ->
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
+                if (contactsPermissionGranted) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                } else {
+                    LogoTopBar(
+                        logo = R.drawable.logo_contacts,
+                        title = stringResource(R.string.allow_contact_access)
                     )
-                    Spacer(modifier = Modifier.size(12.dp))
-                }
 
-                Button(
-                    onClick = {
-                        when {
-                            contactsPermissionGranted -> {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.contacts_permission_already_granted))
-                                    val result = permissionViewModel.grantPermissionAndProceed()
-                                    if (result.isSuccess) {
-                                        onNavigateToDashboard()
-                                    }
+                    Spacer(modifier = Modifier.size(28.dp))
+
+                    Text(
+                        text = stringResource(R.string.ask_contact_access),
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.size(12.dp))
+
+                    Text(
+                        text = stringResource(R.string.contact_privacy_note),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.size(8.dp))
+
+                    Text(
+                        text = stringResource(R.string.contact_sync_requires_sign_in),
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Spacer(modifier = Modifier.size(20.dp))
+
+                    uiState.errorMessage?.let { error ->
+                        Text(
+                            text = error,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.size(12.dp))
+                    }
+
+                    Button(
+                        onClick = {
+                            requestPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                        },
+                        enabled = !uiState.isLoading,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        )
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo_contacts),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.size(10.dp))
+                        Text(
+                            text = stringResource(R.string.grant_contact_access),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.size(12.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(context.getString(R.string.grant_permission_later))
+                                val result = permissionViewModel.skipPermissionAndProceed()
+                                if (result.isSuccess) {
+                                    onNavigateToDashboard()
                                 }
                             }
-                            else -> {
-                                requestPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                            }
-                        }
-                    },
-                    enabled = !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
-                        disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                    )
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo_contacts),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.size(10.dp))
-                    Text(
-                        text = if (contactsPermissionGranted)
-                            stringResource(R.string.permission_granted)
-                        else
-                            stringResource(R.string.grant_contact_access),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
+                        },
+                        enabled = !uiState.isLoading,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.skip_for_now),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
 
-                Spacer(modifier = Modifier.size(12.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(context.getString(R.string.grant_permission_later))
-                            val result = permissionViewModel.skipPermissionAndProceed()
-                            if (result.isSuccess) {
-                                onNavigateToDashboard()
-                            }
-                        }
-                    },
-                    enabled = !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.skip_for_now),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-
-                if (uiState.isLoading) {
-                    Spacer(modifier = Modifier.size(20.dp))
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    if (uiState.isLoading) {
+                        Spacer(modifier = Modifier.size(20.dp))
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
         }

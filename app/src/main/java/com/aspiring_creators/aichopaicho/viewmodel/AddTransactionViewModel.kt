@@ -75,6 +75,7 @@ class AddTransactionViewModel @Inject constructor(
                 contactId = contactToSave.id,
                 amount = uiState.value.amount!!,
                 date = uiState.value.date!!,
+                dueDate = uiState.value.dueDate,
                 description = uiState.value.description
             )
             recordRepository.upsert(recordToSave)
@@ -89,7 +90,8 @@ class AddTransactionViewModel @Inject constructor(
                     // Clear the form fields
                     contact = null,
                     amount = null,
-                    description = null
+                    description = null,
+                    dueDate = null
                     // Note: We keep type and date as they might want to add similar transactions
                 )
             }
@@ -129,6 +131,13 @@ class AddTransactionViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     date = event.date,
                     // Clear any previous success/error states when user starts new input
+                    submissionSuccessful = false,
+                    errorMessage = null
+                )
+            }
+            is AddTransactionUiEvents.DueDateEntered -> {
+                _uiState.value = _uiState.value.copy(
+                    dueDate = event.dueDate,
                     submissionSuccessful = false,
                     errorMessage = null
                 )

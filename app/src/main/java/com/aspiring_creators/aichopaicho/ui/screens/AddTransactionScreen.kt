@@ -49,6 +49,9 @@ import androidx.compose.material3.IconButton // Added for back button
 import androidx.compose.material3.OutlinedButton // Added for Cancel button
 import androidx.compose.material3.ButtonDefaults // Added for Cancel button theming
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.aspiring_creators.aichopaicho.R
@@ -117,6 +120,36 @@ fun AddTransactionScreen(
                         textSize = 24.sp,
 
                     )
+                }
+
+                if (uiState.errorMessage != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        ),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(
+                            text = uiState.errorMessage ?: "",
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                } else if (uiState.submissionSuccessful) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(
+                            text = stringResource(R.string.transaction_added_successfully),
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
 
                 // Type
@@ -192,6 +225,34 @@ fun AddTransactionScreen(
                         initializeWithCurrentDate = true,
                         modifier = Modifier.weight(1f)
                     )
+                }
+
+                // Due Date (Optional)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    LabelComponent(text = stringResource(R.string.due_date))
+                    Spacer(modifier = Modifier.size(16.dp))
+                    DateInputField(
+                        label = stringResource(R.string.due_date_optional),
+                        selectedDate = uiState.dueDate,
+                        onDateSelected = { date ->
+                            addTransactionViewModel.onEvent(
+                                AddTransactionUiEvents.DueDateEntered(date)
+                            )
+                        },
+                        initializeWithCurrentDate = false,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                if (uiState.dueDate != null) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(
+                            onClick = {
+                                addTransactionViewModel.onEvent(AddTransactionUiEvents.DueDateEntered(null))
+                            }
+                        ) {
+                            Text(stringResource(R.string.clear_due_date))
+                        }
+                    }
                 }
 
                 // Description

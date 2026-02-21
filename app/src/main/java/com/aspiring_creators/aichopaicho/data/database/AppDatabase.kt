@@ -29,7 +29,7 @@ import com.aspiring_creators.aichopaicho.data.local.ScreenViewDao
         Repayment::class
     ],
     views = [UserRecordSummary::class],
-    version = 3, // Incremented version for schema change
+    version = 4, // Incremented version for schema change
     exportSchema = false
 )
 @TypeConverters(Converters::class)

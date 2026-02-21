@@ -12,6 +12,7 @@ AichoPaicho is an Android application designed to help users manage personal rec
     *   Create, view, update, and delete contacts.
     *   Store contact details like name and phone numbers.
     *   Link contacts to a user account.
+    *   Contact data is stored locally and may be synced to Firestore when backup/sync is enabled.
 *   **Record Tracking**:
     *   Log records/transactions with details such as type, amount, date, description, and completion status.
     *   Associate records with specific contacts.

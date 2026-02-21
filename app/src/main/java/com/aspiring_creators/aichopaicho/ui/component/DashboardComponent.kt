@@ -75,6 +75,10 @@ import com.aspiring_creators.aichopaicho.data.entity.User
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
 import com.aspiring_creators.aichopaicho.viewmodel.data.ContactPreview
 import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState
+import com.aspiring_creators.aichopaicho.viewmodel.data.UpcomingDueItem
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun UserProfileImage(
@@ -325,6 +329,9 @@ fun DashboardContent(
                     .padding(horizontal = 16.dp)
             )
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        UpcomingDueCard(items = uiState.upcomingDue)
     }
 }
 
@@ -551,6 +558,80 @@ fun BalanceItemExtended(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         onContainerColor = MaterialTheme.colorScheme.onTertiaryContainer
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun UpcomingDueCard(items: List<UpcomingDueItem>) {
+    val context = LocalContext.current
+    val dueFormatter = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
+    val now = System.currentTimeMillis()
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.upcoming_due),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            if (items.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.no_upcoming_due),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                items.forEach { item ->
+                    val isOverdue = item.dueDate < now
+                    val amountPrefix = if (item.typeId == TypeConstants.LENT_ID) "+" else "-"
+                    val amountColor = if (item.typeId == TypeConstants.LENT_ID) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = item.contactName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = if (isOverdue) {
+                                    "${stringResource(R.string.overdue)} ${dueFormatter.format(Date(item.dueDate))}"
+                                } else {
+                                    "${stringResource(R.string.due)} ${dueFormatter.format(Date(item.dueDate))}"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                        Text(
+                            text = "$amountPrefix ${AppPreferenceUtils.getCurrencySymbol(context)} ${item.amount}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = amountColor
+                        )
+                    }
                 }
             }
         }

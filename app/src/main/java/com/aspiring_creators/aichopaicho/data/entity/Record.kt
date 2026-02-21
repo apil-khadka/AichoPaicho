@@ -22,6 +22,7 @@ data class Record(
     val typeId: Int,
     val amount: Int,
     val date: Long,
+    val dueDate: Long? = null,
     @get:PropertyName("complete")
     val isComplete: Boolean = false,
     @get:PropertyName("deleted")
@@ -38,6 +39,7 @@ data class Record(
         typeId = 0,
         amount = 0,
         date = 0L,
+        dueDate = null,
         isComplete = false,
         isDeleted = false,
         description = null,

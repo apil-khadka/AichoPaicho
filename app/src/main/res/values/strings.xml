@@ -2,8 +2,9 @@
     <string name="app_name">AichoPaicho</string>
     <string name="web_client" translatable="false">105880179467-riu4tm6vme03n75g57bib742gcdpls05.apps.googleusercontent.com</string>
     <string name="description">Description</string>
-    <string name="ask_contact_access">Give us access to your contacts to quickly add friends and family when you record a transaction. We never store or share your information.</string>
-    <string name="contact_privacy_note">We only use your contacts to pick who you transacted with. No other contact data is read or synced to the server.</string>
+    <string name="ask_contact_access">Give us access to your contacts to quickly add friends and family when you record a transaction.</string>
+    <string name="contact_privacy_note">We use your contacts to help you pick who you transacted with. If backup/sync is enabled, contact names and numbers are stored securely to support multi‑device access.</string>
+    <string name="contact_sync_requires_sign_in">Backup and sync require sign‑in.</string>
     <string name="allow_contact_access">Allow Contact Access</string>
     <string name="Version_number">1.0.0</string>
     <string name="sign_in_google">Sign in with Google</string>
@@ -79,6 +80,13 @@
     <string name="completed">Completed</string>
     <string name="type">Type</string>
     <string name="amount">Amount</string>
+    <string name="due_date">Due Date</string>
+    <string name="due_date_optional">Due Date (Optional)</string>
+    <string name="clear_due_date">Clear due date</string>
+    <string name="due">Due</string>
+    <string name="overdue">Overdue</string>
+    <string name="upcoming_due">Upcoming Due</string>
+    <string name="no_upcoming_due">No upcoming due dates.</string>
     <string name="date">Date</string>
     <string name="no_description">No description</string>
     <string name="created_at">Created: %1$s</string>
@@ -87,6 +95,7 @@
     <string name="start">Start</string>
     <string name="end">End</string>
     <string name="all_time">All Time</string>
+    <string name="all">All</string>
     <string name="clear">Clear</string>
     <string name="view_contacts">View Contacts</string>
     <string name="select_date_range">Select Date Range</string>
@@ -96,6 +105,8 @@
     <string name="from">From</string>
     <string name="to">To</string>
     <string name="apply">Apply</string>
+    <string name="amount_enter_number">Enter a valid number</string>
+    <string name="amount_invalid_range">From must be less than or equal to To.</string>
     <string name="show_completed">Show completed</string>
     <string name="done">Done</string>
     <string name="unknown">Unknown</string>

@@ -7,6 +7,7 @@ data class AddTransactionUiState (
     val contact: Contact? = null,
     val amount: Int? = null,
     val date: Long? = null,
+    val dueDate: Long? = null,
     val description: String? = null,
 
     val errorMessage: String? = null,

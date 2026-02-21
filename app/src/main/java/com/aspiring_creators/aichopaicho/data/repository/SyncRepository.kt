@@ -102,6 +102,7 @@ class SyncRepository @Inject constructor(
                         "userId" to record.userId,
                         "contactId" to record.contactId,
                         "date" to record.date,
+                        "dueDate" to record.dueDate,
                         "deleted" to record.isDeleted, // Matches @PropertyName
                         "complete" to record.isComplete, // Matches @PropertyName
                         "description" to record.description,
@@ -173,6 +174,7 @@ class SyncRepository @Inject constructor(
                         "userId" to r.userId,
                         "contactId" to r.contactId,
                         "date" to r.date,
+                        "dueDate" to r.dueDate,
                         "deleted" to r.isDeleted, // Matches @PropertyName
                         "complete" to r.isComplete, // Matches @PropertyName
                         "description" to r.description,
@@ -328,6 +330,7 @@ class SyncRepository @Inject constructor(
                         val firestoreTypeId = doc.getLong("typeId")?.toInt() ?: 0
                         val firestoreAmount = doc.getLong("amount")?.toInt() ?: 0
                         val firestoreDate = doc.getLong("date") ?: 0L
+                        val firestoreDueDate = doc.getLong("dueDate")
                         val firestoreIsComplete = doc.getBoolean("complete") ?: false
                         val firestoreIsDeleted = doc.getBoolean("deleted") ?: false
                         val firestoreDescription = doc.getString("description")
@@ -347,6 +350,7 @@ class SyncRepository @Inject constructor(
                             typeId = firestoreTypeId,
                             amount = firestoreAmount,
                             date = firestoreDate,
+                            dueDate = firestoreDueDate,
                             isComplete = firestoreIsComplete,
                             isDeleted = firestoreIsDeleted,
                             description = firestoreDescription,

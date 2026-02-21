@@ -314,9 +314,12 @@ fun ContactRecordCard(
 ) {
     val record = recordWithRepayments.record // Unpack for convenience
     val dateFormatter = remember { SimpleDateFormat("dd MMM yy", Locale.getDefault()) }
+    val dueFormatter = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
     val timeFormatter = remember { SimpleDateFormat("HH:mm a", Locale.getDefault()) }
     val isLent = record.typeId == TypeConstants.LENT_ID
     val context = LocalContext.current
+    val now = System.currentTimeMillis()
+    val isOverdue = record.dueDate != null && record.dueDate < now && !recordWithRepayments.isSettled
 
     val amountColor = if (isLent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
     val typeName = type?.name ?: if(isLent) "Lent" else "Borrowed"
@@ -386,6 +389,18 @@ fun ContactRecordCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                record.dueDate?.let { due ->
+                    Text(
+                        text = if (isOverdue) {
+                            "${stringResource(R.string.overdue)} ${dueFormatter.format(Date(due))}"
+                        } else {
+                            "${stringResource(R.string.due)} ${dueFormatter.format(Date(due))}"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                    )
+                }
 
                 record.description?.takeIf { it.isNotBlank() }?.let { description ->
                     Text(
@@ -517,7 +532,20 @@ fun EmptyRecordsCardPreview() {
 @Composable
 fun ContactRecordCardLentPreview() {
     AichoPaichoTheme {
-        val record = Record("1", "u1", "c1", TypeConstants.LENT_ID, 12000, System.currentTimeMillis(), false, false, "Lunch",System.currentTimeMillis(), System.currentTimeMillis())
+        val record = Record(
+            id = "1",
+            userId = "u1",
+            contactId = "c1",
+            typeId = TypeConstants.LENT_ID,
+            amount = 12000,
+            date = System.currentTimeMillis(),
+            dueDate = null,
+            isComplete = false,
+            isDeleted = false,
+            description = "Lunch",
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
+        )
         val type = Type(TypeConstants.LENT_ID, "Lent")
         ContactRecordCard(
             recordWithRepayments = RecordWithRepayments(record, emptyList()),
@@ -532,7 +560,20 @@ fun ContactRecordCardLentPreview() {
 @Composable
 fun ContactRecordCardBorrowedPreview() {
     AichoPaichoTheme {
-        val record = Record("2", "u1", "c1", TypeConstants.BORROWED_ID, 7550, System.currentTimeMillis() - 86400000, false, true, "just for fun",System.currentTimeMillis(), System.currentTimeMillis())
+        val record = Record(
+            id = "2",
+            userId = "u1",
+            contactId = "c1",
+            typeId = TypeConstants.BORROWED_ID,
+            amount = 7550,
+            date = System.currentTimeMillis() - 86400000,
+            dueDate = null,
+            isComplete = false,
+            isDeleted = true,
+            description = "just for fun",
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
+        )
         val type = Type(TypeConstants.BORROWED_ID, "Borrowed")
         ContactRecordCard(
             recordWithRepayments = RecordWithRepayments(record, emptyList()),

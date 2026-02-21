@@ -18,6 +18,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +38,7 @@ import com.aspiring_creators.aichopaicho.data.entity.Record
 import com.aspiring_creators.aichopaicho.data.entity.RecordWithRepayments
 import com.aspiring_creators.aichopaicho.data.entity.Repayment
 import com.aspiring_creators.aichopaicho.data.entity.Type
+import com.aspiring_creators.aichopaicho.ui.component.DateInputField
 import com.aspiring_creators.aichopaicho.ui.theme.AichoPaichoTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -53,6 +55,7 @@ fun TransactionDetailsCard(
     onAmountChange: (String) -> Unit, // Changed to String
     onDescriptionChange: (String) -> Unit,
     onDateChange: (Long) -> Unit, // Kept, though no UI for edit in this card
+    onDueDateChange: (Long?) -> Unit,
     // onCompletionToggle: () -> Unit // Removed, as completion is now derived
 ) {
     val record = recordWithRepayments.record // Unpack for convenience
@@ -159,6 +162,28 @@ fun TransactionDetailsCard(
                 value = dateFormatter.format(Date(record.date)),
                 isEditing = false // Date is not editable in this component
             )
+
+            if (isEditing) {
+                DateInputField(
+                    label = stringResource(R.string.due_date_optional),
+                    selectedDate = record.dueDate,
+                    onDateSelected = onDueDateChange,
+                    initializeWithCurrentDate = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (record.dueDate != null) {
+                    TextButton(onClick = { onDueDateChange(null) }) {
+                        Text(stringResource(R.string.clear_due_date))
+                    }
+                }
+            } else {
+                DetailRow(
+                    label = stringResource(R.string.due_date),
+                    value = record.dueDate?.let { dateFormatter.format(Date(it)) }
+                        ?: stringResource(R.string.none),
+                    isEditing = false
+                )
+            }
 
             if (isEditing) {
                 OutlinedTextField(
@@ -403,6 +428,7 @@ fun TransactionDetailsCardPreview() {
             id = "1", userId = "user1", contactId = "contact1", typeId = TypeConstants.LENT_ID,
             amount = 12550, // e.g. 125.50
             date = System.currentTimeMillis() - 86400000L * 5, // 5 days ago
+            dueDate = System.currentTimeMillis() + 86400000L * 3, // 3 days from now
             description = "Lunch with client. Discussed project milestones and future collaboration opportunities.",
             isComplete = false,
             createdAt = System.currentTimeMillis() - 86400000L * 10, // 10 days ago
@@ -426,7 +452,8 @@ fun TransactionDetailsCardPreview() {
             isEditing = false,
             onAmountChange = {},
             onDescriptionChange = {},
-            onDateChange = {}
+            onDateChange = {},
+            onDueDateChange = {}
         )
     }
 }
@@ -439,6 +466,7 @@ fun TransactionDetailsCardEditingPreview() {
             id = "2", userId = "user1", contactId = "contact2", typeId = TypeConstants.BORROWED_ID,
             amount = 7500, // e.g. 75.00
             date = System.currentTimeMillis() - 86400000L * 3, // 3 days ago
+            dueDate = System.currentTimeMillis() - 86400000L, // 1 day ago
             description = "Shared expenses for team outing.",
             isComplete = true,
             createdAt = System.currentTimeMillis() - 86400000L * 7, // 7 days ago
@@ -463,7 +491,8 @@ fun TransactionDetailsCardEditingPreview() {
             isEditing = true,
             onAmountChange = {},
             onDescriptionChange = {},
-            onDateChange = {}
+            onDateChange = {},
+            onDueDateChange = {}
         )
     }
 }

@@ -19,7 +19,7 @@ data class ViewTransactionViewModelUiState(
     val selectedType: Int? = null,
     val fromQuery: String = "",
     val moneyToQuery: String = "",
-    val showCompleted: Boolean = true,
+    val showCompleted: Boolean = false,
     val lentContacts: List<ContactPreview> = emptyList(),
     val borrowedContacts: List<ContactPreview> = emptyList()
 )

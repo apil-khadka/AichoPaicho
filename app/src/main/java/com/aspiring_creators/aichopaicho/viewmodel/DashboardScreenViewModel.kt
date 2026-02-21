@@ -8,7 +8,10 @@ import com.aspiring_creators.aichopaicho.R
 import com.aspiring_creators.aichopaicho.data.entity.User
 import com.aspiring_creators.aichopaicho.data.repository.UserRecordSummaryRepository
 import com.aspiring_creators.aichopaicho.data.repository.UserRepository
+import com.aspiring_creators.aichopaicho.data.repository.RecordRepository
+import com.aspiring_creators.aichopaicho.data.repository.ContactRepository
 import com.aspiring_creators.aichopaicho.viewmodel.data.DashboardScreenUiState
+import com.aspiring_creators.aichopaicho.viewmodel.data.UpcomingDueItem
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -16,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,6 +29,8 @@ class DashboardScreenViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val firebaseAuth: FirebaseAuth,
     private val userRecordSummaryRepository: UserRecordSummaryRepository,
+    private val recordRepository: RecordRepository,
+    private val contactRepository: ContactRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardScreenUiState(isLoading = true))
@@ -55,7 +61,7 @@ class DashboardScreenViewModel @Inject constructor(
 
                 // Check for the sentinel user, which indicates no actual user in the DB
                 if (localUser.id.isEmpty()) {
-                    _uiState.value = DashboardScreenUiState(isLoading = false, isSignedIn = false, user = null)
+                    _uiState.value = DashboardScreenUiState(isLoading = false, isSignedIn = false, user = null, upcomingDue = emptyList())
                 } else {
                     // We have a real local user. Check if it matches a firebase session.
                     val isSignedIn = firebaseUser != null && firebaseUser.uid == localUser.id && !localUser.isOffline
@@ -64,6 +70,7 @@ class DashboardScreenViewModel @Inject constructor(
                         isSignedIn = isSignedIn,
                         user = localUser
                     )
+                    loadUpcomingDueRecords()
                     if (isSignedIn) {
                         loadRecordSummary()
                     } else {
@@ -99,6 +106,25 @@ class DashboardScreenViewModel @Inject constructor(
         } else {
             Log.d("DashboardViewModel", "Skipping record summary load: User not signed in or null.")
             _uiState.value = _uiState.value.copy(recordSummary = null) // Clear summary if not signed in
+        }
+    }
+
+    private suspend fun loadUpcomingDueRecords() {
+        try {
+            val records = recordRepository.getAllRecords().first()
+            val upcoming = records
+                .filter { it.dueDate != null && !it.isDeleted && !it.isComplete }
+                .sortedBy { it.dueDate }
+                .take(3)
+                .mapNotNull { record ->
+                    val contactName = record.contactId?.let { id ->
+                        contactRepository.getContactById(id)?.name
+                    } ?: context.getString(R.string.unknown)
+                    UpcomingDueItem.from(record, contactName)
+                }
+            _uiState.value = _uiState.value.copy(upcomingDue = upcoming)
+        } catch (e: Exception) {
+            Log.e("DashboardViewModel", "Error loading upcoming due records", e)
         }
     }
 
