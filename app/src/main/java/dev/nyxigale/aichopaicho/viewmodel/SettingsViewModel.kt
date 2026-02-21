@@ -221,13 +221,22 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(showSignOutDialog = false)
     }
 
+    fun showDeleteAccountDialog() {
+        _uiState.value = _uiState.value.copy(showDeleteAccountDialog = true)
+    }
+
+    fun hideDeleteAccountDialog() {
+        _uiState.value = _uiState.value.copy(showDeleteAccountDialog = false)
+    }
+
     suspend fun signInWithGoogle(activity: Activity, isReturningUser: Boolean = false) {
         try {
-            setErrorMessage("")
+            setErrorMessage(null)
 
             firebaseAuth.currentUser?.let { currentUser ->
                 val localUser = userRepository.getUser()
                 if (localUser.id == currentUser.uid) {
+                    hideSignInDialog()
                     return
                 }
             }
@@ -245,8 +254,9 @@ class SettingsViewModel @Inject constructor(
             val result = credentialManager.getCredential(request = request, context = activity)
             val firebaseUser = handleSignIn(result)
 
-            firebaseUser?.let {
-                transferLocalDataToFirebaseUser(firebaseUser)
+            firebaseUser?.let { signedInFirebaseUser ->
+                val resolvedUser = resolveSignedInUser(signedInFirebaseUser)
+                transferLocalDataToFirebaseUser(resolvedUser)
                 hideSignInDialog()
             }
 
@@ -254,6 +264,7 @@ class SettingsViewModel @Inject constructor(
         } catch (error: Exception) {
             Log.e("SettingsViewModel", "Sign in failed", error)
             setErrorMessage(error.message ?: context.getString(R.string.sign_in_failed))
+            hideSignInDialog()
         }
     }
 
@@ -294,28 +305,31 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun transferLocalDataToFirebaseUser(firebaseUser: FirebaseUser) {
-        try {
-            val currentUser = _uiState.value.user
-            currentUser?.let { user ->
-                val updatedUser = user.copy(
-                    id = firebaseUser.uid,
-                    isOffline = false,
-                    name = firebaseUser.displayName,
-                    email = firebaseUser.email,
-                    photoUrl = firebaseUser.photoUrl
-                )
-
-                userRepository.upsert(updatedUser)
-                updateUserIdAcrossAllTables(user.id, firebaseUser.uid)
-                userRepository.deleteUserCompletely(user.id)
-
-                _uiState.value = _uiState.value.copy(user = updatedUser)
-                startSync()
+    private suspend fun resolveSignedInUser(firebaseUser: FirebaseUser): User {
+        return when (val resolution = userRepository.resolveUserForSignIn(firebaseUser)) {
+            is UserRepository.SignInResolution.Allowed -> {
+                userRepository.upsertRemoteUser(resolution.user)
+                resolution.user
             }
-        } catch (error: Exception) {
-            setErrorMessage(context.getString(R.string.data_transfer_failed, error.message))
+
+            is UserRepository.SignInResolution.RecoveryWindowExpired -> {
+                firebaseAuth.signOut()
+                throw IllegalStateException(context.getString(R.string.account_recovery_window_expired))
+            }
         }
+    }
+
+    private suspend fun transferLocalDataToFirebaseUser(resolvedUser: User) {
+        val currentUser = _uiState.value.user
+        userRepository.upsert(resolvedUser)
+
+        if (currentUser != null && currentUser.id != resolvedUser.id) {
+            updateUserIdAcrossAllTables(currentUser.id, resolvedUser.id)
+            userRepository.deleteUserCompletely(currentUser.id)
+        }
+
+        _uiState.value = _uiState.value.copy(user = resolvedUser)
+        startSync()
     }
 
     fun signOut() {
@@ -338,6 +352,42 @@ class SettingsViewModel @Inject constructor(
                 }
             } catch (error: Exception) {
                 setErrorMessage(context.getString(R.string.sign_out_failed, error.message))
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
+        }
+    }
+
+    fun deleteAccount() {
+        viewModelScope.launch {
+            val currentUser = _uiState.value.user
+            if (currentUser == null || currentUser.isOffline) {
+                setErrorMessage(context.getString(R.string.account_delete_requires_sign_in))
+                _uiState.value = _uiState.value.copy(showDeleteAccountDialog = false)
+                return@launch
+            }
+
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+
+                val deletedUser = currentUser.copy(
+                    isDeleted = true,
+                    updatedAt = System.currentTimeMillis()
+                )
+                userRepository.upsertRemoteUser(deletedUser)
+                userRepository.deleteUserCompletely(currentUser.id)
+                firebaseAuth.signOut()
+
+                val offlineUser = createNewOfflineUser()
+                userRepository.upsert(offlineUser)
+
+                _uiState.value = _uiState.value.copy(
+                    user = offlineUser,
+                    showDeleteAccountDialog = false,
+                    showSignOutDialog = false
+                )
+            } catch (error: Exception) {
+                setErrorMessage(context.getString(R.string.account_delete_failed, error.message))
             } finally {
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
@@ -408,7 +458,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun setErrorMessage(message: String) {
+    private fun setErrorMessage(message: String?) {
         _uiState.value = _uiState.value.copy(errorMessage = message)
     }
 

@@ -17,8 +17,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -94,7 +96,7 @@ fun SettingsScreen(
     ) {
         // Top Bar
         TopAppBar(
-            title = { Text("Settings", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.settings), fontWeight = FontWeight.Bold) },
             navigationIcon = {
                 IconButton(
                     onClick = onNavigateBack,
@@ -123,6 +125,16 @@ fun SettingsScreen(
                 onSignInClick = settingsViewModel::showSignInDialog,
                 onSignOutClick = settingsViewModel::showSignOutDialog
             )
+
+            uiState.errorMessage
+                ?.takeIf { it.isNotBlank() }
+                ?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
 
             // Currency Settings
             SettingsCard(
@@ -209,6 +221,30 @@ fun SettingsScreen(
                 )
             }
 
+            if (uiState.user?.isOffline == false) {
+                SettingsCard(
+                    title = stringResource(R.string.danger_zone),
+                    icon = Icons.Default.Warning
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = stringResource(R.string.delete_account_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                            onClick = settingsViewModel::showDeleteAccountDialog,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            )
+                        ) {
+                            Text(stringResource(R.string.delete_account))
+                        }
+                    }
+                }
+            }
+
             // App Information
             SettingsCard(
                 title = stringResource(R.string.app_information),
@@ -258,6 +294,31 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = settingsViewModel::hideSignOutDialog) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (uiState.showDeleteAccountDialog) {
+        AlertDialog(
+            onDismissRequest = settingsViewModel::hideDeleteAccountDialog,
+            title = { Text(stringResource(R.string.delete_account_title)) },
+            text = {
+                Text(stringResource(R.string.delete_account_confirm_message))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = settingsViewModel::deleteAccount,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text(stringResource(R.string.delete_account))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = settingsViewModel::hideDeleteAccountDialog) {
                     Text(stringResource(R.string.cancel))
                 }
             }

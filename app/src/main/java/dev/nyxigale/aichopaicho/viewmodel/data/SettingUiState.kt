@@ -20,6 +20,7 @@ data class SettingsUiState(
     val hasFailedSyncItems: Boolean = false,
     val showSignInDialog: Boolean = false,
     val showSignOutDialog: Boolean = false,
+    val showDeleteAccountDialog: Boolean = false,
     val showCurrencyDropdown: Boolean = false,
     val appVersion: String = "",
     val lastSyncTime: Long? = null,

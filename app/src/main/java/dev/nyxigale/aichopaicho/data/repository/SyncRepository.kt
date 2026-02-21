@@ -157,10 +157,7 @@ class SyncRepository @Inject constructor(
             return SyncReport.EMPTY
         }
         return try {
-            firestore.collection("users")
-                .document(user.id)
-                .set(user, SetOptions.merge())
-                .await()
+            userRepository.upsertRemoteUser(user)
             SyncReport(attempted = 1, succeeded = 1, failed = 0)
         } catch (error: Exception) {
             Log.e(TAG, "Failed syncing user data", error)

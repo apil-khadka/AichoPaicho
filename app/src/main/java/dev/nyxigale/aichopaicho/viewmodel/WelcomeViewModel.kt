@@ -107,8 +107,9 @@ class WelcomeViewModel @Inject constructor(
             val user = handleSignIn(result)
 
             // Save user to database
-            user?.let {
-                userRepository.upsert(it.toUserEntity())
+            user?.let { firebaseUser ->
+                val resolvedUser = resolveSignedInUser(firebaseUser)
+                userRepository.upsert(resolvedUser)
             }
 
             screenViewRepository.markScreenAsShown(Routes.WELCOME_SCREEN)
@@ -188,6 +189,20 @@ class WelcomeViewModel @Inject constructor(
                     R.string.unsupported_credential_type,
                     credential.type
                 ))
+            }
+        }
+    }
+
+    private suspend fun resolveSignedInUser(firebaseUser: FirebaseUser): User {
+        return when (val resolution = userRepository.resolveUserForSignIn(firebaseUser)) {
+            is UserRepository.SignInResolution.Allowed -> {
+                userRepository.upsertRemoteUser(resolution.user)
+                resolution.user
+            }
+
+            is UserRepository.SignInResolution.RecoveryWindowExpired -> {
+                firebaseAuth.signOut()
+                throw IllegalStateException(context.getString(R.string.account_recovery_window_expired))
             }
         }
     }

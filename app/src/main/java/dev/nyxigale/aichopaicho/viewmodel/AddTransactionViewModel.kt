@@ -8,15 +8,12 @@ import android.content.Context
 import dev.nyxigale.aichopaicho.R
 import dev.nyxigale.aichopaicho.data.entity.Contact
 import dev.nyxigale.aichopaicho.data.entity.Record
-import dev.nyxigale.aichopaicho.data.entity.RecurringTemplate
 import dev.nyxigale.aichopaicho.data.repository.ContactRepository
-import dev.nyxigale.aichopaicho.data.repository.RecurringTemplateRepository
 import dev.nyxigale.aichopaicho.data.repository.RecordRepository
 import dev.nyxigale.aichopaicho.data.repository.TypeRepository
 import dev.nyxigale.aichopaicho.data.repository.UserRepository
 import dev.nyxigale.aichopaicho.viewmodel.data.AddTransactionUiEvents
 import dev.nyxigale.aichopaicho.viewmodel.data.AddTransactionUiState
-import dev.nyxigale.aichopaicho.viewmodel.data.RecurrenceType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @HiltViewModel
 class AddTransactionViewModel @Inject constructor(
@@ -33,8 +29,7 @@ class AddTransactionViewModel @Inject constructor(
     private val recordRepository: RecordRepository,
     private val typeRepository: TypeRepository,
     private val userRepository: UserRepository,
-    private val contactRepository: ContactRepository,
-    private val recurringTemplateRepository: RecurringTemplateRepository
+    private val contactRepository: ContactRepository
 ) : ViewModel(){
 
     private val _uiState = MutableStateFlow(AddTransactionUiState())
@@ -46,10 +41,10 @@ class AddTransactionViewModel @Inject constructor(
         if (validationErrors.hasAnyError()) {
             _uiState.update {
                 it.copy(
-                    contactError = validationErrors.contactError,
+                    contactNameError = validationErrors.contactNameError,
+                    contactPhoneError = validationErrors.contactPhoneError,
                     amountError = validationErrors.amountError,
                     dateError = validationErrors.dateError,
-                    customRecurrenceDaysError = validationErrors.customRecurrenceDaysError,
                     errorMessage = validationErrors.firstError(),
                     isLoading = false,
                     submissionSuccessful = false
@@ -63,44 +58,43 @@ class AddTransactionViewModel @Inject constructor(
                 isLoading = true,
                 errorMessage = null,
                 submissionSuccessful = false,
-                contactError = null,
+                contactNameError = null,
+                contactPhoneError = null,
                 amountError = null,
-                dateError = null,
-                customRecurrenceDaysError = null
+                dateError = null
             )
         }
 
         return try {
             val currentState = uiState.value
             val parsedAmount = currentState.amountInput.toIntOrNull() ?: 0
-            val recurringTemplateId = if (
-                currentState.isRecurringEnabled && currentState.recurrenceType != RecurrenceType.NONE
-            ) {
-                UUID.randomUUID().toString()
-            } else {
-                null
-            }
 
             val type = typeRepository.getByName(currentState.type!!)
                 ?: throw IllegalArgumentException(context.getString(R.string.error_transaction_type_not_found))
             val user = userRepository.getUser()
 
-            val selectedContactInfo = currentState.contact
+            val selectedContactInfo = resolveContactInput(currentState)
                 ?: throw IllegalArgumentException(context.getString(R.string.error_select_contact))
-            val primaryPhoneNumber = selectedContactInfo.phone.firstOrNull()
+            val primaryPhoneNumber = selectedContactInfo.phone
+                .firstOrNull()
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: throw IllegalArgumentException(context.getString(R.string.error_enter_contact_number))
 
             var canonicalContact: Contact? = null
-            if (primaryPhoneNumber != null) {
-                canonicalContact = contactRepository.getContactByPhoneNumber(primaryPhoneNumber)
-            }
+            canonicalContact = contactRepository.getContactByPhoneNumber(primaryPhoneNumber)
             
             val contactToSave: Contact
             if (canonicalContact == null) {
+                val phonesToSave = selectedContactInfo.phone
+                    .mapNotNull { it?.trim() }
+                    .filter { it.isNotBlank() }
+                    .ifEmpty { listOf(primaryPhoneNumber) }
                 // No canonical contact exists, create a new one owned by the current user.
                 contactToSave = Contact(
                     id = UUID.randomUUID().toString(),
-                    name = selectedContactInfo.name,
-                    phone = selectedContactInfo.phone,
+                    name = selectedContactInfo.name.trim(),
+                    phone = phonesToSave,
                     contactId = selectedContactInfo.contactId, // Can still save this for reference
                     userId = user.id // The current user becomes the owner/creator
                 )
@@ -117,16 +111,9 @@ class AddTransactionViewModel @Inject constructor(
                 amount = parsedAmount,
                 date = currentState.date!!,
                 dueDate = currentState.dueDate,
-                description = currentState.description,
-                recurringTemplateId = recurringTemplateId
+                description = currentState.description
             )
             recordRepository.upsert(recordToSave)
-            createRecurringTemplateIfNeeded(
-                userId = user.id,
-                typeId = type.id,
-                contactId = contactToSave.id,
-                templateId = recurringTemplateId
-            )
 
             Log.e("AddTransactionViewModel", "handleSubmit: $recordToSave")
 
@@ -137,17 +124,16 @@ class AddTransactionViewModel @Inject constructor(
                     isLoading = false,
                     // Clear the form fields
                     contact = null,
+                    contactNameInput = "",
+                    contactPhoneInput = "",
                     amountInput = "",
                     amount = null,
                     description = null,
                     dueDate = null,
-                    isRecurringEnabled = false,
-                    recurrenceType = RecurrenceType.NONE,
-                    customRecurrenceDays = "",
-                    contactError = null,
+                    contactNameError = null,
+                    contactPhoneError = null,
                     amountError = null,
-                    dateError = null,
-                    customRecurrenceDaysError = null
+                    dateError = null
                     // Note: We keep type and date as they might want to add similar transactions
                 )
             }
@@ -157,10 +143,10 @@ class AddTransactionViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     errorMessage = e.message ?: context.getString(R.string.unknown_error_occurred),
-                    contactError = null,
+                    contactNameError = null,
+                    contactPhoneError = null,
                     amountError = null,
                     dateError = null,
-                    customRecurrenceDaysError = null,
                     isLoading = false,
                     submissionSuccessful = false
                 )
@@ -177,6 +163,24 @@ class AddTransactionViewModel @Inject constructor(
                     // Clear any previous success/error states when user starts new input
                     submissionSuccessful = false,
                     errorMessage = null
+                )
+            }
+            is AddTransactionUiEvents.ContactNameEntered -> {
+                _uiState.value = _uiState.value.copy(
+                    contact = null,
+                    contactNameInput = event.name,
+                    submissionSuccessful = false,
+                    errorMessage = null,
+                    contactNameError = null
+                )
+            }
+            is AddTransactionUiEvents.ContactPhoneEntered -> {
+                _uiState.value = _uiState.value.copy(
+                    contact = null,
+                    contactPhoneInput = event.phone,
+                    submissionSuccessful = false,
+                    errorMessage = null,
+                    contactPhoneError = null
                 )
             }
             is AddTransactionUiEvents.AmountEntered -> {
@@ -213,40 +217,17 @@ class AddTransactionViewModel @Inject constructor(
                     errorMessage = null
                 )
             }
-            is AddTransactionUiEvents.RecurringEnabledChanged -> {
-                _uiState.value = _uiState.value.copy(
-                    isRecurringEnabled = event.isEnabled,
-                    recurrenceType = if (event.isEnabled) _uiState.value.recurrenceType else RecurrenceType.NONE,
-                    customRecurrenceDays = if (event.isEnabled) _uiState.value.customRecurrenceDays else "",
-                    submissionSuccessful = false,
-                    errorMessage = null,
-                    customRecurrenceDaysError = null
-                )
-            }
-            is AddTransactionUiEvents.RecurrenceSelected -> {
-                _uiState.value = _uiState.value.copy(
-                    isRecurringEnabled = event.recurrenceType != RecurrenceType.NONE,
-                    recurrenceType = event.recurrenceType,
-                    submissionSuccessful = false,
-                    errorMessage = null,
-                    customRecurrenceDaysError = null
-                )
-            }
-            is AddTransactionUiEvents.CustomRecurrenceDaysEntered -> {
-                _uiState.value = _uiState.value.copy(
-                    customRecurrenceDays = event.days,
-                    submissionSuccessful = false,
-                    errorMessage = null,
-                    customRecurrenceDaysError = null
-                )
-            }
             is AddTransactionUiEvents.ContactSelected -> {
+                val safeContact = sanitizeContact(event.contact)
                 _uiState.value = _uiState.value.copy(
-                    contact = sanitizeContact(event.contact),
+                    contact = safeContact,
+                    contactNameInput = safeContact?.name.orEmpty(),
+                    contactPhoneInput = safeContact?.phone?.firstOrNull().orEmpty(),
                     // Clear any previous success/error states when user starts new input
                     submissionSuccessful = false,
                     errorMessage = null,
-                    contactError = null
+                    contactNameError = null,
+                    contactPhoneError = null
                 )
             }
             AddTransactionUiEvents.Submit -> {
@@ -268,48 +249,15 @@ class AddTransactionViewModel @Inject constructor(
         _uiState.update { it.copy(submissionSuccessful = false) }
     }
 
-    private suspend fun createRecurringTemplateIfNeeded(
-        userId: String,
-        typeId: Int,
-        contactId: String,
-        templateId: String?
-    ) {
-        val state = _uiState.value
-        if (!state.isRecurringEnabled) return
-        val recurrenceType = state.recurrenceType
-        if (recurrenceType == RecurrenceType.NONE) return
-
-        val intervalDays = when (recurrenceType) {
-            RecurrenceType.NONE -> null
-            RecurrenceType.DAILY -> RecurrenceType.DAILY.intervalDays
-            RecurrenceType.WEEKLY -> RecurrenceType.WEEKLY.intervalDays
-            RecurrenceType.MONTHLY -> RecurrenceType.MONTHLY.intervalDays
-            RecurrenceType.CUSTOM -> state.customRecurrenceDays.toIntOrNull()?.takeIf { it > 0 }
-        } ?: throw IllegalArgumentException("Custom recurrence interval must be greater than 0 days.")
-
-        val baseDate = state.date ?: System.currentTimeMillis()
-        val nextRunAt = baseDate + TimeUnit.DAYS.toMillis(intervalDays.toLong())
-        val dueOffsetDays = state.dueDate?.let { dueDate ->
-            ((dueDate - baseDate) / TimeUnit.DAYS.toMillis(1)).toInt().coerceAtLeast(0)
-        } ?: 0
-
-        val template = RecurringTemplate(
-            id = templateId ?: UUID.randomUUID().toString(),
-            userId = userId,
-            contactId = contactId,
-            typeId = typeId,
-            amount = state.amount ?: 0,
-            description = state.description,
-            intervalDays = intervalDays,
-            nextRunAt = nextRunAt,
-            dueOffsetDays = dueOffsetDays
-        )
-        recurringTemplateRepository.upsert(template)
-    }
-
     private fun validate(state: AddTransactionUiState): ValidationErrors {
-        val contactError = if (!isContactValid(state.contact)) {
-            context.getString(R.string.error_select_contact)
+        val usingPickedContact = isContactValid(state.contact)
+        val contactNameError = if (!usingPickedContact && state.contactNameInput.isBlank()) {
+            context.getString(R.string.error_enter_contact_name)
+        } else {
+            null
+        }
+        val contactPhoneError = if (!usingPickedContact && state.contactPhoneInput.isBlank()) {
+            context.getString(R.string.error_enter_contact_number)
         } else {
             null
         }
@@ -327,23 +275,28 @@ class AddTransactionViewModel @Inject constructor(
             null
         }
 
-        val customRecurrenceDaysError =
-            if (state.isRecurringEnabled && state.recurrenceType == RecurrenceType.CUSTOM) {
-                val customDays = state.customRecurrenceDays.toIntOrNull()
-                if (customDays == null || customDays <= 0) {
-                    context.getString(R.string.error_custom_recurrence_days)
-                } else {
-                    null
-                }
-            } else {
-                null
-            }
-
         return ValidationErrors(
-            contactError = contactError,
+            contactNameError = contactNameError,
+            contactPhoneError = contactPhoneError,
             amountError = amountError,
-            dateError = dateError,
-            customRecurrenceDaysError = customRecurrenceDaysError
+            dateError = dateError
+        )
+    }
+
+    private fun resolveContactInput(state: AddTransactionUiState): Contact? {
+        val picked = sanitizeContact(state.contact)
+        if (picked != null) return picked
+
+        val manualName = state.contactNameInput.trim()
+        val manualPhone = state.contactPhoneInput.trim()
+        if (manualName.isBlank() || manualPhone.isBlank()) return null
+
+        return Contact(
+            id = "",
+            name = manualName,
+            userId = null,
+            phone = listOf(manualPhone),
+            contactId = null
         )
     }
 
@@ -358,20 +311,20 @@ class AddTransactionViewModel @Inject constructor(
     }
 
     private data class ValidationErrors(
-        val contactError: String? = null,
+        val contactNameError: String? = null,
+        val contactPhoneError: String? = null,
         val amountError: String? = null,
-        val dateError: String? = null,
-        val customRecurrenceDaysError: String? = null
+        val dateError: String? = null
     ) {
         fun hasAnyError(): Boolean {
-            return contactError != null ||
+            return contactNameError != null ||
+                contactPhoneError != null ||
                 amountError != null ||
-                dateError != null ||
-                customRecurrenceDaysError != null
+                dateError != null
         }
 
         fun firstError(): String? {
-            return contactError ?: amountError ?: dateError ?: customRecurrenceDaysError
+            return contactNameError ?: contactPhoneError ?: amountError ?: dateError
         }
     }
 

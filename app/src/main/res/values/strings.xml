@@ -125,6 +125,7 @@
     <string name="failed_to_save_permission_status">Failed to save permission status</string>
     <string name="failed_to_load_settings">Failed to load settings: %1$s</string>
     <string name="sign_in_failed">Sign in failed</string>
+    <string name="account_recovery_window_expired">This account was deleted more than 30 days ago and can no longer be restored.</string>
     <string name="failed_to_retrieve_google_id_token">Failed to retrieve Google ID token</string>
     <string name="unsupported_credential_type">Unsupported credential type: %1$s</string>
     <string name="data_transfer_failed">Data transfer failed: %1$s</string>
@@ -137,6 +138,9 @@
     <string name="transaction_added_successfully">Transaction added successfully</string>
     <string name="name">Name</string>
     <string name="contact_name">Contact Name</string>
+    <string name="contact_phone_number">Contact Phone Number</string>
+    <string name="pick_from_contacts">Pick from contacts</string>
+    <string name="selected_contact_has_no_phone">Selected contact has no phone number.</string>
     <string name="description_optional">Description (Optional)</string>
     <string name="save_transaction">Save Transaction</string>
     <string name="contacts_you_lent_to">Contacts You Lent To</string>
@@ -157,6 +161,13 @@
     <string name="app_information">App Information</string>
     <string name="about">About</string>
     <string name="sign_out_confirm">Are you sure you want to sign out? This will delete all your local data permanently.</string>
+    <string name="danger_zone">Danger Zone</string>
+    <string name="delete_account_title">Delete Account</string>
+    <string name="delete_account">Delete Account</string>
+    <string name="delete_account_warning">This marks your cloud account as deleted. You can recover access by signing back in within 30 days.</string>
+    <string name="delete_account_confirm_message">Your account will be marked as deleted now. You can sign in again within 30 days to restore access. Continue?</string>
+    <string name="account_delete_requires_sign_in">Sign in to delete your account.</string>
+    <string name="account_delete_failed">Delete account failed: %1$s</string>
     <string name="transaction_deleted">Transaction deleted</string>
     <string name="delete_transaction">Delete Transaction</string>
     <string name="delete_transaction_confirmation">Are you sure you want to delete this transaction? This action cannot be undone.</string>
@@ -183,6 +194,8 @@
     <string name="error_write_something">Write something before saving the transaction.</string>
     <string name="error_enter_amount">Enter an amount before saving.</string>
     <string name="error_enter_valid_amount">Enter a valid amount greater than 0.</string>
+    <string name="error_enter_contact_name">Enter the contact name.</string>
+    <string name="error_enter_contact_number">Enter the contact phone number.</string>
     <string name="error_select_date">Select a transaction date.</string>
     <string name="error_custom_recurrence_days">Enter custom recurrence days (greater than 0).</string>
     <string name="error_transaction_type_not_found">Selected transaction type was not found.</string>
