@@ -4,6 +4,9 @@ import android.app.Application
 import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.work.WorkManager
+import com.microsoft.clarity.Clarity
+import com.microsoft.clarity.ClarityConfig
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -13,6 +16,10 @@ class AichoPaichoApp : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    companion object {
+        private const val TAG = "AichoPaichoApp"
+        private const val CLARITY_PROJECT_ID = "vkq46hwvk6"
+    }
 
 
 
@@ -25,6 +32,15 @@ class AichoPaichoApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d("AichoPaichoApp", "WorkManager configuration initialized with HiltWorkerFactory: $workerFactory")
+        // Clarity requires initialization after WorkManager when using custom WorkManager setup.
+        WorkManager.getInstance(applicationContext)
+
+        val clarityInitialized = Clarity.initialize(
+            applicationContext,
+            ClarityConfig(projectId = CLARITY_PROJECT_ID)
+        )
+
+        Log.d(TAG, "WorkManager configuration initialized with HiltWorkerFactory: $workerFactory")
+        Log.i(TAG, "Microsoft Clarity initialized: $clarityInitialized")
     }
 }

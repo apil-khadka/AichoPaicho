@@ -1,9 +1,17 @@
 ## Screenshots
 
-| Screenshot 1 | Screenshot 2 | Screenshot 3 |
-|--------------|--------------|--------------|
-| ![1](Pic/app-ui-1.jpeg) | ![2](Pic/app-ui-2.jpeg) | ![3](Pic/app-ui-3.jpeg) |
+| Initial Screen | Permission Screen | Dashboard |
+|---|---|---|
+| ![Initial Screen](Pic/initscreen.jpg) | ![Permission Screen](Pic/permission-screen.jpg) | ![Dashboard](Pic/dashboard.jpg) |
 
-| Screenshot 4 | Screenshot 5 | Screenshot 6 |
-|--------------|--------------|--------------|
-| ![4](Pic/app-ui-4.jpeg) | ![5](Pic/app-ui-5.jpeg) | ![6](Pic/app-ui-6.jpeg) |
+| Dashboard Due | Add Transaction | View Transaction |
+|---|---|---|
+| ![Dashboard Due](Pic/dashboard-due.jpg) | ![Add Transaction](Pic/addtxn.jpg) | ![View Transaction](Pic/viewtxn.jpg) |
+
+| Transaction Detail | Repaid Detail | View Contacts |
+|---|---|---|
+| ![Transaction Detail](Pic/viewtxndetail.jpg) | ![Repaid Detail](Pic/viewtxndetailrepaid.jpg) | ![View Contacts](Pic/viewcontacts.jpg) |
+
+| Settings (No User) | Settings (User) |
+|---|---|
+| ![Settings No User](Pic/setting-nouser.jpg) | ![Settings User](Pic/setting-user.jpg) |
