@@ -14,6 +14,11 @@ data class AddTransactionUiState (
     val recurrenceType: RecurrenceType = RecurrenceType.NONE,
     val customRecurrenceDays: String = "",
 
+    val contactError: String? = null,
+    val amountError: String? = null,
+    val dateError: String? = null,
+    val customRecurrenceDaysError: String? = null,
+
     val errorMessage: String? = null,
     val isLoading: Boolean = false,
     val submissionSuccessful: Boolean = false

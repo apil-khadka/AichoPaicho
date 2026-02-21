@@ -28,6 +28,7 @@ data class Record(
     @get:PropertyName("deleted")
     val isDeleted: Boolean = false,
     val description: String?,
+    val recurringTemplateId: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 ){
@@ -43,6 +44,7 @@ data class Record(
         isComplete = false,
         isDeleted = false,
         description = null,
+        recurringTemplateId = null,
         createdAt = System.currentTimeMillis(),
         updatedAt = System.currentTimeMillis()
     )

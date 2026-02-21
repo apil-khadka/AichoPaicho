@@ -55,6 +55,8 @@ Date: 2026-02-21
 - runtime notification permission prompt UX, on-device QA, and edge-case fixes.
 - [ ] UX stabilization follow-up:
 - verify add-transaction layout on small screens, recurring toggle UX, and undo flows after device QA.
+- [ ] Responsive layout pass (in progress):
+- improve portrait + landscape behavior for core screens (Add Transaction, View Transactions, Transaction Detail) across phone/tablet widths.
 
 ### P1 (User Value + Retention)
 - [ ] Add analytics/insights screen:

@@ -60,6 +60,9 @@ fun TransactionDetailsCard(
 ) {
     val record = recordWithRepayments.record // Unpack for convenience
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+    val now = System.currentTimeMillis()
+    val isRecurring = !record.recurringTemplateId.isNullOrBlank()
+    val isOverdue = record.dueDate != null && record.dueDate < now && !recordWithRepayments.isSettled
     // Update local state handling for editing
     var amountText by remember(record.amount, isEditing) {
         // Initialize with formatted string if editing, otherwise it's not shown in an input field
@@ -91,10 +94,27 @@ fun TransactionDetailsCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.transaction_details),
-                    style = MaterialTheme.typography.titleLarge
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = stringResource(R.string.transaction_details),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    if (isRecurring) {
+                        Card(
+                            shape = RoundedCornerShape(8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(R.string.recurring),
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = recordWithRepayments.isSettled,
@@ -180,6 +200,11 @@ fun TransactionDetailsCard(
                     label = stringResource(R.string.due_date),
                     value = record.dueDate?.let { dateFormatter.format(Date(it)) }
                         ?: stringResource(R.string.none),
+                    valueColor = if (isOverdue) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                     isEditing = false
                 )
             }
@@ -240,6 +265,7 @@ fun TransactionDetailsCard(
 private fun DetailRow(
     label: String,
     value: String,
+    valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
     isEditing: Boolean // Parameter kept for potential future use or consistency
 ) {
     Column(
@@ -252,7 +278,8 @@ private fun DetailRow(
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
+            color = valueColor
         )
     }
 }

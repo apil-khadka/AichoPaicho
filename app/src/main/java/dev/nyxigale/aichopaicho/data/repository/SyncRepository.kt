@@ -313,6 +313,7 @@ class SyncRepository @Inject constructor(
                         val firestoreIsComplete = doc.getBoolean("complete") ?: false
                         val firestoreIsDeleted = doc.getBoolean("deleted") ?: false
                         val firestoreDescription = doc.getString("description")
+                        val firestoreRecurringTemplateId = doc.getString("recurringTemplateId")
                         val firestoreCreatedAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
                         val firestoreUpdatedAtTimestamp = doc.getTimestamp("updatedAt")
                         val firestoreUpdatedAt =
@@ -334,6 +335,7 @@ class SyncRepository @Inject constructor(
                             isComplete = firestoreIsComplete,
                             isDeleted = firestoreIsDeleted,
                             description = firestoreDescription,
+                            recurringTemplateId = firestoreRecurringTemplateId,
                             createdAt = firestoreCreatedAt,
                             updatedAt = firestoreUpdatedAt
                         )
@@ -513,6 +515,7 @@ class SyncRepository @Inject constructor(
                 "deleted" to record.isDeleted,
                 "complete" to record.isComplete,
                 "description" to record.description,
+                "recurringTemplateId" to record.recurringTemplateId,
                 "typeId" to record.typeId,
                 "amount" to record.amount,
                 "createdAt" to record.createdAt,

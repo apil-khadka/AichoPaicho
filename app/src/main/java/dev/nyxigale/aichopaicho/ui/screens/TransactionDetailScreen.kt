@@ -1,10 +1,13 @@
 package dev.nyxigale.aichopaicho.ui.screens
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -34,9 +37,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,10 +62,14 @@ fun TransactionDetailScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val uiState by transactionDetailViewModel.uiState.collectAsStateWithLifecycle()
     var isEditing by remember { mutableStateOf(false) }
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val useTwoPane = isLandscape && configuration.screenWidthDp >= 700
+    val contentMaxWidth = if (configuration.screenWidthDp >= 840) 1080.dp else Dp.Unspecified
 
     LaunchedEffect(transactionId) {
         if (transactionId.isBlank()) { // Check for blank instead of just empty
@@ -184,41 +193,97 @@ fun TransactionDetailScreen(
                 }
             } else {
                 uiState.recordWithRepayments?.let { recordWithRepayments ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState()) // Make the column scrollable
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.TopCenter
                     ) {
-                        TransactionDetailsCard(
-                            recordWithRepayments = recordWithRepayments,
-                            contact = uiState.contact,
-                            type = uiState.type,
-                            isEditing = isEditing,
-                            onAmountChange = transactionDetailViewModel::updateAmount,
-                            onDescriptionChange = transactionDetailViewModel::updateDescription,
-                            onDateChange = transactionDetailViewModel::updateDate,
-                            onDueDateChange = transactionDetailViewModel::updateDueDate,
-                            onToggleComplete = transactionDetailViewModel::toggleRecordCompletion
-                        )
+                        if (useTwoPane) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .widthIn(max = contentMaxWidth)
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    TransactionDetailsCard(
+                                        recordWithRepayments = recordWithRepayments,
+                                        contact = uiState.contact,
+                                        type = uiState.type,
+                                        isEditing = isEditing,
+                                        onAmountChange = transactionDetailViewModel::updateAmount,
+                                        onDescriptionChange = transactionDetailViewModel::updateDescription,
+                                        onDateChange = transactionDetailViewModel::updateDate,
+                                        onDueDateChange = transactionDetailViewModel::updateDueDate,
+                                        onToggleComplete = transactionDetailViewModel::toggleRecordCompletion
+                                    )
+                                }
 
-                        // Only show AddRepaymentCard if not fully settled and not in edit mode
-                        if (!recordWithRepayments.isSettled && !isEditing) {
-                            AddRepaymentCard(
-                                repaymentAmount = uiState.repaymentAmount,
-                                onRepaymentAmountChange = transactionDetailViewModel::onRepaymentAmountChanged,
-                                repaymentDescription = uiState.repaymentDescription,
-                                onRepaymentDescriptionChange = transactionDetailViewModel::onRepaymentDescriptionChanged,
-                                onSaveRepayment = transactionDetailViewModel::saveRepayment,
-                                isLoading = uiState.isLoading,
-                                remainingAmount = recordWithRepayments.remainingAmount
-                            )
-                        }
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    if (!recordWithRepayments.isSettled && !isEditing) {
+                                        AddRepaymentCard(
+                                            repaymentAmount = uiState.repaymentAmount,
+                                            onRepaymentAmountChange = transactionDetailViewModel::onRepaymentAmountChanged,
+                                            repaymentDescription = uiState.repaymentDescription,
+                                            onRepaymentDescriptionChange = transactionDetailViewModel::onRepaymentDescriptionChanged,
+                                            onSaveRepayment = transactionDetailViewModel::saveRepayment,
+                                            isLoading = uiState.isLoading,
+                                            remainingAmount = recordWithRepayments.remainingAmount
+                                        )
+                                    }
 
-                        // Display repayment history if any
-                        if (recordWithRepayments.repayments.isNotEmpty()) {
-                            RepaymentHistoryCard(repayments = recordWithRepayments.repayments)
+                                    if (recordWithRepayments.repayments.isNotEmpty()) {
+                                        RepaymentHistoryCard(repayments = recordWithRepayments.repayments)
+                                    }
+                                }
+                            }
+                        } else {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .widthIn(max = contentMaxWidth)
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                TransactionDetailsCard(
+                                    recordWithRepayments = recordWithRepayments,
+                                    contact = uiState.contact,
+                                    type = uiState.type,
+                                    isEditing = isEditing,
+                                    onAmountChange = transactionDetailViewModel::updateAmount,
+                                    onDescriptionChange = transactionDetailViewModel::updateDescription,
+                                    onDateChange = transactionDetailViewModel::updateDate,
+                                    onDueDateChange = transactionDetailViewModel::updateDueDate,
+                                    onToggleComplete = transactionDetailViewModel::toggleRecordCompletion
+                                )
+
+                                if (!recordWithRepayments.isSettled && !isEditing) {
+                                    AddRepaymentCard(
+                                        repaymentAmount = uiState.repaymentAmount,
+                                        onRepaymentAmountChange = transactionDetailViewModel::onRepaymentAmountChanged,
+                                        repaymentDescription = uiState.repaymentDescription,
+                                        onRepaymentDescriptionChange = transactionDetailViewModel::onRepaymentDescriptionChanged,
+                                        onSaveRepayment = transactionDetailViewModel::saveRepayment,
+                                        isLoading = uiState.isLoading,
+                                        remainingAmount = recordWithRepayments.remainingAmount
+                                    )
+                                }
+
+                                if (recordWithRepayments.repayments.isNotEmpty()) {
+                                    RepaymentHistoryCard(repayments = recordWithRepayments.repayments)
+                                }
+                            }
                         }
                     }
                 } ?: Box(

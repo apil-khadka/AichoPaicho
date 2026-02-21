@@ -49,7 +49,8 @@ class RecurringTemplateWorker @AssistedInject constructor(
                     amount = template.amount,
                     date = nextRunAt,
                     dueDate = dueDate,
-                    description = template.description
+                    description = template.description,
+                    recurringTemplateId = template.id
                 )
                 recordRepository.insertRecord(record)
                 nextRunAt += intervalMillis

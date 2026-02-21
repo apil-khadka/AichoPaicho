@@ -63,6 +63,12 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE records ADD COLUMN recurringTemplateId TEXT")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -74,7 +80,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "aichopaicho_app_database"
         )
-            .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .fallbackToDestructiveMigration(true)
             .addCallback(AppDatabaseCallback(typeDaoProvider))
             .build()

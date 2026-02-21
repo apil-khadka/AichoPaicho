@@ -78,10 +78,12 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ContactPickerField(
     label: String,
-    onContactSelected: (Contact) -> Unit,
+    onContactSelected: (Contact?) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = stringResource(R.string.contact_placeholder),
     selectedContact: Contact?,
+    isError: Boolean = false,
+    errorMessage: String? = null,
 ) {
     var showContactPicker by remember { mutableStateOf(false) }
     var currentValue by remember(selectedContact) { // Recomposes when selectedContact changes
@@ -103,6 +105,7 @@ fun ContactPickerField(
             readOnly = true,
             label = { Text(label) },
             placeholder = { Text(placeholder) },
+            isError = isError,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             trailingIcon = {
@@ -120,11 +123,7 @@ fun ContactPickerField(
                         IconButton(
                             onClick = {
                                 currentValue = ""
-                                   val emptyContact = Contact(
-                                    id = "", name = "", phone = emptyList(), contactId = null,
-                                    isDeleted = false, createdAt = 0, updatedAt = 0, userId = ""
-                                )
-                                onContactSelected(emptyContact)
+                                onContactSelected(null)
                             }
                         ) {
                             Icon(
@@ -138,6 +137,15 @@ fun ContactPickerField(
             }
             // Colors will be inherited from MaterialTheme
         )
+
+        if (isError && errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
 
         if (showContactPicker) {
             ContactPickerDialog(
@@ -360,10 +368,11 @@ fun ContactPickerFieldPreview() {
                 label = "Contact Name",
                 selectedContact = selectedContactPreview,
                 onContactSelected = { contact ->
-                    selectedContactPreview = if (contact.name.isEmpty()) null else contact
-                    println("Selected contact: ${contact.name}")
-                    if (contact.phone.isNotEmpty()) {
-                        println("Phone numbers: ${contact.phone}")
+                    selectedContactPreview = contact
+                    println("Selected contact: ${contact?.name ?: "None"}")
+                    val phones = contact?.phone
+                    if (!phones.isNullOrEmpty()) {
+                        println("Phone numbers: $phones")
                     }
                 }
             )

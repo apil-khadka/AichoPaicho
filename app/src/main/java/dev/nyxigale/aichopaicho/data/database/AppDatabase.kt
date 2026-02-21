@@ -32,7 +32,7 @@ import dev.nyxigale.aichopaicho.data.local.ScreenViewDao
         RecurringTemplate::class
     ],
     views = [UserRecordSummary::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

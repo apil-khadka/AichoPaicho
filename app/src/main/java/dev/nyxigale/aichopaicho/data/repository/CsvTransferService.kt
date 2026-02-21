@@ -80,6 +80,7 @@ class CsvTransferService @Inject constructor(
                     "isComplete",
                     "isDeleted",
                     "description",
+                    "recurringTemplateId",
                     "createdAt",
                     "updatedAt"
                 ),
@@ -95,6 +96,7 @@ class CsvTransferService @Inject constructor(
                         record.isComplete.toString(),
                         record.isDeleted.toString(),
                         record.description.orEmpty(),
+                        record.recurringTemplateId.orEmpty(),
                         record.createdAt.toString(),
                         record.updatedAt.toString()
                     )
@@ -208,6 +210,15 @@ class CsvTransferService @Inject constructor(
             val id = columns[0]
             if (id.isBlank()) return@forEach
 
+            val hasRecurringTemplateIdColumn = columns.size >= 13
+            val recurringTemplateId = if (hasRecurringTemplateIdColumn) {
+                columns[10].ifBlank { null }
+            } else {
+                null
+            }
+            val createdAtIndex = if (hasRecurringTemplateIdColumn) 11 else 10
+            val updatedAtIndex = if (hasRecurringTemplateIdColumn) 12 else 11
+
             val record = Record(
                 id = id,
                 userId = columns[1].ifBlank { null },
@@ -219,8 +230,9 @@ class CsvTransferService @Inject constructor(
                 isComplete = columns[7].toBooleanStrictOrNull() ?: false,
                 isDeleted = columns[8].toBooleanStrictOrNull() ?: false,
                 description = columns[9].ifBlank { null },
-                createdAt = columns[10].toLongOrNull() ?: System.currentTimeMillis(),
-                updatedAt = columns[11].toLongOrNull() ?: System.currentTimeMillis()
+                recurringTemplateId = recurringTemplateId,
+                createdAt = columns[createdAtIndex].toLongOrNull() ?: System.currentTimeMillis(),
+                updatedAt = columns[updatedAtIndex].toLongOrNull() ?: System.currentTimeMillis()
             )
             recordRepository.upsert(record)
             imported++

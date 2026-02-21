@@ -11,6 +11,7 @@ data class RecordDto(
     val isComplete: Boolean = false,
     val isDeleted: Boolean = false,
     val description: String? = null,
+    val recurringTemplateId: String? = null,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L
 )

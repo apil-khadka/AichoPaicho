@@ -562,6 +562,7 @@ fun TransactionCard(
     val dateFormatter = remember { SimpleDateFormat("dd/M/yy", Locale.getDefault()) }
     val dueFormatter = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
     val isLent = record.typeId == TypeConstants.LENT_ID
+    val isRecurring = !record.recurringTemplateId.isNullOrBlank()
     val accent = if (isLent) Color(0xFF2E7D32) else Color(0xFFC62828)
     val now = System.currentTimeMillis()
     val isOverdue = record.dueDate != null && record.dueDate < now && !recordWithRepayments.isSettled
@@ -635,6 +636,21 @@ fun TransactionCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
+                if (isRecurring) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ) {
+                        Text(
+                            text = stringResource(R.string.recurring),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
                 record.dueDate?.let { due ->
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -645,6 +661,17 @@ fun TransactionCard(
                         },
                         fontSize = 12.sp,
                         color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                    )
+                }
+
+                if (!record.description.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = record.description,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

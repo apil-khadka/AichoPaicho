@@ -140,7 +140,9 @@ fun DateInputField(
     onDateSelected: (Long?) -> Unit,
     modifier: Modifier = Modifier,
     initializeWithCurrentDate: Boolean = false,
-    selectedDate: Long?
+    selectedDate: Long?,
+    isError: Boolean = false,
+    errorMessage: String? = null
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -173,6 +175,7 @@ fun DateInputField(
             value = formattedDateText,
             onValueChange = { },
             label = { Text(label) },
+            isError = isError,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = { showDialog = true }),
@@ -189,8 +192,18 @@ fun DateInputField(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                errorContainerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f),
             )
         )
+
+        if (isError && errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
     }
 
     if (showDialog) {
