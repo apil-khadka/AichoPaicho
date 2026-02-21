@@ -199,7 +199,8 @@ fun TransactionDetailScreen(
                             onAmountChange = transactionDetailViewModel::updateAmount,
                             onDescriptionChange = transactionDetailViewModel::updateDescription,
                             onDateChange = transactionDetailViewModel::updateDate,
-                            onDueDateChange = transactionDetailViewModel::updateDueDate
+                            onDueDateChange = transactionDetailViewModel::updateDueDate,
+                            onToggleComplete = transactionDetailViewModel::toggleRecordCompletion
                         )
 
                         // Only show AddRepaymentCard if not fully settled and not in edit mode

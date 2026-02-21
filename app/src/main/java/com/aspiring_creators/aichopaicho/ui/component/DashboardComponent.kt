@@ -600,7 +600,7 @@ fun UpcomingDueCard(items: List<UpcomingDueItem>) {
                     val isOverdue = item.dueDate < now
                     val amountPrefix = if (item.typeId == TypeConstants.LENT_ID) "+" else "-"
                     val amountColor = if (item.typeId == TypeConstants.LENT_ID) {
-                        MaterialTheme.colorScheme.primary
+                        Color(0xFF2E7D32)
                     } else {
                         MaterialTheme.colorScheme.error
                     }

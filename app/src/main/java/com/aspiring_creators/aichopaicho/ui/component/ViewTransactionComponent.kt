@@ -560,6 +560,7 @@ fun TransactionCard(
     onRecordClick: () -> Unit,
     onDeleteRecord: () -> Unit,
     onNavigateToContactList: (String) -> Unit,
+    onToggleComplete: (Boolean) -> Unit,
 ) {
     val record = recordWithRepayments.record
     val dateFormatter = remember { SimpleDateFormat("dd/M/yy", Locale.getDefault()) }
@@ -668,8 +669,7 @@ fun TransactionCard(
                     // Completion checkbox: small and read-only
                     Checkbox(
                         checked = recordWithRepayments.isSettled,
-                        onCheckedChange = null,
-                        enabled = false
+                        onCheckedChange = { checked -> onToggleComplete(checked) }
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -724,6 +724,7 @@ fun TransactionCardPreview() {
         contact = Contact("c1","Golesam", userId = "",phone = listOf("987"), contactId = "", isDeleted = false, createdAt = 0, updatedAt = 0),
         onRecordClick = {},
         onDeleteRecord = {},
-        onNavigateToContactList = {}
+        onNavigateToContactList = {},
+        onToggleComplete = {}
     )
 }

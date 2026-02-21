@@ -76,7 +76,6 @@ fun AddTransactionScreen(
 
     LaunchedEffect(uiState.submissionSuccessful) {
         if (uiState.submissionSuccessful) {
-            addTransactionViewModel.clearSubmissionSuccessFlag()
             snackbarHostState.showSnackbar(context.getString(R.string.transaction_added_successfully))
         }
     }

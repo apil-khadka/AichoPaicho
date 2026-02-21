@@ -123,6 +123,12 @@ fun ViewTransactionScreen(
                                 contact = uiState.contacts[recordWithRepayments.record.contactId],
                                 onRecordClick = { onNavigateToIndividualRecord(recordWithRepayments.record.id) },
                                 onDeleteRecord = { viewTransactionViewModel.deleteRecord(recordWithRepayments.record.id) },
+                                onToggleComplete = { checked ->
+                                    viewTransactionViewModel.toggleRecordCompletion(
+                                        recordWithRepayments.record.id,
+                                        checked
+                                    )
+                                },
                                 onNavigateToContactList = { contactId ->
                                     onNavigateToContactList(contactId)
                                 }

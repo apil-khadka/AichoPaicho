@@ -2,6 +2,8 @@ package com.aspiring_creators.aichopaicho.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.aspiring_creators.aichopaicho.data.AppDatabaseCallback
 import com.aspiring_creators.aichopaicho.data.dao.ContactDao
 import com.aspiring_creators.aichopaicho.data.dao.RecordDao
@@ -23,6 +25,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE records ADD COLUMN dueDate INTEGER")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -33,7 +41,9 @@ object DatabaseModule {
                 appContext,
                 AppDatabase::class.java,
                 "aichopaicho_app_database"
-            ).fallbackToDestructiveMigration(true) // review
+            )
+            .addMigrations(MIGRATION_3_4)
+            .fallbackToDestructiveMigration(true) // review
             .addCallback(AppDatabaseCallback(typeDaoProvider))
          .build()
     }

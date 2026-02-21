@@ -129,7 +129,7 @@ class ViewTransactionViewModel @Inject constructor(
         val currentState = _uiState.value
         return records.filter { recordWithRepayments ->
             // Filter by completion status
-            if (currentState.showCompleted && !recordWithRepayments.isSettled) return@filter false
+            if (!currentState.showCompleted && recordWithRepayments.isSettled) return@filter false
 
             // Filter by type
             currentState.selectedType?.let { typeId ->
@@ -157,6 +157,22 @@ class ViewTransactionViewModel @Inject constructor(
             } catch (e: Exception) {
                 setErrorMessage(context.getString(
                     R.string.failed_to_delete_record,
+                    e.message
+                ))
+            }
+        }
+    }
+
+    fun toggleRecordCompletion(recordId: String, isComplete: Boolean) {
+        viewModelScope.launch {
+            try {
+                val record = recordRepository.getRecordById(recordId) ?: return@launch
+                recordRepository.updateRecord(
+                    record.copy(isComplete = isComplete, updatedAt = System.currentTimeMillis())
+                )
+            } catch (e: Exception) {
+                setErrorMessage(context.getString(
+                    R.string.failed_to_update_record,
                     e.message
                 ))
             }

@@ -164,6 +164,22 @@ class TransactionDetailViewModel @Inject constructor(
         }
     }
 
+    fun toggleRecordCompletion(isComplete: Boolean) {
+        _uiState.value.recordWithRepayments?.record?.let { record ->
+            viewModelScope.launch {
+                try {
+                    val updated = record.copy(isComplete = isComplete, updatedAt = System.currentTimeMillis())
+                    recordRepository.updateRecord(updated)
+                    _uiState.value = _uiState.value.copy(
+                        recordWithRepayments = _uiState.value.recordWithRepayments?.copy(record = updated)
+                    )
+                } catch (e: Exception) {
+                    _uiState.value = _uiState.value.copy(errorMessage = e.message)
+                }
+            }
+        }
+    }
+
     fun acknowledgeRecordDeleted() {
         _uiState.value = _uiState.value.copy(isRecordDeleted = false)
     }

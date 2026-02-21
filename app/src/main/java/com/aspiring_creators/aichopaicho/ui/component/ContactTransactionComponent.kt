@@ -310,7 +310,8 @@ fun ContactRecordCard(
     recordWithRepayments: RecordWithRepayments,
     type: Type?,
     onRecordClick: () -> Unit,
-    onDeleteRecord: () -> Unit
+    onDeleteRecord: () -> Unit,
+    onToggleComplete: (Boolean) -> Unit
 ) {
     val record = recordWithRepayments.record // Unpack for convenience
     val dateFormatter = remember { SimpleDateFormat("dd MMM yy", Locale.getDefault()) }
@@ -419,8 +420,7 @@ fun ContactRecordCard(
             ) {
                 Checkbox(
                     checked = recordWithRepayments.isSettled,
-                    onCheckedChange = null, // Completion is automatic, so no manual toggle
-                    enabled = false,
+                    onCheckedChange = { checked -> onToggleComplete(checked) },
                     modifier = Modifier.size(36.dp)
                 )
                 IconButton(
@@ -551,7 +551,8 @@ fun ContactRecordCardLentPreview() {
             recordWithRepayments = RecordWithRepayments(record, emptyList()),
             type = type,
             onRecordClick = {},
-            onDeleteRecord = {}
+            onDeleteRecord = {},
+            onToggleComplete = {}
         )
     }
 }
@@ -579,7 +580,8 @@ fun ContactRecordCardBorrowedPreview() {
             recordWithRepayments = RecordWithRepayments(record, emptyList()),
             type = type,
             onRecordClick = {},
-            onDeleteRecord = {}
+            onDeleteRecord = {},
+            onToggleComplete = {}
         )
     }
 }

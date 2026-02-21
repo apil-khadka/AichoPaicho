@@ -155,10 +155,15 @@ class WelcomeViewModel @Inject constructor(
     // Helper method to check if user should auto-navigate
     suspend fun shouldAutoNavigate(): Boolean {
         val currentUser = firebaseAuth.currentUser
-        if (currentUser != null ) {
+        if (currentUser != null) {
             val localUser = userRepository.getUser()
-            return localUser.id == currentUser.uid
+            if (localUser.id != currentUser.uid) {
+                userRepository.upsert(currentUser.toUserEntity())
+                screenViewRepository.markScreenAsShown(Routes.WELCOME_SCREEN)
+                BackgroundSyncWorker.scheduleOneTimeSyncOnLogin(context)
             }
+            return true
+        }
         return false
     }
 

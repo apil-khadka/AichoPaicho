@@ -18,5 +18,5 @@ data class RecordWithRepayments(
         get() = record.amount - totalRepayment
 
     val isSettled: Boolean
-        get() = remainingAmount <= 0
+        get() = record.isComplete || remainingAmount <= 0
 }

@@ -56,6 +56,7 @@ fun TransactionDetailsCard(
     onDescriptionChange: (String) -> Unit,
     onDateChange: (Long) -> Unit, // Kept, though no UI for edit in this card
     onDueDateChange: (Long?) -> Unit,
+    onToggleComplete: (Boolean) -> Unit,
     // onCompletionToggle: () -> Unit // Removed, as completion is now derived
 ) {
     val record = recordWithRepayments.record // Unpack for convenience
@@ -97,9 +98,8 @@ fun TransactionDetailsCard(
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
-                        checked = recordWithRepayments.isSettled, // Use derived state
-                        onCheckedChange = null, // Read-only
-                        enabled = false // Disable user interaction
+                        checked = recordWithRepayments.isSettled,
+                        onCheckedChange = { checked -> onToggleComplete(checked) }
                     )
                     Text(
                         text = stringResource(R.string.completed),
@@ -453,7 +453,8 @@ fun TransactionDetailsCardPreview() {
             onAmountChange = {},
             onDescriptionChange = {},
             onDateChange = {},
-            onDueDateChange = {}
+            onDueDateChange = {},
+            onToggleComplete = {}
         )
     }
 }
@@ -492,7 +493,8 @@ fun TransactionDetailsCardEditingPreview() {
             onAmountChange = {},
             onDescriptionChange = {},
             onDateChange = {},
-            onDueDateChange = {}
+            onDueDateChange = {},
+            onToggleComplete = {}
         )
     }
 }

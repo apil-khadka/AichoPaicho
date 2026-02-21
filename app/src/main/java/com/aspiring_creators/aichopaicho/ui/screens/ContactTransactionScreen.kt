@@ -162,7 +162,13 @@ fun ContactTransactionScreen(
                                 recordWithRepayments = recordWithRepayments,
                                 type = uiState.types[recordWithRepayments.record.typeId],
                                 onRecordClick = { onNavigateToRecord(recordWithRepayments.record.id) },
-                                onDeleteRecord = { contactTransactionViewModel.deleteRecord(recordWithRepayments.record.id) }
+                                onDeleteRecord = { contactTransactionViewModel.deleteRecord(recordWithRepayments.record.id) },
+                                onToggleComplete = { checked ->
+                                    contactTransactionViewModel.toggleRecordCompletion(
+                                        recordWithRepayments.record.id,
+                                        checked
+                                    )
+                                }
                             )
                         }
                     }

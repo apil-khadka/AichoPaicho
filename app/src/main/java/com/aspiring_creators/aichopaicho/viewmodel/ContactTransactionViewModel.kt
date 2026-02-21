@@ -156,6 +156,19 @@ class ContactTransactionViewModel @Inject constructor(
         }
     }
 
+    fun toggleRecordCompletion(recordId: String, isComplete: Boolean) {
+        viewModelScope.launch {
+            try {
+                val record = recordRepository.getRecordById(recordId) ?: return@launch
+                recordRepository.updateRecord(
+                    record.copy(isComplete = isComplete, updatedAt = System.currentTimeMillis())
+                )
+            } catch (e: Exception) {
+                setErrorMessage(context.getString(R.string.failed_to_update_record, e.message))
+            }
+        }
+    }
+
     fun setErrorMessage(value: String?) {
         _uiState.value = _uiState.value.copy(errorMessage = value)
     }
