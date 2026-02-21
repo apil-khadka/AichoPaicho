@@ -63,8 +63,8 @@ Date: 2026-02-21
 8. Legal/support link updates
 - Updated settings About section actions to open live website pages.
 - Wired URLs:
-- Privacy policy: `https://aichopaicho.nyxigale.dev/legal/privacy`
-- Terms of service: `https://aichopaicho.nyxigale.dev/legal/terms`
+- Privacy policy: `https://aichopaicho.nyxigale.dev/en/legal/privacy-policy`
+- Terms of service: `https://aichopaicho.nyxigale.dev/en/legal/terms-of-service`
 - Support/site: `https://aichopaicho.nyxigale.dev/`
 
 9. Privacy and data-use disclosure clarity
@@ -82,6 +82,27 @@ Date: 2026-02-21
 - Switched Add Transaction contact selection to intent-based phone picker (`ACTION_PICK` on `CommonDataKinds.Phone`).
 - Updated onboarding navigation to go directly from Welcome to Dashboard (removed mandatory contact-permission step from primary flow).
 - Reworked contact detail quick action to open the dialer intent from stored phone number, avoiding device-contact lookup.
+
+12. Global search and status filtering expansion
+- Added advanced transaction filters in View Transactions:
+- text search (contact/name/phone/note/amount), status chips (open/completed/overdue/all), and resilient amount-range parsing.
+- Extended similar search + status filtering to Contact Transactions for consistency across list/detail workflows.
+- Kept existing type/date/amount controls and integrated filter state into ViewModel-driven list updates.
+
+13. Insights screen implementation
+- Added a new `Insights` flow with ViewModel-driven metrics from existing records/repayments:
+- current-month inflow/outflow, overdue outstanding totals, top-contact balances, and a six-month trend series.
+- Added dedicated UI screen and navigation route (`INSIGHTS_SCREEN`), with Settings entry point (`Open insights`).
+- Reused existing amount-format privacy utilities so hidden-amount mode also applies to insights values.
+
+14. Transaction detail UI refresh
+- Redesigned the transaction detail card with stronger visual hierarchy:
+- hero summary area, status/type chips, repayment progress bar, and compact amount summary tiles.
+- Improved repayment UX cards:
+- clearer remaining-amount context in add-repayment form, better error hinting, and cleaner repayment history row styling.
+- Replaced remaining hardcoded repayment success messaging with localized string resources.
+- Refined transaction-detail interactions:
+- moved add-repayment flow to an on-demand overlay sheet and added explicit "person not found in contacts" feedback for View Details actions when local contact linkage is unavailable.
 
 ## Files Updated For This Work
 - `app/build.gradle.kts`

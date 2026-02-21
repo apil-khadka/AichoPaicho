@@ -80,6 +80,9 @@ class AddTransactionViewModel @Inject constructor(
                 ?.trim()
                 ?.takeIf { it.isNotBlank() }
                 ?: throw IllegalArgumentException(context.getString(R.string.error_enter_contact_number))
+            if (!isPhoneNumberValid(primaryPhoneNumber)) {
+                throw IllegalArgumentException(context.getString(R.string.error_enter_valid_contact_number))
+            }
 
             var canonicalContact: Contact? = null
             canonicalContact = contactRepository.getContactByPhoneNumber(primaryPhoneNumber)
@@ -88,7 +91,7 @@ class AddTransactionViewModel @Inject constructor(
             if (canonicalContact == null) {
                 val phonesToSave = selectedContactInfo.phone
                     .mapNotNull { it?.trim() }
-                    .filter { it.isNotBlank() }
+                    .filter { isPhoneNumberValid(it) }
                     .ifEmpty { listOf(primaryPhoneNumber) }
                 // No canonical contact exists, create a new one owned by the current user.
                 contactToSave = Contact(
@@ -256,10 +259,12 @@ class AddTransactionViewModel @Inject constructor(
         } else {
             null
         }
-        val contactPhoneError = if (!usingPickedContact && state.contactPhoneInput.isBlank()) {
-            context.getString(R.string.error_enter_contact_number)
-        } else {
-            null
+        val contactPhoneError = when {
+            !usingPickedContact && state.contactPhoneInput.isBlank() ->
+                context.getString(R.string.error_enter_contact_number)
+            !usingPickedContact && !isPhoneNumberValid(state.contactPhoneInput) ->
+                context.getString(R.string.error_enter_valid_contact_number)
+            else -> null
         }
 
         val amountError = when {
@@ -307,7 +312,15 @@ class AddTransactionViewModel @Inject constructor(
     private fun isContactValid(contact: Contact?): Boolean {
         return contact != null &&
             contact.name.isNotBlank() &&
-            contact.phone.any { !it.isNullOrBlank() }
+            contact.phone.any { isPhoneNumberValid(it) }
+    }
+
+    private fun isPhoneNumberValid(phone: String?): Boolean {
+        val value = phone?.trim().orEmpty()
+        if (value.isBlank()) return false
+        if (value.any { !it.isDigit() && it !in setOf('+', '-', ' ', '(', ')') }) return false
+        val digitCount = value.count(Char::isDigit)
+        return digitCount >= 5
     }
 
     private data class ValidationErrors(

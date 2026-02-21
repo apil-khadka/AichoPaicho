@@ -19,8 +19,8 @@ Date: 2026-02-21
 - Removed unsafe Kotlin compiler flag `-XXLanguage:+PropertyParamAnnotationDefaultTargetMode`.
 - Fixed settings version/build metadata loading by using `PackageManager` instead of `BuildConfig`.
 - Wired legal/support links in settings About section to live website URLs:
-- Privacy: `https://aichopaicho.nyxigale.dev/legal/privacy`
-- Terms: `https://aichopaicho.nyxigale.dev/legal/terms`
+- Privacy: `https://aichopaicho.nyxigale.dev/en/legal/privacy-policy`
+- Terms: `https://aichopaicho.nyxigale.dev/en/legal/terms-of-service`
 - Website/Support: `https://aichopaicho.nyxigale.dev/`
 - Updated CSV flow to use user-selected SAF destinations:
 - export now prompts for folder, import now prompts for file.
@@ -34,6 +34,13 @@ Date: 2026-02-21
 - Removed broad contacts permission flow:
 - switched Add Transaction to intent-based phone contact picker and removed `READ_CONTACTS` from manifest.
 - streamlined onboarding to go directly from Welcome to Dashboard.
+- Completed global transaction discovery filters:
+- added search + status filters (open/completed/overdue/all) in both View Transactions and Contact Transactions screens.
+- Added Insights screen:
+- monthly inflow/outflow, overdue outstanding, top contacts, and a 6-month trend view.
+- Refined Transaction Detail UI with a richer summary header, progress visualization, and improved repayment section styling.
+- Updated Transaction Detail interactions:
+- repayment form now opens as an overlay sheet via Add Repayment button, and View Details now shows a clear not-found message when contact info is unavailable on device.
 
 ## Project Analysis Snapshot
 - Strengths:
@@ -66,9 +73,9 @@ Date: 2026-02-21
 - improve portrait + landscape behavior for core screens (Add Transaction, View Transactions, Transaction Detail) across phone/tablet widths.
 
 ### P1 (User Value + Retention)
-- [ ] Add analytics/insights screen:
+- [x] Add analytics/insights screen:
 - monthly inflow/outflow, overdue totals, top contacts, trend graph.
-- [ ] Add global search and advanced filters:
+- [x] Add global search and advanced filters:
 - by contact, amount range, date range, status, type.
 - [ ] Add quick actions on dashboard:
 - add transaction, mark repaid, contact shortcuts.

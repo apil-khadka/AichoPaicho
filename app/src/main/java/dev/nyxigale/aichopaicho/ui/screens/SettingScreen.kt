@@ -79,6 +79,7 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSyncCenter: () -> Unit,
+    onNavigateToInsights: () -> Unit,
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
@@ -296,6 +297,15 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+
+            SettingsCard(
+                title = stringResource(R.string.insights),
+                icon = Icons.Default.Info
+            ) {
+                TextButton(onClick = onNavigateToInsights) {
+                    Text(stringResource(R.string.open_insights))
                 }
             }
 

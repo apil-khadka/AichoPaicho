@@ -10,6 +10,7 @@ import dev.nyxigale.aichopaicho.data.repository.RecordRepository
 import dev.nyxigale.aichopaicho.data.repository.TypeRepository
 import dev.nyxigale.aichopaicho.ui.component.TypeConstants
 import dev.nyxigale.aichopaicho.viewmodel.data.ContactTransactionUiState
+import dev.nyxigale.aichopaicho.viewmodel.data.TransactionStatusFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 
 @HiltViewModel
@@ -55,6 +57,7 @@ class ContactTransactionViewModel @Inject constructor(
         try {
             val contact = contactRepository.getContactById(contactId)
             _uiState.value = _uiState.value.copy(contact = contact)
+            applyFiltersToCurrentRecords()
         } catch (e: Exception) {
             setErrorMessage(
                 context.getString(
@@ -74,26 +77,8 @@ class ContactTransactionViewModel @Inject constructor(
                 ))
             }
             .collect { recordsWithRepayments ->
-
-                // Filter settled records based on the new isSettled property
-                val filteredRecords = if (_uiState.value.showCompleted) {
-                    recordsWithRepayments
-                } else {
-                    recordsWithRepayments.filter { !it.isSettled }
-                }
-
-                val (lentRecords, borrowedRecords) = separateRecordsByType(filteredRecords)
-                val (totalLent, totalBorrowed) = calculateGrossTotals(filteredRecords)
-                val netBalance = calculateNetBalance(filteredRecords)
-
-                _uiState.value = _uiState.value.copy(
-                    allRecords = filteredRecords,
-                    lentRecords = lentRecords,
-                    borrowedRecords = borrowedRecords,
-                    totalLent = totalLent,
-                    totalBorrowed = totalBorrowed,
-                    netBalance = netBalance
-                )
+                _uiState.value = _uiState.value.copy(sourceRecords = recordsWithRepayments)
+                applyFiltersToCurrentRecords()
             }
     }
 
@@ -128,14 +113,104 @@ class ContactTransactionViewModel @Inject constructor(
         return outstandingLent - outstandingBorrowed
     }
 
-    fun updateShowCompleted(showCompleted: Boolean) {
-        _uiState.value = _uiState.value.copy(showCompleted = showCompleted)
-        // Reload records with new filter
-        _uiState.value.contact?.id?.let { contactId ->
-            viewModelScope.launch {
-                loadRecordsAndCalculations(contactId)
+    private fun applyFiltersToCurrentRecords() {
+        val currentState = _uiState.value
+        val filteredRecords = applyFilters(currentState.sourceRecords)
+        val (lentRecords, borrowedRecords) = separateRecordsByType(filteredRecords)
+        val (totalLent, totalBorrowed) = calculateGrossTotals(filteredRecords)
+        val netBalance = calculateNetBalance(filteredRecords)
+
+        _uiState.value = currentState.copy(
+            allRecords = filteredRecords,
+            lentRecords = lentRecords,
+            borrowedRecords = borrowedRecords,
+            totalLent = totalLent,
+            totalBorrowed = totalBorrowed,
+            netBalance = netBalance
+        )
+    }
+
+    private fun applyFilters(records: List<RecordWithRepayments>): List<RecordWithRepayments> {
+        val currentState = _uiState.value
+        val now = System.currentTimeMillis()
+        val normalizedQuery = currentState.searchQuery.trim().lowercase(Locale.getDefault())
+        val contact = currentState.contact
+        val contactSearchBlob = buildString {
+            append(contact?.name.orEmpty())
+            append(' ')
+            append(contact?.phone?.filterNotNull()?.joinToString(" ").orEmpty())
+        }.lowercase(Locale.getDefault())
+
+        return records.filter { recordWithRepayments ->
+            val record = recordWithRepayments.record
+
+            when (currentState.statusFilter) {
+                TransactionStatusFilter.OPEN -> {
+                    if (recordWithRepayments.isSettled) return@filter false
+                }
+
+                TransactionStatusFilter.COMPLETED -> {
+                    if (!recordWithRepayments.isSettled) return@filter false
+                }
+
+                TransactionStatusFilter.OVERDUE -> {
+                    val dueDate = record.dueDate
+                    if (dueDate == null || dueDate >= now || recordWithRepayments.isSettled) {
+                        return@filter false
+                    }
+                }
+
+                TransactionStatusFilter.ALL -> Unit
             }
+
+            if (normalizedQuery.isNotBlank()) {
+                val searchable = buildString {
+                    append(contactSearchBlob)
+                    append(' ')
+                    append(record.description.orEmpty())
+                    append(' ')
+                    append(record.amount.toString())
+                    append(' ')
+                    append(
+                        when (record.typeId) {
+                            TypeConstants.LENT_ID -> "lent"
+                            TypeConstants.BORROWED_ID -> "borrowed"
+                            else -> ""
+                        }
+                    )
+                }.lowercase(Locale.getDefault())
+
+                if (!searchable.contains(normalizedQuery)) {
+                    return@filter false
+                }
+            }
+            true
         }
+    }
+
+    fun updateShowCompleted(showCompleted: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            showCompleted = showCompleted,
+            statusFilter = if (showCompleted) {
+                TransactionStatusFilter.ALL
+            } else {
+                TransactionStatusFilter.OPEN
+            }
+        )
+        applyFiltersToCurrentRecords()
+    }
+
+    fun updateStatusFilter(statusFilter: TransactionStatusFilter) {
+        _uiState.value = _uiState.value.copy(
+            statusFilter = statusFilter,
+            showCompleted = statusFilter != TransactionStatusFilter.OPEN
+        )
+        applyFiltersToCurrentRecords()
+    }
+
+    fun updateSearchQuery(query: String) {
+        _uiState.value = _uiState.value.copy(searchQuery = query)
+        applyFiltersToCurrentRecords()
     }
 
     fun updateSelectedTab(tabIndex: Int) {

@@ -3,8 +3,11 @@ package dev.nyxigale.aichopaicho.ui.component
 // import androidx.compose.ui.res.stringResource // Not used
 // import androidx.compose.ui.unit.sp // Replaced with MaterialTheme.typography
 // import dev.nyxigale.aichopaicho.R // Not used
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,9 +29,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,6 +62,7 @@ import dev.nyxigale.aichopaicho.ui.util.formatAbsoluteCurrencyAmount
 import dev.nyxigale.aichopaicho.ui.util.formatCurrencyAmount
 import dev.nyxigale.aichopaicho.ui.util.formatSignedCurrencyAmount
 import dev.nyxigale.aichopaicho.ui.util.rememberHideAmountsEnabled
+import dev.nyxigale.aichopaicho.viewmodel.data.TransactionStatusFilter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -174,6 +180,74 @@ fun ContactSummaryCard(
                     stringResource(R.string.show_completed_transactions),
                     style = MaterialTheme.typography.bodyMedium // Themed
                 )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ContactRecordFilterSection(
+    searchQuery: String,
+    onSearchQueryChanged: (String) -> Unit,
+    statusFilter: TransactionStatusFilter,
+    onStatusFilterChanged: (TransactionStatusFilter) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChanged,
+                label = { Text(stringResource(R.string.search)) },
+                placeholder = { Text(stringResource(R.string.search_transactions_hint)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = statusFilter == TransactionStatusFilter.ALL,
+                    onClick = { onStatusFilterChanged(TransactionStatusFilter.ALL) },
+                    label = { Text(stringResource(R.string.all)) }
+                )
+                FilterChip(
+                    selected = statusFilter == TransactionStatusFilter.OPEN,
+                    onClick = { onStatusFilterChanged(TransactionStatusFilter.OPEN) },
+                    label = { Text(stringResource(R.string.status_open)) }
+                )
+                FilterChip(
+                    selected = statusFilter == TransactionStatusFilter.COMPLETED,
+                    onClick = { onStatusFilterChanged(TransactionStatusFilter.COMPLETED) },
+                    label = { Text(stringResource(R.string.status_completed)) }
+                )
+                FilterChip(
+                    selected = statusFilter == TransactionStatusFilter.OVERDUE,
+                    onClick = { onStatusFilterChanged(TransactionStatusFilter.OVERDUE) },
+                    label = { Text(stringResource(R.string.status_overdue)) }
+                )
+            }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(
+                    onClick = {
+                        onSearchQueryChanged("")
+                        onStatusFilterChanged(TransactionStatusFilter.ALL)
+                    }
+                ) {
+                    Text(text = stringResource(R.string.clear))
+                }
             }
         }
     }
@@ -480,16 +554,45 @@ fun ContactHeadingDisplay(
             modifier = Modifier.weight(1f, fill = false) // Allow text to take space but not push button
         )
         if (!primaryPhoneNumber.isNullOrBlank()) {
-            TextButton(
-                onClick = {
-                    openContactDetailsByPhoneNumber(context = context, phoneNumber = primaryPhoneNumber)
-                },
-                modifier = Modifier.padding(start = 8.dp)
+            Row(
+                modifier = Modifier.padding(start = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.view_details),
-                    color = MaterialTheme.colorScheme.primary // Themed
-                )
+                TextButton(
+                    onClick = {
+                        val opened = openDialer(context = context, phoneNumber = primaryPhoneNumber)
+                        if (!opened) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.unable_to_open_phone_app),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.call),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                TextButton(
+                    onClick = {
+                        val opened = openContactDetails(context = context, contact = contact)
+                        if (!opened) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.person_not_found_in_contacts),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.view_details),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }

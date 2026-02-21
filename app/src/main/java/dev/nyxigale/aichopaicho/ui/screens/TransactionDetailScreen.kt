@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -16,12 +17,14 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -37,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -66,6 +70,7 @@ fun TransactionDetailScreen(
     val uiState by transactionDetailViewModel.uiState.collectAsStateWithLifecycle()
     var isEditing by remember { mutableStateOf(false) }
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
+    var showAddRepaymentSheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val useTwoPane = isLandscape && configuration.screenWidthDp >= 700
@@ -94,8 +99,9 @@ fun TransactionDetailScreen(
     }
     LaunchedEffect(uiState.repaymentSaved) {
         if (uiState.repaymentSaved) {
-            snackbarHostState.showSnackbar("Repayment saved successfully!")
+            snackbarHostState.showSnackbar(context.getString(R.string.repayment_saved_successfully))
             transactionDetailViewModel.acknowledgeRepaymentSaved()
+            showAddRepaymentSheet = false
             // The ViewModel's flow should automatically emit the new state,
             // but a manual reload can be a fallback if needed.
             // transactionDetailViewModel.loadRecord(transactionId)
@@ -130,51 +136,86 @@ fun TransactionDetailScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.transaction_details)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                actions = {
-                    if (uiState.recordWithRepayments != null && !uiState.isLoading) {
-                        IconButton(
-                            onClick = {
-                                if (isEditing) {
-                                    transactionDetailViewModel.saveRecord()
-                                }
-                                isEditing = !isEditing
-                            }
-                        ) {
-                            Icon(
-                                if (isEditing) Icons.Default.Done else Icons.Default.Edit,
-                                contentDescription = if (isEditing) "Save" else "Edit",
-                                tint = if(isEditing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        IconButton(onClick = { showDeleteConfirmationDialog = true }) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    if (showAddRepaymentSheet && uiState.recordWithRepayments != null && !isEditing) {
+        ModalBottomSheet(
+            onDismissRequest = { showAddRepaymentSheet = false }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                AddRepaymentCard(
+                    repaymentAmount = uiState.repaymentAmount,
+                    onRepaymentAmountChange = transactionDetailViewModel::onRepaymentAmountChanged,
+                    repaymentDescription = uiState.repaymentDescription,
+                    onRepaymentDescriptionChange = transactionDetailViewModel::onRepaymentDescriptionChanged,
+                    onSaveRepayment = transactionDetailViewModel::saveRepayment,
+                    isLoading = uiState.isLoading,
+                    remainingAmount = uiState.recordWithRepayments?.remainingAmount ?: 0
                 )
-            )
+            }
+        }
+    }
+
+    Scaffold(
+        containerColor = Color(0xFFF4F5F7),
+        topBar = {
+            Surface(
+                color = Color.White,
+                shadowElevation = 4.dp,
+                tonalElevation = 1.dp
+            ) {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.transaction_details)) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                Icons.AutoMirrored.Outlined.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    actions = {
+                        if (uiState.recordWithRepayments != null && !uiState.isLoading) {
+                            IconButton(
+                                onClick = {
+                                    if (isEditing) {
+                                        transactionDetailViewModel.saveRecord()
+                                    }
+                                    val nextEditingState = !isEditing
+                                    isEditing = nextEditingState
+                                    if (nextEditingState) {
+                                        showAddRepaymentSheet = false
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    if (isEditing) Icons.Default.Done else Icons.Default.Edit,
+                                    contentDescription = if (isEditing) "Save" else "Edit",
+                                    tint = if (isEditing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            IconButton(onClick = { showDeleteConfirmationDialog = true }) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.White,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                        actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+            }
         },
         snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
     ) { paddingValues ->
@@ -182,7 +223,7 @@ fun TransactionDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            color = MaterialTheme.colorScheme.background
+            color = Color(0xFFF4F5F7)
         ) {
             if (uiState.isLoading && uiState.recordWithRepayments == null) {
                 Box(
@@ -231,15 +272,12 @@ fun TransactionDetailScreen(
                                     verticalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
                                     if (!recordWithRepayments.isSettled && !isEditing) {
-                                        AddRepaymentCard(
-                                            repaymentAmount = uiState.repaymentAmount,
-                                            onRepaymentAmountChange = transactionDetailViewModel::onRepaymentAmountChanged,
-                                            repaymentDescription = uiState.repaymentDescription,
-                                            onRepaymentDescriptionChange = transactionDetailViewModel::onRepaymentDescriptionChanged,
-                                            onSaveRepayment = transactionDetailViewModel::saveRepayment,
-                                            isLoading = uiState.isLoading,
-                                            remainingAmount = recordWithRepayments.remainingAmount
-                                        )
+                                        Button(
+                                            onClick = { showAddRepaymentSheet = true },
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(stringResource(R.string.add_repayment))
+                                        }
                                     }
 
                                     if (recordWithRepayments.repayments.isNotEmpty()) {
@@ -269,15 +307,12 @@ fun TransactionDetailScreen(
                                 )
 
                                 if (!recordWithRepayments.isSettled && !isEditing) {
-                                    AddRepaymentCard(
-                                        repaymentAmount = uiState.repaymentAmount,
-                                        onRepaymentAmountChange = transactionDetailViewModel::onRepaymentAmountChanged,
-                                        repaymentDescription = uiState.repaymentDescription,
-                                        onRepaymentDescriptionChange = transactionDetailViewModel::onRepaymentDescriptionChanged,
-                                        onSaveRepayment = transactionDetailViewModel::saveRepayment,
-                                        isLoading = uiState.isLoading,
-                                        remainingAmount = recordWithRepayments.remainingAmount
-                                    )
+                                    Button(
+                                        onClick = { showAddRepaymentSheet = true },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(stringResource(R.string.add_repayment))
+                                    }
                                 }
 
                                 if (recordWithRepayments.repayments.isNotEmpty()) {

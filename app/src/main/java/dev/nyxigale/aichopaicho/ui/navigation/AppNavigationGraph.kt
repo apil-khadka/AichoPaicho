@@ -21,6 +21,7 @@ import dev.nyxigale.aichopaicho.ui.screens.AddTransactionScreen
 import dev.nyxigale.aichopaicho.ui.screens.ContactListScreen
 import dev.nyxigale.aichopaicho.ui.screens.ContactTransactionScreen
 import dev.nyxigale.aichopaicho.ui.screens.DashboardScreen
+import dev.nyxigale.aichopaicho.ui.screens.InsightsScreen
 import dev.nyxigale.aichopaicho.ui.screens.SettingsScreen
 import dev.nyxigale.aichopaicho.ui.screens.SyncCenterScreen
 import dev.nyxigale.aichopaicho.ui.screens.TransactionDetailScreen
@@ -206,12 +207,25 @@ fun AppNavigationGraph(
                         navController.navSafe(Routes.SYNC_CENTER_SCREEN) {
                             launchSingleTop = true
                         }
+                    },
+                    onNavigateToInsights = {
+                        navController.navSafe(Routes.INSIGHTS_SCREEN) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
 
             composable(Routes.SYNC_CENTER_SCREEN) {
                 SyncCenterScreen(
+                    onNavigateBack = {
+                        navController.popSafe()
+                    }
+                )
+            }
+
+            composable(Routes.INSIGHTS_SCREEN) {
+                InsightsScreen(
                     onNavigateBack = {
                         navController.popSafe()
                     }

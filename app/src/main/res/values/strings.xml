@@ -88,8 +88,8 @@
     <string name="privacy_policy">Privacy Policy</string>
     <string name="terms_of_service">Terms of Service</string>
     <string name="contact_support">Contact Support</string>
-    <string name="privacy_policy_url" translatable="false">https://aichopaicho.nyxigale.dev/legal/privacy</string>
-    <string name="terms_of_service_url" translatable="false">https://aichopaicho.nyxigale.dev/legal/terms</string>
+    <string name="privacy_policy_url" translatable="false">https://aichopaicho.nyxigale.dev/en/legal/privacy-policy</string>
+    <string name="terms_of_service_url" translatable="false">https://aichopaicho.nyxigale.dev/en/legal/terms-of-service</string>
     <string name="support_website_url" translatable="false">https://aichopaicho.nyxigale.dev/</string>
     <string name="transaction_details">Transaction Details</string>
     <string name="completed">Completed</string>
@@ -188,6 +188,19 @@
     <string name="transaction_deleted">Transaction deleted</string>
     <string name="delete_transaction">Delete Transaction</string>
     <string name="delete_transaction_confirmation">Are you sure you want to delete this transaction? This action cannot be undone.</string>
+    <string name="original_amount">Original Amount</string>
+    <string name="total_repaid">Total Repaid</string>
+    <string name="remaining_amount">Remaining Amount</string>
+    <string name="add_repayment">Add Repayment</string>
+    <string name="save_repayment">Save Repayment</string>
+    <string name="repayment_history">Repayment History</string>
+    <string name="see_all">See All</string>
+    <string name="show_less">Show less</string>
+    <string name="call">Call</string>
+    <string name="unable_to_open_phone_app">Unable to open phone app.</string>
+    <string name="repayment_amount_exceeds_remaining">Repayment amount cannot exceed remaining amount.</string>
+    <string name="repayment_saved_successfully">Repayment saved successfully!</string>
+    <string name="person_not_found_in_contacts">This person could not be found in your device contacts.</string>
     <string name="delete">Delete</string>
     <string name="transaction_not_found">Transaction not found or could not be loaded.</string>
     <string name="no_transactions_match">No transactions match your filters.</string>
@@ -213,6 +226,7 @@
     <string name="error_enter_valid_amount">Enter a valid amount greater than 0.</string>
     <string name="error_enter_contact_name">Enter the contact name.</string>
     <string name="error_enter_contact_number">Enter the contact phone number.</string>
+    <string name="error_enter_valid_contact_number">Enter a valid contact phone number.</string>
     <string name="error_select_date">Select a transaction date.</string>
     <string name="error_custom_recurrence_days">Enter custom recurrence days (greater than 0).</string>
     <string name="error_transaction_type_not_found">Selected transaction type was not found.</string>
@@ -231,6 +245,15 @@
     <string name="reminders">Reminders</string>
     <string name="data_portability">Data portability</string>
     <string name="analytics">Analytics</string>
+    <string name="insights">Insights</string>
+    <string name="open_insights">Open insights</string>
+    <string name="insights_overview">This month overview</string>
+    <string name="monthly_inflow">Monthly inflow</string>
+    <string name="monthly_outflow">Monthly outflow</string>
+    <string name="overdue_outstanding">Overdue outstanding</string>
+    <string name="top_contacts">Top contacts</string>
+    <string name="trend_last_6_months">Trend (last 6 months)</string>
+    <string name="no_insights_data">Not enough data yet.</string>
     <string name="enable_usage_analytics">Enable usage analytics</string>
     <string name="analytics_toggle_note">When disabled, analytics collection stays off on next app launch.</string>
     <string name="amount_privacy">Amount Privacy</string>

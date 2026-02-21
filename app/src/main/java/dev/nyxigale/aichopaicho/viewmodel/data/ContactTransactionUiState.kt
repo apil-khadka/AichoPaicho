@@ -10,6 +10,7 @@ data class ContactTransactionUiState(
     val contact: Contact? = null,
 
     // This is the key change to support repayments
+    val sourceRecords: List<RecordWithRepayments> = emptyList(),
     val allRecords: List<RecordWithRepayments> = emptyList(),
     val lentRecords: List<RecordWithRepayments> = emptyList(),
     val borrowedRecords: List<RecordWithRepayments> = emptyList(),
@@ -23,6 +24,8 @@ data class ContactTransactionUiState(
     // Net balance of what is currently outstanding
     val netBalance: Double = 0.0,
 
+    val searchQuery: String = "",
+    val statusFilter: TransactionStatusFilter = TransactionStatusFilter.ALL,
     val showCompleted: Boolean = true,
     val selectedTab: Int = 0
 )

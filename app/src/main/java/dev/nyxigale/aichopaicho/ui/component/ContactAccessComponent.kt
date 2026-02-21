@@ -674,13 +674,27 @@ fun ContactItemPreview() {
 }
 
 
-fun openContactDetailsByPhoneNumber(context: Context, phoneNumber: String?) {
-    if (phoneNumber.isNullOrBlank()) {
-        return
+fun openContactDetails(context: Context, contact: Contact?): Boolean {
+    val contactId = contact?.contactId?.toLongOrNull() ?: return false
+    val contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId)
+    val viewIntent = Intent(Intent.ACTION_VIEW, contactUri)
+    if (viewIntent.resolveActivity(context.packageManager) == null) return false
+    return try {
+        context.startActivity(viewIntent)
+        true
+    } catch (_: Exception) {
+        false
     }
+}
 
-    val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${Uri.encode(phoneNumber)}"))
-    if (dialIntent.resolveActivity(context.packageManager) != null) {
+fun openDialer(context: Context, phoneNumber: String?): Boolean {
+    val sanitizedNumber = phoneNumber?.trim()?.takeIf { it.isNotEmpty() } ?: return false
+    val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${Uri.encode(sanitizedNumber)}"))
+    if (dialIntent.resolveActivity(context.packageManager) == null) return false
+    return try {
         context.startActivity(dialIntent)
+        true
+    } catch (_: Exception) {
+        false
     }
 }

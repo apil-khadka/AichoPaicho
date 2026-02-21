@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.nyxigale.aichopaicho.R
 import dev.nyxigale.aichopaicho.ui.component.ContactHeadingDisplay
 import dev.nyxigale.aichopaicho.ui.component.ContactRecordCard
+import dev.nyxigale.aichopaicho.ui.component.ContactRecordFilterSection
 import dev.nyxigale.aichopaicho.ui.component.ContactRecordTabs
 import dev.nyxigale.aichopaicho.ui.component.ContactSummaryCard
 import dev.nyxigale.aichopaicho.ui.component.EmptyRecordsCard
@@ -150,11 +151,20 @@ fun ContactTransactionScreen(
                         )
                     }
 
+                    item {
+                        ContactRecordFilterSection(
+                            searchQuery = uiState.searchQuery,
+                            onSearchQueryChanged = contactTransactionViewModel::updateSearchQuery,
+                            statusFilter = uiState.statusFilter,
+                            onStatusFilterChanged = contactTransactionViewModel::updateStatusFilter
+                        )
+                    }
+
                     val recordsToShow = when (uiState.selectedTab) {
                         1 -> uiState.lentRecords
                         2 -> uiState.borrowedRecords
                         else -> uiState.allRecords
-                    }.filter { uiState.showCompleted || !it.isSettled } // Use new isSettled property
+                    }
 
 
                     if (recordsToShow.isEmpty()) {

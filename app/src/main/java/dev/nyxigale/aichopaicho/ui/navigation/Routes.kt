@@ -25,5 +25,6 @@ object Routes {
 
     const val CONTACT_TRANSACTION_SCREEN = "contact_transaction_screen"
     const val SYNC_CENTER_SCREEN = "sync_center_screen"
+    const val INSIGHTS_SCREEN = "insights_screen"
 
 }
