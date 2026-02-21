@@ -53,6 +53,10 @@ import dev.nyxigale.aichopaicho.data.entity.Record
 import dev.nyxigale.aichopaicho.data.entity.RecordWithRepayments
 import dev.nyxigale.aichopaicho.data.entity.Type
 import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
+import dev.nyxigale.aichopaicho.ui.util.formatAbsoluteCurrencyAmount
+import dev.nyxigale.aichopaicho.ui.util.formatCurrencyAmount
+import dev.nyxigale.aichopaicho.ui.util.formatSignedCurrencyAmount
+import dev.nyxigale.aichopaicho.ui.util.rememberHideAmountsEnabled
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -67,6 +71,7 @@ fun ContactSummaryCard(
     onShowCompletedChanged: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -117,7 +122,11 @@ fun ContactSummaryCard(
                 else -> MaterialTheme.colorScheme.onSurface
             }
             Text(
-                text = "${AppPreferenceUtils.getCurrencySymbol(context)} ${ "%.2f".format(netBalance.toBigDecimal().abs())}", // Show absolute value
+                text = formatAbsoluteCurrencyAmount(
+                    currency = AppPreferenceUtils.getCurrencySymbol(context),
+                    amount = netBalance,
+                    hideAmounts = hideAmounts
+                ),
                 style = MaterialTheme.typography.headlineMedium, // Themed
                 color = netBalanceColor
             )
@@ -178,6 +187,7 @@ fun SummaryItem(
     color: Color
 ) {
     val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -191,7 +201,11 @@ fun SummaryItem(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "${AppPreferenceUtils.getCurrencySymbol(context)} ${ "%.2f".format(amount)}",
+                text = formatCurrencyAmount(
+                    currency = AppPreferenceUtils.getCurrencySymbol(context),
+                    amount = amount,
+                    hideAmounts = hideAmounts
+                ),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), // Themed
                 color = color
             )
@@ -315,6 +329,7 @@ fun ContactRecordCard(
     val timeFormatter = remember { SimpleDateFormat("HH:mm a", Locale.getDefault()) }
     val isLent = record.typeId == TypeConstants.LENT_ID
     val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
     val now = System.currentTimeMillis()
     val isOverdue = record.dueDate != null && record.dueDate < now && !recordWithRepayments.isSettled
 
@@ -353,7 +368,12 @@ fun ContactRecordCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "$amountPrefix ${AppPreferenceUtils.getCurrencySymbol(context)} ${recordWithRepayments.remainingAmount}",
+                        text = formatSignedCurrencyAmount(
+                            sign = amountPrefix,
+                            currency = AppPreferenceUtils.getCurrencySymbol(context),
+                            amount = recordWithRepayments.remainingAmount,
+                            hideAmounts = hideAmounts
+                        ),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = amountColor,
                         textDecoration = if (recordWithRepayments.isSettled) TextDecoration.LineThrough else TextDecoration.None
@@ -374,7 +394,13 @@ fun ContactRecordCard(
                 // Show original amount if it's different from remaining and not settled
                 if (recordWithRepayments.totalRepayment > 0 && !recordWithRepayments.isSettled) {
                     Text(
-                        text = "Original: ${AppPreferenceUtils.getCurrencySymbol(context)} ${record.amount}",
+                        text = "Original: ${
+                            formatCurrencyAmount(
+                                currency = AppPreferenceUtils.getCurrencySymbol(context),
+                                amount = record.amount,
+                                hideAmounts = hideAmounts
+                            )
+                        }",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textDecoration = TextDecoration.LineThrough

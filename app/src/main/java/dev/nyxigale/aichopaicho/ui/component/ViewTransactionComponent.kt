@@ -43,7 +43,11 @@ import dev.nyxigale.aichopaicho.data.entity.Record
 import dev.nyxigale.aichopaicho.data.entity.RecordWithRepayments
 import dev.nyxigale.aichopaicho.data.entity.UserRecordSummary
 import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
+import dev.nyxigale.aichopaicho.ui.util.formatCurrencyAmount
+import dev.nyxigale.aichopaicho.ui.util.formatSignedCurrencyAmount
+import dev.nyxigale.aichopaicho.ui.util.rememberHideAmountsEnabled
 import dev.nyxigale.aichopaicho.viewmodel.data.ContactPreview
+import dev.nyxigale.aichopaicho.viewmodel.data.TransactionStatusFilter
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -274,6 +278,7 @@ fun ContactChip(
     onContainerColor: Color = MaterialTheme.colorScheme.onPrimaryContainer // Text in avatar
 ) {
     val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
@@ -315,7 +320,11 @@ fun ContactChip(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "${AppPreferenceUtils.getCurrencyCode(context)} ${contact.amount.toInt()}",
+                    text = formatCurrencyAmount(
+                        currency = AppPreferenceUtils.getCurrencyCode(context),
+                        amount = contact.amount.toInt(),
+                        hideAmounts = hideAmounts
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = baseColor // Use tertiary for amount text to match avatar theme
                 )
@@ -354,17 +363,20 @@ fun NetBalanceCardPreview() {
         }
     }
 }
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TransactionFilterSection(
     selectedType: Int?,
     onTypeSelected: (Int?) -> Unit,
+    searchQuery: String,
+    onSearchQueryChanged: (String) -> Unit,
+    statusFilter: TransactionStatusFilter,
+    onStatusFilterChanged: (TransactionStatusFilter) -> Unit,
     fromQuery: String,
     onFromQueryChanged: (String) -> Unit,
     moneyToQuery: String,
     onMoneyToQueryChanged: (String) -> Unit,
-    onMoneyFilterApplyClicked: () -> Unit,
-    showCompleted: Boolean,
-    onShowCompletedChanged: (Boolean) -> Unit
+    onMoneyFilterApplyClicked: () -> Unit
 ) {
     val fromAmount = fromQuery.toDoubleOrNull()
     val toAmount = moneyToQuery.toDoubleOrNull()
@@ -373,14 +385,21 @@ fun TransactionFilterSection(
     val rangeError = fromAmount != null && toAmount != null && fromAmount > toAmount
     val hasAmountError = fromError || toError || rangeError
     var expanded by remember { mutableStateOf(false) }
+    val statusSummary = when (statusFilter) {
+        TransactionStatusFilter.OPEN -> stringResource(R.string.status_open)
+        TransactionStatusFilter.COMPLETED -> stringResource(R.string.status_completed)
+        TransactionStatusFilter.OVERDUE -> stringResource(R.string.status_overdue)
+        TransactionStatusFilter.ALL -> stringResource(R.string.all)
+    }
     val summary = buildString {
+        if (searchQuery.isNotBlank()) append("${stringResource(R.string.search)}: $searchQuery • ")
         when (selectedType) {
             TypeConstants.LENT_ID -> append("${stringResource(R.string.lent)} • ")
             TypeConstants.BORROWED_ID -> append("${stringResource(R.string.borrowed)} • ")
         }
+        if (statusFilter != TransactionStatusFilter.OPEN) append("$statusSummary • ")
         if (fromQuery.isNotBlank()) append("${stringResource(R.string.from)} $fromQuery • ")
         if (moneyToQuery.isNotBlank()) append("${stringResource(R.string.to)} $moneyToQuery • ")
-        if (showCompleted) append("${stringResource(R.string.show_completed)} • ")
     }.removeSuffix(" • ").trim()
 
     Card(
@@ -415,9 +434,11 @@ fun TransactionFilterSection(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = {
                         onTypeSelected(null)
+                        onSearchQueryChanged("")
+                        onStatusFilterChanged(TransactionStatusFilter.OPEN)
                         onFromQueryChanged("")
                         onMoneyToQueryChanged("")
-                        onShowCompletedChanged(false)
+                        onMoneyFilterApplyClicked()
                     }) {
                         Text(stringResource(R.string.clear))
                     }
@@ -444,33 +465,71 @@ fun TransactionFilterSection(
                 exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = onSearchQueryChanged,
+                        label = { Text(stringResource(R.string.search)) },
+                        placeholder = { Text(stringResource(R.string.search_transactions_hint)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
                     Text(
                         text = stringResource(R.string.type),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
-                    Row(
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         FilterChip(
                             selected = selectedType == null,
                             onClick = { onTypeSelected(null) },
-                            label = { Text(stringResource(R.string.all)) },
-                            modifier = Modifier.weight(1f)
+                            label = { Text(stringResource(R.string.all)) }
                         )
                         FilterChip(
                             selected = selectedType == TypeConstants.LENT_ID,
                             onClick = { onTypeSelected(if (selectedType == TypeConstants.LENT_ID) null else TypeConstants.LENT_ID) },
-                            label = { Text(TypeConstants.TYPE_LENT) },
-                            modifier = Modifier.weight(1f)
+                            label = { Text(TypeConstants.TYPE_LENT) }
                         )
                         FilterChip(
                             selected = selectedType == TypeConstants.BORROWED_ID,
                             onClick = { onTypeSelected(if (selectedType == TypeConstants.BORROWED_ID) null else TypeConstants.BORROWED_ID) },
-                            label = { Text(TypeConstants.TYPE_BORROWED) },
-                            modifier = Modifier.weight(1f)
+                            label = { Text(TypeConstants.TYPE_BORROWED) }
+                        )
+                    }
+
+                    Text(
+                        text = stringResource(R.string.status),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = statusFilter == TransactionStatusFilter.OPEN,
+                            onClick = { onStatusFilterChanged(TransactionStatusFilter.OPEN) },
+                            label = { Text(stringResource(R.string.status_open)) }
+                        )
+                        FilterChip(
+                            selected = statusFilter == TransactionStatusFilter.COMPLETED,
+                            onClick = { onStatusFilterChanged(TransactionStatusFilter.COMPLETED) },
+                            label = { Text(stringResource(R.string.status_completed)) }
+                        )
+                        FilterChip(
+                            selected = statusFilter == TransactionStatusFilter.OVERDUE,
+                            onClick = { onStatusFilterChanged(TransactionStatusFilter.OVERDUE) },
+                            label = { Text(stringResource(R.string.status_overdue)) }
+                        )
+                        FilterChip(
+                            selected = statusFilter == TransactionStatusFilter.ALL,
+                            onClick = { onStatusFilterChanged(TransactionStatusFilter.ALL) },
+                            label = { Text(stringResource(R.string.all)) }
                         )
                     }
 
@@ -479,7 +538,6 @@ fun TransactionFilterSection(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -524,14 +582,8 @@ fun TransactionFilterSection(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        FilterChip(
-                            selected = showCompleted,
-                            onClick = { onShowCompletedChanged(!showCompleted) },
-                            label = { Text(stringResource(R.string.show_completed)) }
-                        )
                         FilledTonalButton(
                             onClick = {
                                 onMoneyFilterApplyClicked()
@@ -559,6 +611,8 @@ fun TransactionCard(
     onToggleComplete: (Boolean) -> Unit,
 ) {
     val record = recordWithRepayments.record
+    val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
     val dateFormatter = remember { SimpleDateFormat("dd/M/yy", Locale.getDefault()) }
     val dueFormatter = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
     val isLent = record.typeId == TypeConstants.LENT_ID
@@ -680,7 +734,12 @@ fun TransactionCard(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${if (isLent) "+" else "-"} ${AppPreferenceUtils.getCurrencyCode(LocalContext.current)} ${recordWithRepayments.remainingAmount}",
+                    text = formatSignedCurrencyAmount(
+                        sign = if (isLent) "+" else "-",
+                        currency = AppPreferenceUtils.getCurrencyCode(context),
+                        amount = recordWithRepayments.remainingAmount,
+                        hideAmounts = hideAmounts
+                    ),
                     fontWeight = FontWeight.Bold,
                     color = accent,
                     textDecoration = if (recordWithRepayments.isSettled) TextDecoration.LineThrough else TextDecoration.None
@@ -713,20 +772,23 @@ fun TransactionCard(
 @Composable
 fun TransactionFilterSectionPreview() {
     var type by remember { mutableStateOf<Int?>(2) }
+    var query by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf(TransactionStatusFilter.OPEN) }
     var from by remember { mutableStateOf("") }
     var money by remember { mutableStateOf("") }
-    var showCompleted by remember { mutableStateOf(false) }
 
     TransactionFilterSection(
         selectedType = type,
         onTypeSelected = { type = it },
+        searchQuery = query,
+        onSearchQueryChanged = { query = it },
+        statusFilter = status,
+        onStatusFilterChanged = { status = it },
         fromQuery = from,
         onFromQueryChanged = { from = it },
         moneyToQuery = money,
         onMoneyToQueryChanged = { money = it },
-        onMoneyFilterApplyClicked = {},
-        showCompleted = showCompleted,
-        onShowCompletedChanged = { showCompleted = it }
+        onMoneyFilterApplyClicked = {}
     )
 }
 

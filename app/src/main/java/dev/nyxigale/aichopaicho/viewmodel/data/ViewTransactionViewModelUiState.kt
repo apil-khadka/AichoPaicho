@@ -16,6 +16,8 @@ data class ViewTransactionViewModelUiState(
     val types: Map<Int, Type> = emptyMap(),
     val dateRange: Pair<Long, Long> = 0L to 0L,
     val selectedType: Int? = null,
+    val searchQuery: String = "",
+    val statusFilter: TransactionStatusFilter = TransactionStatusFilter.OPEN,
     val fromQuery: String = "",
     val moneyToQuery: String = "",
     val showCompleted: Boolean = false,

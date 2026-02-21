@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -55,9 +59,11 @@ fun PermissionScreen(
     permissionViewModel: PermissionViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val uiState by permissionViewModel.uiState.collectAsState()
+    val contentScrollState = rememberScrollState()
 
     var contactsPermissionGranted by remember {
         mutableStateOf(
@@ -111,8 +117,15 @@ fun PermissionScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
+                    .then(
+                        if (contactsPermissionGranted) {
+                            Modifier
+                        } else {
+                            Modifier.verticalScroll(contentScrollState)
+                        }
+                    )
                     .padding(horizontal = 20.dp, vertical = 28.dp),
-                verticalArrangement = Arrangement.Center,
+                verticalArrangement = if (contactsPermissionGranted) Arrangement.Center else Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (contactsPermissionGranted) {
@@ -135,8 +148,44 @@ fun PermissionScreen(
                     Spacer(modifier = Modifier.size(12.dp))
 
                     Text(
-                        text = stringResource(R.string.contact_privacy_note),
+                        text = stringResource(R.string.data_use_intro),
                         style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.size(8.dp))
+
+                    Text(
+                        text = stringResource(R.string.data_use_contacts_only),
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.size(6.dp))
+
+                    Text(
+                        text = stringResource(R.string.data_use_local_default),
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.size(6.dp))
+
+                    Text(
+                        text = stringResource(R.string.data_use_cloud_sync),
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.size(6.dp))
+
+                    Text(
+                        text = stringResource(R.string.data_use_manual_entry),
+                        style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -149,6 +198,14 @@ fun PermissionScreen(
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.primary
                     )
+
+                    Spacer(modifier = Modifier.size(8.dp))
+
+                    TextButton(
+                        onClick = { uriHandler.openUri(context.getString(R.string.privacy_policy_url)) }
+                    ) {
+                        Text(stringResource(R.string.read_privacy_policy))
+                    }
 
                     Spacer(modifier = Modifier.size(20.dp))
 

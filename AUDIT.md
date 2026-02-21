@@ -22,12 +22,16 @@ Date: 2026-02-21
 - Added Compose SDK dependency `com.microsoft.clarity:clarity-compose:3.8.1` via version catalog.
 - Initialized Clarity in `AichoPaichoApp` with project ID `vkq46hwvk6`.
 - Ensured WorkManager is initialized before Clarity startup in app initialization flow.
+- Added user consent toggle in Settings for analytics and made Clarity initialization conditional on that preference.
 
 3. Due reminders implementation
 - Added `DueReminderWorker` for periodic due-date checks and notifications.
 - Added notification channel setup in app startup (`NotificationChannels`).
 - Added `POST_NOTIFICATIONS` permission in `AndroidManifest.xml`.
 - Added due reminder preference toggle in settings state and ViewModel logic.
+- Added runtime notification-permission UX in Settings:
+- shows clear requirement text when reminders are enabled but permission is missing.
+- supports direct permission request and a shortcut to app notification settings.
 
 4. Recurring templates implementation
 - Added Room entity `RecurringTemplate` and DAO/repository plumbing.
@@ -61,6 +65,16 @@ Date: 2026-02-21
 - Terms of service: `https://aichopaicho.nyxigale.dev/legal/terms`
 - Support/site: `https://aichopaicho.nyxigale.dev/`
 
+9. Privacy and data-use disclosure clarity
+- Expanded onboarding permission copy with explicit contact/cloud-sync data handling statements.
+- Added dedicated `Data Use & Privacy` section in Settings with clear disclosure bullets.
+- Linked disclosure actions to Privacy Policy and Terms pages from both onboarding and settings.
+
+10. Hide-amount privacy mode
+- Added Settings toggle to enable/disable amount masking in UI.
+- Added shared amount privacy formatter utilities with preference observer support.
+- Applied masking to key amount displays across dashboard, transaction list, contact transaction, and transaction detail screens.
+
 ## Files Updated For This Work
 - `app/build.gradle.kts`
 - `app/src/main/AndroidManifest.xml`
@@ -88,9 +102,15 @@ Date: 2026-02-21
 - `app/src/main/java/dev/nyxigale/aichopaicho/ui/navigation/Routes.kt`
 - `app/src/main/java/dev/nyxigale/aichopaicho/ui/navigation/AppNavigationGraph.kt`
 - `app/src/main/java/dev/nyxigale/aichopaicho/ui/screens/SettingScreen.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/screens/PermissionScreen.kt`
 - `app/src/main/java/dev/nyxigale/aichopaicho/ui/screens/AddTransactionScreen.kt`
 - `app/src/main/java/dev/nyxigale/aichopaicho/ui/screens/SyncCenterScreen.kt`
 - `app/src/main/java/dev/nyxigale/aichopaicho/ui/component/SettingComponent.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/component/DashboardComponent.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/component/ViewTransactionComponent.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/component/ContactTransactionComponent.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/component/TransactionDetailComponent.kt`
+- `app/src/main/java/dev/nyxigale/aichopaicho/ui/util/AmountPrivacy.kt`
 - `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/SettingsViewModel.kt`
 - `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/AddTransactionViewModel.kt`
 - `app/src/main/java/dev/nyxigale/aichopaicho/viewmodel/SyncCenterViewModel.kt`

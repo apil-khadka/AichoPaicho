@@ -20,6 +20,8 @@ class AichoPaichoApp : Application(), Configuration.Provider {
     companion object {
         private const val TAG = "AichoPaichoApp"
         private const val CLARITY_PROJECT_ID = "vkq46hwvk6"
+        private const val APP_PREFS_NAME = "app_preferences"
+        private const val KEY_ANALYTICS_ENABLED = "analytics_enabled"
     }
 
 
@@ -37,12 +39,21 @@ class AichoPaichoApp : Application(), Configuration.Provider {
         WorkManager.getInstance(applicationContext)
         NotificationChannels.createAll(applicationContext)
 
-        val clarityInitialized = Clarity.initialize(
-            applicationContext,
-            ClarityConfig(projectId = CLARITY_PROJECT_ID)
-        )
+        val clarityInitialized = if (isAnalyticsEnabled()) {
+            Clarity.initialize(
+                applicationContext,
+                ClarityConfig(projectId = CLARITY_PROJECT_ID)
+            )
+        } else {
+            false
+        }
 
         Log.d(TAG, "WorkManager configuration initialized with HiltWorkerFactory: $workerFactory")
         Log.i(TAG, "Microsoft Clarity initialized: $clarityInitialized")
+    }
+
+    private fun isAnalyticsEnabled(): Boolean {
+        val prefs = getSharedPreferences(APP_PREFS_NAME, MODE_PRIVATE)
+        return prefs.getBoolean(KEY_ANALYTICS_ENABLED, true)
     }
 }

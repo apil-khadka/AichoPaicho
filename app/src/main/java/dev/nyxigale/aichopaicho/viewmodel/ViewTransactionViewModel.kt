@@ -6,12 +6,13 @@ import androidx.lifecycle.viewModelScope
 import dev.nyxigale.aichopaicho.R
 import dev.nyxigale.aichopaicho.data.entity.*
 import dev.nyxigale.aichopaicho.data.repository.*
+import dev.nyxigale.aichopaicho.viewmodel.data.TransactionStatusFilter
 import dev.nyxigale.aichopaicho.viewmodel.data.ViewTransactionViewModelUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.*
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -73,6 +74,7 @@ class ViewTransactionViewModel @Inject constructor(
             .collect { contacts ->
                 val contactMap = contacts.associateBy { it.id }
                 _uiState.value = _uiState.value.copy(contacts = contactMap)
+                applyFiltersToCurrentRecords()
             }
     }
 
@@ -100,6 +102,19 @@ class ViewTransactionViewModel @Inject constructor(
         applyFiltersToCurrentRecords()
     }
 
+    fun updateSearchQuery(query: String) {
+        _uiState.value = _uiState.value.copy(searchQuery = query)
+        applyFiltersToCurrentRecords()
+    }
+
+    fun updateStatusFilter(statusFilter: TransactionStatusFilter) {
+        _uiState.value = _uiState.value.copy(
+            statusFilter = statusFilter,
+            showCompleted = statusFilter != TransactionStatusFilter.OPEN
+        )
+        applyFiltersToCurrentRecords()
+    }
+
     fun updateFromQuery(query: String) {
         _uiState.value = _uiState.value.copy(fromQuery = query)
     }
@@ -113,7 +128,14 @@ class ViewTransactionViewModel @Inject constructor(
     }
 
     fun updateShowCompleted(showCompleted: Boolean) {
-        _uiState.value = _uiState.value.copy(showCompleted = showCompleted)
+        _uiState.value = _uiState.value.copy(
+            showCompleted = showCompleted,
+            statusFilter = if (showCompleted) {
+                TransactionStatusFilter.ALL
+            } else {
+                TransactionStatusFilter.OPEN
+            }
+        )
         applyFiltersToCurrentRecords()
     }
 
@@ -126,22 +148,69 @@ class ViewTransactionViewModel @Inject constructor(
 
     private fun applyFilters(records: List<RecordWithRepayments>): List<RecordWithRepayments> {
         val currentState = _uiState.value
+        val now = System.currentTimeMillis()
+        val normalizedQuery = currentState.searchQuery.trim().lowercase(Locale.getDefault())
+        val fromAmount = currentState.fromQuery.toIntOrNull()
+        val toAmount = currentState.moneyToQuery.toIntOrNull()
+
         return records.filter { recordWithRepayments ->
-            // Filter by completion status
-            if (!currentState.showCompleted && recordWithRepayments.isSettled) return@filter false
+            val record = recordWithRepayments.record
+
+            // Filter by status
+            when (currentState.statusFilter) {
+                TransactionStatusFilter.OPEN -> {
+                    if (recordWithRepayments.isSettled) return@filter false
+                }
+                TransactionStatusFilter.COMPLETED -> {
+                    if (!recordWithRepayments.isSettled) return@filter false
+                }
+                TransactionStatusFilter.OVERDUE -> {
+                    val dueDate = record.dueDate
+                    if (dueDate == null || dueDate >= now || recordWithRepayments.isSettled) {
+                        return@filter false
+                    }
+                }
+                TransactionStatusFilter.ALL -> Unit
+            }
 
             // Filter by type
             currentState.selectedType?.let { typeId ->
-                if (recordWithRepayments.record.typeId != typeId) return@filter false
+                if (record.typeId != typeId) return@filter false
             }
 
             // Filter by amount range
-            if (currentState.fromQuery.isNotBlank() && currentState.moneyToQuery.isNotBlank()) {
-                val amount = recordWithRepayments.record.amount
-                if ( !(amount >= currentState.fromQuery.toInt() && amount <= currentState.moneyToQuery.toInt())) {
+            if ((currentState.fromQuery.isNotBlank() && fromAmount == null) ||
+                (currentState.moneyToQuery.isNotBlank() && toAmount == null)
+            ) {
+                return@filter false
+            }
+
+            if (fromAmount != null && toAmount != null && fromAmount > toAmount) {
+                return@filter false
+            }
+
+            val amount = record.amount
+            if (fromAmount != null && amount < fromAmount) return@filter false
+            if (toAmount != null && amount > toAmount) return@filter false
+
+            // Filter by text query across contact + transaction metadata.
+            if (normalizedQuery.isNotBlank()) {
+                val contact = currentState.contacts[record.contactId]
+                val searchable = buildString {
+                    append(contact?.name.orEmpty())
+                    append(' ')
+                    append(contact?.phone?.filterNotNull()?.joinToString(" ").orEmpty())
+                    append(' ')
+                    append(record.description.orEmpty())
+                    append(' ')
+                    append(record.amount.toString())
+                }.lowercase(Locale.getDefault())
+
+                if (!searchable.contains(normalizedQuery)) {
                     return@filter false
                 }
             }
+
             true
         }
     }

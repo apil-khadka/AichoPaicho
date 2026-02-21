@@ -1,5 +1,10 @@
 package dev.nyxigale.aichopaicho.ui.screens
 
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -7,7 +12,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -27,11 +34,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,10 +52,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.nyxigale.aichopaicho.R
 import dev.nyxigale.aichopaicho.ui.component.AboutSection
@@ -70,6 +83,8 @@ fun SettingsScreen(
 ) {
     val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val activity = context as ComponentActivity
     val scope = rememberCoroutineScope()
 
@@ -86,6 +101,27 @@ fun SettingsScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let { settingsViewModel.importCsvData(it) }
+    }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        settingsViewModel.onNotificationPermissionResult(granted)
+    }
+
+    LaunchedEffect(Unit) {
+        settingsViewModel.refreshNotificationPermissionStatus()
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                settingsViewModel.refreshNotificationPermissionStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
 
@@ -202,10 +238,134 @@ fun SettingsScreen(
                 title = stringResource(R.string.reminders),
                 icon = Icons.Default.ThumbUp
             ) {
-                DueReminderSettings(
-                    isEnabled = uiState.isDueReminderEnabled,
-                    onToggle = settingsViewModel::toggleDueReminderEnabled
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    DueReminderSettings(
+                        isEnabled = uiState.isDueReminderEnabled,
+                        onToggle = settingsViewModel::toggleDueReminderEnabled
+                    )
+
+                    if (uiState.isDueReminderEnabled &&
+                        uiState.requiresNotificationPermissionPrompt &&
+                        !uiState.hasNotificationPermission
+                    ) {
+                        Text(
+                            text = stringResource(R.string.notifications_permission_required_message),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            ) {
+                                Text(stringResource(R.string.grant_notification_permission))
+                            }
+
+                            TextButton(
+                                onClick = {
+                                    openNotificationSettings(context)
+                                }
+                            ) {
+                                Text(stringResource(R.string.open_notification_settings))
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsCard(
+                title = stringResource(R.string.analytics),
+                icon = Icons.Default.Info
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(stringResource(R.string.enable_usage_analytics))
+                        Switch(
+                            checked = uiState.isAnalyticsEnabled,
+                            onCheckedChange = { settingsViewModel.toggleAnalyticsEnabled() }
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.analytics_toggle_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            SettingsCard(
+                title = stringResource(R.string.amount_privacy),
+                icon = Icons.Default.Info
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(stringResource(R.string.hide_amounts))
+                        Switch(
+                            checked = uiState.isHideAmountsEnabled,
+                            onCheckedChange = { settingsViewModel.toggleHideAmountsEnabled() }
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.hide_amounts_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            SettingsCard(
+                title = stringResource(R.string.data_use_privacy),
+                icon = Icons.Default.Info
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.data_use_intro),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = stringResource(R.string.data_use_contacts_only),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = stringResource(R.string.data_use_local_default),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = stringResource(R.string.data_use_cloud_sync),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = stringResource(R.string.data_use_manual_entry),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = {
+                            uriHandler.openUri(context.getString(R.string.privacy_policy_url))
+                        }) {
+                            Text(stringResource(R.string.read_privacy_policy))
+                        }
+                        TextButton(onClick = {
+                            uriHandler.openUri(context.getString(R.string.terms_of_service_url))
+                        }) {
+                            Text(stringResource(R.string.read_terms))
+                        }
+                    }
+                }
             }
 
             SettingsCard(
@@ -336,5 +496,20 @@ fun SettingsScreen(
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
     }
+}
+
+private fun openNotificationSettings(context: android.content.Context) {
+    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    }
+    context.startActivity(intent)
 }
 

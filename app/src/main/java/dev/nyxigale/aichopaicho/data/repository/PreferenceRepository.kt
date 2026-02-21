@@ -54,4 +54,20 @@ class PreferencesRepository @Inject constructor(
     fun setDueReminderEnabled(enabled: Boolean) {
         prefs.edit { putBoolean("due_reminder_enabled", enabled) }
     }
+
+    fun isAnalyticsEnabled(): Boolean {
+        return prefs.getBoolean("analytics_enabled", true)
+    }
+
+    fun setAnalyticsEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean("analytics_enabled", enabled) }
+    }
+
+    fun isHideAmountsEnabled(): Boolean {
+        return prefs.getBoolean("hide_amounts_enabled", false)
+    }
+
+    fun setHideAmountsEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean("hide_amounts_enabled", enabled) }
+    }
 }

@@ -114,13 +114,15 @@ fun ViewTransactionScreen(
                             TransactionFilterSection(
                                 selectedType = uiState.selectedType,
                                 onTypeSelected = viewTransactionViewModel::updateSelectedType,
+                                searchQuery = uiState.searchQuery,
+                                onSearchQueryChanged = viewTransactionViewModel::updateSearchQuery,
+                                statusFilter = uiState.statusFilter,
+                                onStatusFilterChanged = viewTransactionViewModel::updateStatusFilter,
                                 fromQuery = uiState.fromQuery,
                                 onFromQueryChanged = viewTransactionViewModel::updateFromQuery,
                                 moneyToQuery = uiState.moneyToQuery,
                                 onMoneyToQueryChanged = viewTransactionViewModel::updateMoneyToQuery,
-                                onMoneyFilterApplyClicked = viewTransactionViewModel::updateMoneyFilterApplyClicked,
-                                showCompleted = uiState.showCompleted,
-                                onShowCompletedChanged = viewTransactionViewModel::updateShowCompleted
+                                onMoneyFilterApplyClicked = viewTransactionViewModel::updateMoneyFilterApplyClicked
                             )
                         }
 

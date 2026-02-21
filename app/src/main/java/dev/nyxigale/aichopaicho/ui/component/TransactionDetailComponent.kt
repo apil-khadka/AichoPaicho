@@ -39,6 +39,8 @@ import dev.nyxigale.aichopaicho.data.entity.RecordWithRepayments
 import dev.nyxigale.aichopaicho.data.entity.Repayment
 import dev.nyxigale.aichopaicho.data.entity.Type
 import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
+import dev.nyxigale.aichopaicho.ui.util.formatCurrencyAmount
+import dev.nyxigale.aichopaicho.ui.util.rememberHideAmountsEnabled
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -73,6 +75,7 @@ fun TransactionDetailsCard(
     }
 
     val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
 
     val cardColors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -141,7 +144,11 @@ fun TransactionDetailsCard(
             // Original Amount Display
             DetailRow(
                 label = "Original Amount", // New label
-                value = "${AppPreferenceUtils.getCurrencySymbol(context)} ${record.amount}",
+                value = formatCurrencyAmount(
+                    currency = AppPreferenceUtils.getCurrencySymbol(context),
+                    amount = record.amount,
+                    hideAmounts = hideAmounts
+                ),
                 isEditing = false
             )
 
@@ -149,7 +156,11 @@ fun TransactionDetailsCard(
             if (recordWithRepayments.totalRepayment > 0) {
                 DetailRow(
                     label = "Total Repaid", // New label
-                    value = "${AppPreferenceUtils.getCurrencySymbol(context)} ${recordWithRepayments.totalRepayment}",
+                    value = formatCurrencyAmount(
+                        currency = AppPreferenceUtils.getCurrencySymbol(context),
+                        amount = recordWithRepayments.totalRepayment,
+                        hideAmounts = hideAmounts
+                    ),
                     isEditing = false
                 )
             }
@@ -170,7 +181,11 @@ fun TransactionDetailsCard(
             } else {
                 DetailRow(
                     label = "Remaining Amount", // New label
-                    value = "${AppPreferenceUtils.getCurrencySymbol(context)} ${recordWithRepayments.remainingAmount}",
+                    value = formatCurrencyAmount(
+                        currency = AppPreferenceUtils.getCurrencySymbol(context),
+                        amount = recordWithRepayments.remainingAmount,
+                        hideAmounts = hideAmounts
+                    ),
                     isEditing = false
                 )
             }
@@ -393,6 +408,7 @@ fun RepaymentHistoryCard(
 ) {
     val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
     val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
 
     if (repayments.isEmpty()) return
 
@@ -420,7 +436,11 @@ fun RepaymentHistoryCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "${AppPreferenceUtils.getCurrencySymbol(context)} ${repayment.amount}",
+                            text = formatCurrencyAmount(
+                                currency = AppPreferenceUtils.getCurrencySymbol(context),
+                                amount = repayment.amount,
+                                hideAmounts = hideAmounts
+                            ),
                             style = MaterialTheme.typography.bodyLarge
                         )
                         repayment.description?.takeIf { it.isNotBlank() }?.let {

@@ -1,10 +1,14 @@
 package dev.nyxigale.aichopaicho.viewmodel
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import androidx.core.app.ActivityCompat.recreate
+import androidx.core.content.ContextCompat
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
@@ -91,7 +95,11 @@ class SettingsViewModel @Inject constructor(
                     selectedCurrency = selectedCurrency,
                     selectedLanguage = languageCode,
                     isBackupEnabled = preferencesRepository.isBackupEnabled(),
-                    isDueReminderEnabled = preferencesRepository.isDueReminderEnabled()
+                    isDueReminderEnabled = preferencesRepository.isDueReminderEnabled(),
+                    requiresNotificationPermissionPrompt = requiresRuntimeNotificationPermission(),
+                    hasNotificationPermission = hasNotificationPermission(),
+                    isHideAmountsEnabled = preferencesRepository.isHideAmountsEnabled(),
+                    isAnalyticsEnabled = preferencesRepository.isAnalyticsEnabled()
                 )
             } catch (error: Exception) {
                 setErrorMessage(context.getString(R.string.failed_to_load_settings, error.message))
@@ -190,10 +198,48 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.setDueReminderEnabled(enabled)
             if (enabled) {
+                if (requiresRuntimeNotificationPermission() && !hasNotificationPermission()) {
+                    setErrorMessage(context.getString(R.string.notifications_permission_required_message))
+                }
                 DueReminderWorker.schedulePeriodic(context)
             } else {
                 DueReminderWorker.cancel(context)
             }
+        }
+    }
+
+    fun refreshNotificationPermissionStatus() {
+        _uiState.value = _uiState.value.copy(
+            requiresNotificationPermissionPrompt = requiresRuntimeNotificationPermission(),
+            hasNotificationPermission = hasNotificationPermission()
+        )
+    }
+
+    fun onNotificationPermissionResult(granted: Boolean) {
+        _uiState.value = _uiState.value.copy(hasNotificationPermission = granted)
+        if (granted) {
+            if (_uiState.value.isDueReminderEnabled) {
+                DueReminderWorker.schedulePeriodic(context)
+            }
+            setErrorMessage(null)
+        } else if (_uiState.value.isDueReminderEnabled && requiresRuntimeNotificationPermission()) {
+            setErrorMessage(context.getString(R.string.notification_permission_denied_message))
+        }
+    }
+
+    fun toggleHideAmountsEnabled() {
+        val enabled = !_uiState.value.isHideAmountsEnabled
+        _uiState.value = _uiState.value.copy(isHideAmountsEnabled = enabled)
+        viewModelScope.launch {
+            preferencesRepository.setHideAmountsEnabled(enabled)
+        }
+    }
+
+    fun toggleAnalyticsEnabled() {
+        val enabled = !_uiState.value.isAnalyticsEnabled
+        _uiState.value = _uiState.value.copy(isAnalyticsEnabled = enabled)
+        viewModelScope.launch {
+            preferencesRepository.setAnalyticsEnabled(enabled)
         }
     }
 
@@ -469,5 +515,17 @@ class SettingsViewModel @Inject constructor(
     private suspend fun updateUserIdAcrossAllTables(id: String, firebaseUid: String) {
         recordRepository.updateUserId(id, firebaseUid)
         contactRepository.updateUserId(id, firebaseUid)
+    }
+
+    private fun requiresRuntimeNotificationPermission(): Boolean {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    }
+
+    private fun hasNotificationPermission(): Boolean {
+        if (!requiresRuntimeNotificationPermission()) return true
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
     }
 }

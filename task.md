@@ -27,6 +27,10 @@ Date: 2026-02-21
 - Refactored Add Transaction screen for cleaner spacing and reduced visual clutter.
 - Added stronger Add Transaction validation for empty/invalid input before save.
 - Added undo snackbars for transaction complete/delete actions in list screens.
+- Added analytics consent toggle in Settings for Microsoft Clarity initialization.
+- Added clearer privacy/data-use disclosure in Permission and Settings screens for contacts + cloud sync.
+- Added runtime notification permission UX in Settings for due reminders (request + app notification settings shortcut).
+- Added optional hide-amount mode with Settings toggle and masked amounts across dashboard/transaction screens.
 
 ## Project Analysis Snapshot
 - Strengths:
@@ -76,10 +80,10 @@ Date: 2026-02-21
 
 ### P2 (Security + Privacy)
 - [ ] Add biometric/PIN lock for app open.
-- [ ] Add optional hide-amount mode in UI.
+- [x] Add optional hide-amount mode in UI.
 - [ ] Encrypt sensitive local preferences or move to encrypted storage.
-- [ ] Add consent/settings for analytics tracking (Clarity toggle).
-- [ ] Add clearer privacy/data-use disclosure for contacts + cloud sync.
+- [x] Add consent/settings for analytics tracking (Clarity toggle).
+- [x] Add clearer privacy/data-use disclosure for contacts + cloud sync.
 
 ### P2 (Developer Experience)
 - [ ] Add unit tests for repositories/viewmodels.

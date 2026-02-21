@@ -68,6 +68,9 @@ import dev.nyxigale.aichopaicho.AppPreferenceUtils
 import dev.nyxigale.aichopaicho.R
 import dev.nyxigale.aichopaicho.data.entity.*
 import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
+import dev.nyxigale.aichopaicho.ui.util.formatCurrencyAmount
+import dev.nyxigale.aichopaicho.ui.util.formatSignedCurrencyAmount
+import dev.nyxigale.aichopaicho.ui.util.rememberHideAmountsEnabled
 import dev.nyxigale.aichopaicho.viewmodel.data.ContactPreview
 import dev.nyxigale.aichopaicho.viewmodel.data.DashboardScreenUiState
 import dev.nyxigale.aichopaicho.viewmodel.data.UpcomingDueItem
@@ -342,6 +345,7 @@ fun NetBalanceCard(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
 
     // Gradient Background
     val brush = Brush.verticalGradient(
@@ -383,7 +387,11 @@ fun NetBalanceCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "${AppPreferenceUtils.getCurrencyCode(context)} ${summary.netTotal.toInt()}",
+                        formatCurrencyAmount(
+                            currency = AppPreferenceUtils.getCurrencyCode(context),
+                            amount = summary.netTotal.toInt(),
+                            hideAmounts = hideAmounts
+                        ),
                         style = MaterialTheme.typography.displaySmall, // Larger, more prominent
                         fontWeight = FontWeight.Bold,
                         color = if (summary.netTotal >= 0) {
@@ -481,6 +489,7 @@ fun BalanceItemExtended(
     val buttonContainerColor = if (isPositive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
     val buttonContentColor = if (isPositive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
     val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
 
     Column(
         horizontalAlignment = Alignment.Start,
@@ -497,7 +506,11 @@ fun BalanceItemExtended(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "${AppPreferenceUtils.getCurrencyCode(context)} ${amount.toInt()}",
+            text = formatCurrencyAmount(
+                currency = AppPreferenceUtils.getCurrencyCode(context),
+                amount = amount.toInt(),
+                hideAmounts = hideAmounts
+            ),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = amountColor
@@ -562,6 +575,7 @@ fun BalanceItemExtended(
 @Composable
 fun UpcomingDueCard(items: List<UpcomingDueItem>) {
     val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
     val dueFormatter = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
     val now = System.currentTimeMillis()
 
@@ -621,7 +635,12 @@ fun UpcomingDueCard(items: List<UpcomingDueItem>) {
                             )
                         }
                         Text(
-                            text = "$amountPrefix ${AppPreferenceUtils.getCurrencySymbol(context)} ${item.amount}",
+                            text = formatSignedCurrencyAmount(
+                                sign = amountPrefix,
+                                currency = AppPreferenceUtils.getCurrencySymbol(context),
+                                amount = item.amount,
+                                hideAmounts = hideAmounts
+                            ),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = amountColor
