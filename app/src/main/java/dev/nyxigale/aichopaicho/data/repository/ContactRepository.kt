@@ -42,6 +42,10 @@ class ContactRepository @Inject constructor(private val contactDao: ContactDao) 
         contactDao.insertContact(contact)
     }
 
+    suspend fun insertContacts(contacts: List<Contact>) {
+        contactDao.insertContacts(contacts)
+    }
+
     suspend fun updateContact(contact: Contact) {
         contactDao.updateContact(contact)
     }

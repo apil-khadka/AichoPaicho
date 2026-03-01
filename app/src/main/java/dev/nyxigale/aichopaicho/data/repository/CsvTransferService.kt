@@ -2,6 +2,7 @@ package dev.nyxigale.aichopaicho.data.repository
 
 import android.content.Context
 import android.net.Uri
+import androidx.annotation.VisibleForTesting
 import androidx.documentfile.provider.DocumentFile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.nyxigale.aichopaicho.data.entity.Contact
@@ -180,8 +181,9 @@ class CsvTransferService @Inject constructor(
         }
     }
 
-    private suspend fun importContactsRows(rows: List<List<String>>): Int {
-        var imported = 0
+    @VisibleForTesting
+    internal suspend fun importContactsRows(rows: List<List<String>>): Int {
+        val contacts = mutableListOf<Contact>()
         rows.forEach { columns ->
             if (columns.size < 8) return@forEach
             val id = columns[0]
@@ -197,13 +199,18 @@ class CsvTransferService @Inject constructor(
                 createdAt = columns[6].toLongOrNull() ?: System.currentTimeMillis(),
                 updatedAt = columns[7].toLongOrNull() ?: System.currentTimeMillis()
             )
-            contactRepository.insertContact(contact)
-            imported++
+            contacts.add(contact)
         }
-        return imported
+
+        if (contacts.isNotEmpty()) {
+            contactRepository.insertContacts(contacts)
+        }
+
+        return contacts.size
     }
 
-    private suspend fun importRecordsRows(rows: List<List<String>>): Int {
+    @VisibleForTesting
+    internal suspend fun importRecordsRows(rows: List<List<String>>): Int {
         var imported = 0
         rows.forEach { columns ->
             if (columns.size < 12) return@forEach
@@ -240,7 +247,8 @@ class CsvTransferService @Inject constructor(
         return imported
     }
 
-    private suspend fun importRepaymentsRows(rows: List<List<String>>): Int {
+    @VisibleForTesting
+    internal suspend fun importRepaymentsRows(rows: List<List<String>>): Int {
         var imported = 0
         rows.forEach { columns ->
             if (columns.size < 7) return@forEach
