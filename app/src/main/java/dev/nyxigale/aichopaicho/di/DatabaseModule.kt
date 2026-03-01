@@ -81,7 +81,6 @@ object DatabaseModule {
             "aichopaicho_app_database"
         )
             .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
-            .fallbackToDestructiveMigration(true)
             .addCallback(AppDatabaseCallback(typeDaoProvider))
             .build()
     }
