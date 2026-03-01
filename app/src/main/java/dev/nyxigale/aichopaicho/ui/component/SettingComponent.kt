@@ -339,9 +339,9 @@ fun BackupSyncSettings(
                         }
                         IconButton(
                             onClick = onStartSync,
-                            modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
+                            modifier = Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
                         ) {
-                            Icon(Icons.Default.Refresh, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Refresh, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                         }
                     }
                 }
