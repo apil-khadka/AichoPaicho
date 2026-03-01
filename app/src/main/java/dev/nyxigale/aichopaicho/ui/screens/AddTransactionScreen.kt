@@ -24,6 +24,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -55,6 +57,7 @@ fun AddTransactionScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollState = rememberScrollState()
+    val amountFocusRequester = remember { FocusRequester() }
 
     val contactPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickContact()
@@ -69,7 +72,6 @@ fun AddTransactionScreen(
                     val id = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts._ID))
                     val name = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY))
                     
-                    // We need phone numbers too, query them separately
                     val phoneCursor = context.contentResolver.query(
                         ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                         arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
@@ -90,6 +92,10 @@ fun AddTransactionScreen(
                 }
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        amountFocusRequester.requestFocus()
     }
 
     LaunchedEffect(uiState.submissionSuccessful) {
@@ -181,7 +187,8 @@ fun AddTransactionScreen(
             AmountInputSection(
                 amountInput = uiState.amountInput,
                 onAmountChange = { viewModel.onEvent(AddTransactionUiEvents.AmountEntered(it)) },
-                isError = uiState.amountError != null
+                isError = uiState.amountError != null,
+                focusRequester = amountFocusRequester
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -191,8 +198,10 @@ fun AddTransactionScreen(
                 recentContacts = uiState.recentContacts,
                 selectedContact = uiState.contact,
                 contactNameInput = uiState.contactNameInput,
+                contactPhoneInput = uiState.contactPhoneInput,
                 onContactSelected = { viewModel.onEvent(AddTransactionUiEvents.ContactSelected(it)) },
                 onNameChange = { viewModel.onEvent(AddTransactionUiEvents.ContactNameEntered(it)) },
+                onPhoneChange = { viewModel.onEvent(AddTransactionUiEvents.ContactPhoneEntered(it)) },
                 onPickContact = { contactPickerLauncher.launch(null) }
             )
 
@@ -255,7 +264,8 @@ fun TypeSelectorRow(
 fun AmountInputSection(
     amountInput: String,
     onAmountChange: (String) -> Unit,
-    isError: Boolean
+    isError: Boolean,
+    focusRequester: FocusRequester
 ) {
     val context = LocalContext.current
     val currency = AppPreferenceUtils.getCurrencyCode(context)
@@ -273,7 +283,9 @@ fun AmountInputSection(
         TextField(
             value = amountInput,
             onValueChange = onAmountChange,
-            modifier = Modifier.widthIn(min = 120.dp, max = 240.dp),
+            modifier = Modifier
+                .widthIn(min = 120.dp, max = 240.dp)
+                .focusRequester(focusRequester),
             textStyle = MaterialTheme.typography.displayMedium.copy(
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
@@ -307,8 +319,10 @@ fun ContactSelectionSection(
     recentContacts: List<Contact>,
     selectedContact: Contact?,
     contactNameInput: String,
+    contactPhoneInput: String,
     onContactSelected: (Contact) -> Unit,
     onNameChange: (String) -> Unit,
+    onPhoneChange: (String) -> Unit,
     onPickContact: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -397,17 +411,31 @@ fun ContactSelectionSection(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        OutlinedTextField(
-            value = contactNameInput,
-            onValueChange = onNameChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            placeholder = { Text("Name or number") },
-            leadingIcon = { Icon(Icons.Default.Person, null) },
-            shape = RoundedCornerShape(16.dp),
-            singleLine = true
-        )
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedTextField(
+                value = contactNameInput,
+                onValueChange = onNameChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Name") },
+                leadingIcon = { Icon(Icons.Default.Person, null) },
+                shape = RoundedCornerShape(16.dp),
+                singleLine = true
+            )
+            
+            OutlinedTextField(
+                value = contactPhoneInput,
+                onValueChange = onPhoneChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Phone number (Optional)") },
+                leadingIcon = { Icon(Icons.Default.Phone, null) },
+                shape = RoundedCornerShape(16.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+            )
+        }
     }
 }
 
@@ -420,8 +448,6 @@ fun DetailsSection(
     onDueDateChange: (Long?) -> Unit,
     onNoteChange: (String) -> Unit
 ) {
-    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -435,10 +461,10 @@ fun DetailsSection(
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 DateInputField(
                     label = "Date",
                     selectedDate = date ?: System.currentTimeMillis(),
@@ -446,7 +472,7 @@ fun DetailsSection(
                     initializeWithCurrentDate = true
                 )
             }
-            Box(modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 DateInputField(
                     label = "Due Date",
                     selectedDate = dueDate,

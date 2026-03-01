@@ -12,6 +12,7 @@
 - [x] Add direct navigation to contact from `TransactionDetailScreen`.
 - [x] Promote Insights from Settings to Dashboard glimpse.
 - [x] Implement modern visual charts (Trend & Summary) in Insights.
+- [x] Refine `AddTransactionScreen`: Default to "Lent", auto-focus amount, optional phone entry, and consistent date layout.
 
 ## Security
 - [x] Implement PIN lock authentication.

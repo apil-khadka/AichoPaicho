@@ -36,7 +36,7 @@ class AddTransactionViewModel @Inject constructor(
     private val firebaseAuth: FirebaseAuth
 ) : ViewModel(){
 
-    private val _uiState = MutableStateFlow(AddTransactionUiState())
+    private val _uiState = MutableStateFlow(AddTransactionUiState(type = dev.nyxigale.aichopaicho.ui.component.TypeConstants.TYPE_LENT))
     val uiState: StateFlow<AddTransactionUiState> = _uiState.asStateFlow()
 
     private val authStateListener = FirebaseAuth.AuthStateListener {
@@ -322,13 +322,13 @@ class AddTransactionViewModel @Inject constructor(
 
         val manualName = state.contactNameInput.trim()
         val manualPhone = state.contactPhoneInput.trim()
-        if (manualName.isBlank() || manualPhone.isBlank()) return null
+        if (manualName.isBlank()) return null
 
         return Contact(
             id = "",
             name = manualName,
             userId = null,
-            phone = listOf(manualPhone),
+            phone = if (manualPhone.isBlank()) emptyList() else listOf(manualPhone),
             contactId = null
         )
     }
