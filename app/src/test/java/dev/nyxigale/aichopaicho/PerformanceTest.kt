@@ -12,6 +12,9 @@ class MockRecordDao : RecordDao {
     private val records = mutableMapOf<String, Record>()
 
     override suspend fun upsert(record: Record) {}
+    override suspend fun upsertAll(records: List<Record>) {
+        records.forEach { this.records[it.id] = it }
+    }
     override suspend fun getTotalByType(typeId: Int): Int = 0
     override fun getAllRecords(): Flow<List<Record>> = throw NotImplementedError()
     override fun getRecordsByDateRange(startDate: Long, endDate: Long): Flow<List<RecordWithRepayments>> = throw NotImplementedError()
