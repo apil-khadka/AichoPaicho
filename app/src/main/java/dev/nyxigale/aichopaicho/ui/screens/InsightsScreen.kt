@@ -72,10 +72,16 @@ fun InsightsScreen(
                             contentDescription = "Back"
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
         },
-        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
+        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (uiState.isLoading && uiState.trend.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
@@ -146,7 +152,8 @@ fun InsightsOverviewCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
@@ -161,7 +168,7 @@ fun InsightsOverviewCard(
                     label = "Inflow",
                     amount = inflow,
                     icon = Icons.Default.ArrowDownward,
-                    color = Color(0xFF4CAF50),
+                    color = Color(0xFF10B981),
                     currency = currency,
                     hideAmounts = hideAmounts
                 )
@@ -169,7 +176,7 @@ fun InsightsOverviewCard(
                     label = "Outflow",
                     amount = outflow,
                     icon = Icons.Default.ArrowUpward,
-                    color = Color(0xFFF44336),
+                    color = Color(0xFFEF4444),
                     currency = currency,
                     hideAmounts = hideAmounts
                 )
@@ -187,7 +194,7 @@ fun InsightsOverviewCard(
                     text = formatSignedCurrencyAmount(if (net >= 0) "+" else "-", currency, abs(net).toInt(), hideAmounts),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (net >= 0) Color(0xFF4CAF50) else Color(0xFFF44336)
+                    color = if (net >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
                 )
             }
         }
@@ -255,7 +262,8 @@ fun TrendChartCard(trendData: List<MonthlyTrendPoint>, maxTrendValue: Double) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -354,7 +362,8 @@ fun TopContactsCard(topContacts: List<TopContactInsight>, currency: String, hide
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -386,7 +395,7 @@ fun TopContactsCard(topContacts: List<TopContactInsight>, currency: String, hide
                         }
                         Text(
                             text = formatSignedCurrencyAmount(if (contact.netBalance >= 0) "+" else "-", currency, abs(contact.netBalance).toInt(), hideAmounts),
-                            color = if (contact.netBalance >= 0) Color(0xFF4CAF50) else Color(0xFFF44336),
+                            color = if (contact.netBalance >= 0) Color(0xFF10B981) else Color(0xFFEF4444),
                             fontWeight = FontWeight.Bold
                         )
                     }

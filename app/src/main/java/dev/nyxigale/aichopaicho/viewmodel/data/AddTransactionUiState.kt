@@ -13,6 +13,8 @@ data class AddTransactionUiState (
     val dueDate: Long? = null,
     val description: String? = null,
 
+    val recentContacts: List<Contact> = emptyList(),
+
     val contactNameError: String? = null,
     val contactPhoneError: String? = null,
     val amountError: String? = null,

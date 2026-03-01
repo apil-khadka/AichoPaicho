@@ -99,7 +99,7 @@ fun DashboardScreen(
                         AppPreferenceUtils.setHideAmountsEnabled(context, !hideAmounts)
                     }) {
                         Icon(
-                            imageVector = if (hideAmounts) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            imageVector = if (hideAmounts) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                             contentDescription = if (hideAmounts) "Show Amounts" else "Hide Amounts",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
@@ -115,12 +115,13 @@ fun DashboardScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
+        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(
             modifier = Modifier

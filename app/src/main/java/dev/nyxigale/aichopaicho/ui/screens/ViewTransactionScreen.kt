@@ -2,18 +2,16 @@ package dev.nyxigale.aichopaicho.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,14 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,25 +32,18 @@ import dev.nyxigale.aichopaicho.ui.component.TransactionCard
 import dev.nyxigale.aichopaicho.ui.component.TransactionFilterSection
 import dev.nyxigale.aichopaicho.ui.component.TransactionTopBar
 import dev.nyxigale.aichopaicho.viewmodel.ViewTransactionViewModel
-import kotlin.collections.get
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ViewTransactionScreen(
-    viewTransactionViewModel: ViewTransactionViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     onNavigateToIndividualRecord: (String) -> Unit,
     onNavigateToContactList: (String) -> Unit,
-    onNavigateToContact: () -> Unit
+    onNavigateToContact: () -> Unit,
+    viewTransactionViewModel: ViewTransactionViewModel = hiltViewModel()
 ) {
     val uiState by viewTransactionViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val isWideLayout = configuration.screenWidthDp >= 840
-    val listMaxWidth = if (isWideLayout) 960.dp else Dp.Unspecified
 
     LaunchedEffect(Unit) {
         viewTransactionViewModel.loadInitialData()
@@ -65,7 +52,7 @@ fun ViewTransactionScreen(
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
             snackbarHostState.showSnackbar(error)
-            viewTransactionViewModel.clearErrorMessage() // Acknowledge error
+            viewTransactionViewModel.clearErrorMessage()
         }
     }
 
@@ -74,123 +61,77 @@ fun ViewTransactionScreen(
             TransactionTopBar(
                 onNavigateBack = onNavigateBack,
                 dateRange = uiState.dateRange,
-                onDateRangeSelected = { start, end ->
-                    viewTransactionViewModel.updateDateRange(start, end)
-                },
+                onDateRangeSelected = viewTransactionViewModel::updateDateRange,
                 onContactsNavigation = onNavigateToContact
             )
         },
-        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
+        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            color = MaterialTheme.colorScheme.background // Themed background
+            color = MaterialTheme.colorScheme.background
         ) {
-            if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Center
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) // Themed
-                }
-            } else {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.TopCenter
-                ) {
-                    LazyColumn(
+            Column(modifier = Modifier.fillMaxSize()) {
+                TransactionFilterSection(
+                    selectedType = uiState.selectedType,
+                    onTypeSelected = viewTransactionViewModel::updateSelectedType,
+                    searchQuery = uiState.searchQuery,
+                    onSearchQueryChanged = viewTransactionViewModel::updateSearchQuery,
+                    statusFilter = uiState.statusFilter,
+                    onStatusFilterChanged = viewTransactionViewModel::updateStatusFilter,
+                    fromQuery = uiState.fromQuery,
+                    onFromQueryChanged = viewTransactionViewModel::updateFromQuery,
+                    moneyToQuery = uiState.moneyToQuery,
+                    onMoneyToQueryChanged = viewTransactionViewModel::updateMoneyToQuery,
+                    onMoneyFilterApplyClicked = viewTransactionViewModel::updateMoneyFilterApplyClicked
+                )
+
+                if (uiState.isLoading && uiState.records.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                } else if (uiState.filteredRecords.isEmpty()) {
+                    Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .widthIn(max = listMaxWidth),
-                        contentPadding = PaddingValues(
-                            horizontal = if (isWideLayout) 20.dp else 16.dp,
-                            vertical = 12.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        item {
-                            TransactionFilterSection(
-                                selectedType = uiState.selectedType,
-                                onTypeSelected = viewTransactionViewModel::updateSelectedType,
-                                searchQuery = uiState.searchQuery,
-                                onSearchQueryChanged = viewTransactionViewModel::updateSearchQuery,
-                                statusFilter = uiState.statusFilter,
-                                onStatusFilterChanged = viewTransactionViewModel::updateStatusFilter,
-                                fromQuery = uiState.fromQuery,
-                                onFromQueryChanged = viewTransactionViewModel::updateFromQuery,
-                                moneyToQuery = uiState.moneyToQuery,
-                                onMoneyToQueryChanged = viewTransactionViewModel::updateMoneyToQuery,
-                                onMoneyFilterApplyClicked = viewTransactionViewModel::updateMoneyFilterApplyClicked
-                            )
-                        }
-
-                        if (uiState.filteredRecords.isEmpty()) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 32.dp),
-                                    contentAlignment = Center
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.no_transactions_match),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Text(
+                            text = if (uiState.searchQuery.isBlank())
+                                stringResource(R.string.no_transactions)
+                            else stringResource(R.string.no_transactions_match),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(uiState.filteredRecords, key = { it.record.id }) { recordWithRepayments ->
+                            TransactionCard(
+                                recordWithRepayments = recordWithRepayments,
+                                contact = uiState.contacts[recordWithRepayments.record.contactId],
+                                onRecordClick = { onNavigateToIndividualRecord(recordWithRepayments.record.id) },
+                                onDeleteRecord = {
+                                    viewTransactionViewModel.deleteRecord(recordWithRepayments.record.id)
+                                },
+                                onToggleComplete = { isComplete ->
+                                    viewTransactionViewModel.toggleRecordCompletion(
+                                        recordWithRepayments.record.id,
+                                        isComplete
                                     )
+                                },
+                                onNavigateToContactList = { contactId ->
+                                    onNavigateToContactList(contactId)
                                 }
-                            }
-                        } else {
-                            items(uiState.filteredRecords, key = { it.record.id }) { recordWithRepayments ->
-                                TransactionCard(
-                                    recordWithRepayments = recordWithRepayments,
-                                    contact = uiState.contacts[recordWithRepayments.record.contactId],
-                                    onRecordClick = { onNavigateToIndividualRecord(recordWithRepayments.record.id) },
-                                    onDeleteRecord = {
-                                        val deletedRecord = recordWithRepayments.record
-                                        viewTransactionViewModel.deleteRecord(deletedRecord.id)
-                                        scope.launch {
-                                            val result = snackbarHostState.showSnackbar(
-                                                message = context.getString(R.string.transaction_deleted),
-                                                actionLabel = context.getString(R.string.undo)
-                                            )
-                                            if (result == SnackbarResult.ActionPerformed) {
-                                                viewTransactionViewModel.restoreDeletedRecord(deletedRecord)
-                                                snackbarHostState.showSnackbar(context.getString(R.string.transaction_restored))
-                                            }
-                                        }
-                                    },
-                                    onToggleComplete = { checked ->
-                                        val originalValue = recordWithRepayments.record.isComplete
-                                        viewTransactionViewModel.toggleRecordCompletion(
-                                            recordWithRepayments.record.id,
-                                            checked
-                                        )
-                                        scope.launch {
-                                            val result = snackbarHostState.showSnackbar(
-                                                message = context.getString(
-                                                    if (checked) {
-                                                        R.string.transaction_marked_complete
-                                                    } else {
-                                                        R.string.transaction_marked_incomplete
-                                                    }
-                                                ),
-                                                actionLabel = context.getString(R.string.undo)
-                                            )
-                                            if (result == SnackbarResult.ActionPerformed) {
-                                                viewTransactionViewModel.toggleRecordCompletion(
-                                                    recordWithRepayments.record.id,
-                                                    originalValue
-                                                )
-                                            }
-                                        }
-                                    },
-                                    onNavigateToContactList = { contactId ->
-                                        onNavigateToContactList(contactId)
-                                    }
-                                )
-                            }
+                            )
                         }
                     }
                 }

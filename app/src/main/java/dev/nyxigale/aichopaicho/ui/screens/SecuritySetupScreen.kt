@@ -35,14 +35,20 @@ fun SecuritySetupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Security Setup") },
+                title = { Text("Security Setup", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -101,7 +107,7 @@ fun SecurityOverviewPage(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(
-            imageVector = Icons.Filled.Security,
+            imageVector = Icons.Default.Security,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
             tint = if (isSecurityEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
@@ -124,27 +130,28 @@ fun SecurityOverviewPage(
         if (!isSecurityEnabled) {
             Button(
                 onClick = onEnablePin,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Setup PIN Lock")
+                Text("Setup PIN Lock", fontWeight = FontWeight.Bold)
             }
         } else {
             // Biometric Toggle
             if (canUseBiometric) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Fingerprint, null)
+                        Icon(Icons.Default.Fingerprint, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Use Biometric", style = MaterialTheme.typography.titleMedium)
+                            Text("Use Biometric", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             Text(
                                 "Unlock using fingerprint or face",
                                 style = MaterialTheme.typography.bodySmall,
@@ -162,11 +169,11 @@ fun SecurityOverviewPage(
 
             OutlinedButton(
                 onClick = onDisableSecurity,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
-                Text("Disable Security")
+                Text("Disable Security", fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -223,17 +230,17 @@ fun SuccessPage(onDone: () -> Unit) {
             imageVector = Icons.Default.CheckCircle,
             contentDescription = null,
             modifier = Modifier.size(100.dp),
-            tint = Color(0xFF4CAF50)
+            tint = Color(0xFF10B981)
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(text = "Security Setup Complete!", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(48.dp))
         Button(
             onClick = onDone,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Text("Done")
+            Text("Done", fontWeight = FontWeight.Bold)
         }
     }
 }

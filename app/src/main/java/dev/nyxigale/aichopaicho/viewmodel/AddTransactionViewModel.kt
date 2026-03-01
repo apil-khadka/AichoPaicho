@@ -15,10 +15,13 @@ import dev.nyxigale.aichopaicho.data.repository.UserRepository
 import dev.nyxigale.aichopaicho.viewmodel.data.AddTransactionUiEvents
 import dev.nyxigale.aichopaicho.viewmodel.data.AddTransactionUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.google.firebase.auth.FirebaseAuth
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -29,11 +32,36 @@ class AddTransactionViewModel @Inject constructor(
     private val recordRepository: RecordRepository,
     private val typeRepository: TypeRepository,
     private val userRepository: UserRepository,
-    private val contactRepository: ContactRepository
+    private val contactRepository: ContactRepository,
+    private val firebaseAuth: FirebaseAuth
 ) : ViewModel(){
 
     private val _uiState = MutableStateFlow(AddTransactionUiState())
     val uiState: StateFlow<AddTransactionUiState> = _uiState.asStateFlow()
+
+    private val authStateListener = FirebaseAuth.AuthStateListener {
+        loadRecentContacts()
+    }
+
+    init {
+        firebaseAuth.addAuthStateListener(authStateListener)
+        loadRecentContacts()
+    }
+
+    private fun loadRecentContacts() {
+        viewModelScope.launch {
+            contactRepository.getAllContacts()
+                .catch { e -> Log.e("AddTxnViewModel", "Error loading recent contacts", e) }
+                .collect { contacts ->
+                    _uiState.update { it.copy(recentContacts = contacts.take(5)) }
+                }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        firebaseAuth.removeAuthStateListener(authStateListener)
+    }
 
     private suspend fun handleSubmit(): Boolean {
         val state = uiState.value

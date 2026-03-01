@@ -1,407 +1,469 @@
 package dev.nyxigale.aichopaicho.ui.screens
 
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
-import android.content.res.Configuration
-import android.net.Uri
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.nyxigale.aichopaicho.AppPreferenceUtils
 import dev.nyxigale.aichopaicho.R
 import dev.nyxigale.aichopaicho.data.entity.Contact
-import dev.nyxigale.aichopaicho.ui.component.AmountInputField
-import dev.nyxigale.aichopaicho.ui.component.DateInputField
-import dev.nyxigale.aichopaicho.ui.component.MultiLineTextInputField
-import dev.nyxigale.aichopaicho.ui.component.QuickActionButton
-import dev.nyxigale.aichopaicho.ui.component.SegmentedLentBorrowedToggle
-import dev.nyxigale.aichopaicho.ui.component.SnackbarComponent
-import dev.nyxigale.aichopaicho.ui.component.StringInputField
-import dev.nyxigale.aichopaicho.ui.component.TypeConstants
-import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
+import dev.nyxigale.aichopaicho.ui.component.*
 import dev.nyxigale.aichopaicho.viewmodel.AddTransactionViewModel
 import dev.nyxigale.aichopaicho.viewmodel.data.AddTransactionUiEvents
-import java.util.UUID
-import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(
-    onNavigateBack: (() -> Unit)? = null,
-    addTransactionViewModel: AddTransactionViewModel = hiltViewModel()
+    onNavigateBack: () -> Unit,
+    viewModel: AddTransactionViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val uiState by addTransactionViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val isWideLayout = configuration.screenWidthDp >= 840
-    val contentMaxWidth = if (isWideLayout) 900.dp else Dp.Unspecified
+    val scrollState = rememberScrollState()
 
     val contactPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val contactUri = if (result.resultCode == Activity.RESULT_OK) result.data?.data else null
-        contactUri?.let { uri ->
-            val pickedContact = getContactFromUri(context, uri)
-            if (pickedContact != null) {
-                addTransactionViewModel.onEvent(AddTransactionUiEvents.ContactSelected(pickedContact))
-            } else {
-                scope.launch {
-                    snackbarHostState.showSnackbar(context.getString(R.string.selected_contact_has_no_phone))
+        contract = ActivityResultContracts.PickContact()
+    ) { uri ->
+        uri?.let { contactUri ->
+            val projection = arrayOf(
+                ContactsContract.Contacts._ID,
+                ContactsContract.Contacts.DISPLAY_NAME_PRIMARY
+            )
+            context.contentResolver.query(contactUri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val id = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts._ID))
+                    val name = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY))
+                    
+                    // We need phone numbers too, query them separately
+                    val phoneCursor = context.contentResolver.query(
+                        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                        arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
+                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                        arrayOf(id),
+                        null
+                    )
+                    val phoneNumbers = mutableListOf<String>()
+                    phoneCursor?.use { pc ->
+                        while (pc.moveToNext()) {
+                            phoneNumbers.add(pc.getString(0))
+                        }
+                    }
+                    
+                    viewModel.onEvent(AddTransactionUiEvents.ContactSelected(
+                        Contact(id = "", name = name, phone = phoneNumbers, contactId = id, userId = null)
+                    ))
                 }
             }
-        }
-    }
-
-    LaunchedEffect(uiState.errorMessage) {
-        uiState.errorMessage?.let { errorMessage ->
-            addTransactionViewModel.clearErrorMessage()
-            snackbarHostState.showSnackbar(errorMessage)
         }
     }
 
     LaunchedEffect(uiState.submissionSuccessful) {
         if (uiState.submissionSuccessful) {
             snackbarHostState.showSnackbar(context.getString(R.string.transaction_added_successfully))
-            addTransactionViewModel.clearSubmissionSuccessFlag()
+            viewModel.clearSubmissionSuccessFlag()
+            onNavigateBack()
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (uiState.type == null) {
-            addTransactionViewModel.onEvent(AddTransactionUiEvents.TypeSelected(TypeConstants.TYPE_LENT))
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearErrorMessage()
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
-    ) { paddingValues ->
-        Surface(
+        topBar = {
+            TopAppBar(
+                title = { Text("Add Transaction", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier.padding(8.dp).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        },
+        bottomBar = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = { viewModel.onEvent(AddTransactionUiEvents.Submit) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    enabled = !uiState.isLoading
+                ) {
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                    } else {
+                        Icon(Icons.Default.Save, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Save Transaction", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+                }
+                OutlinedButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("Cancel")
+                }
+            }
+        },
+        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            color = MaterialTheme.colorScheme.background
+                .padding(padding)
+                .verticalScroll(scrollState)
+                .padding(bottom = 16.dp)
         ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.TopCenter
-            ) {
-                Column(
+            // Type Selector
+            TypeSelectorRow(
+                selectedType = uiState.type,
+                onTypeSelected = { viewModel.onEvent(AddTransactionUiEvents.TypeSelected(it)) }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Amount Section
+            AmountInputSection(
+                amountInput = uiState.amountInput,
+                onAmountChange = { viewModel.onEvent(AddTransactionUiEvents.AmountEntered(it)) },
+                isError = uiState.amountError != null
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Contact Section
+            ContactSelectionSection(
+                recentContacts = uiState.recentContacts,
+                selectedContact = uiState.contact,
+                contactNameInput = uiState.contactNameInput,
+                onContactSelected = { viewModel.onEvent(AddTransactionUiEvents.ContactSelected(it)) },
+                onNameChange = { viewModel.onEvent(AddTransactionUiEvents.ContactNameEntered(it)) },
+                onPickContact = { contactPickerLauncher.launch(null) }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Details Section
+            DetailsSection(
+                date = uiState.date,
+                dueDate = uiState.dueDate,
+                note = uiState.description ?: "",
+                onDateChange = { viewModel.onEvent(AddTransactionUiEvents.DateEntered(it)) },
+                onDueDateChange = { viewModel.onEvent(AddTransactionUiEvents.DueDateEntered(it)) },
+                onNoteChange = { viewModel.onEvent(AddTransactionUiEvents.DescriptionEntered(it)) }
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun TypeSelectorRow(
+    selectedType: String?,
+    onTypeSelected: (String) -> Unit
+) {
+    val types = listOf(TypeConstants.TYPE_LENT, TypeConstants.TYPE_BORROWED)
+    
+    Surface(
+        modifier = Modifier
+            .padding(horizontal = 24.dp)
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    ) {
+        Row(modifier = Modifier.padding(4.dp)) {
+            types.forEach { type ->
+                val isSelected = selectedType == type
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .widthIn(max = contentMaxWidth)
-                        .padding(horizontal = if (isWideLayout) 24.dp else 16.dp, vertical = 16.dp)
+                        .weight(1f)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                        .clickable { onTypeSelected(type) },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        onNavigateBack?.let { navigateBack ->
-                            IconButton(onClick = navigateBack, enabled = !uiState.isLoading) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Spacer(modifier = Modifier.size(8.dp))
-                        }
-                        Text(
-                            text = stringResource(R.string.add_new_transaction),
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(text = stringResource(R.string.type), style = MaterialTheme.typography.labelLarge)
-                        SegmentedLentBorrowedToggle(
-                            onToggle = { type ->
-                                addTransactionViewModel.onEvent(AddTransactionUiEvents.TypeSelected(type))
-                            }
-                        )
-
-                        HorizontalDivider()
-
-                        Text(text = stringResource(R.string.contact), style = MaterialTheme.typography.labelLarge)
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = {
-                                    contactPickerLauncher.launch(
-                                        Intent(
-                                            Intent.ACTION_PICK,
-                                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI
-                                        )
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
-                                enabled = !uiState.isLoading
-                            ) {
-                                Text(stringResource(R.string.pick_from_contacts))
-                            }
-                            if (uiState.contact != null) {
-                                TextButton(
-                                    onClick = {
-                                        addTransactionViewModel.onEvent(AddTransactionUiEvents.ContactSelected(null))
-                                    },
-                                    enabled = !uiState.isLoading
-                                ) {
-                                    Text(stringResource(R.string.clear))
-                                }
-                            }
-                        }
-
-                        StringInputField(
-                            label = stringResource(R.string.contact_name),
-                            value = uiState.contactNameInput,
-                            onValueChange = { value ->
-                                addTransactionViewModel.onEvent(AddTransactionUiEvents.ContactNameEntered(value))
-                            },
-                            isError = uiState.contactNameError != null,
-                            errorMessage = uiState.contactNameError,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        StringInputField(
-                            label = stringResource(R.string.contact_phone_number),
-                            value = uiState.contactPhoneInput,
-                            onValueChange = { value ->
-                                addTransactionViewModel.onEvent(AddTransactionUiEvents.ContactPhoneEntered(value))
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            isError = uiState.contactPhoneError != null,
-                            errorMessage = uiState.contactPhoneError,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Text(text = stringResource(R.string.amount), style = MaterialTheme.typography.labelLarge)
-                        AmountInputField(
-                            label = stringResource(R.string.amount),
-                            value = uiState.amountInput,
-                            onAmountTextChange = { amountStr ->
-                                addTransactionViewModel.onEvent(AddTransactionUiEvents.AmountEntered(amountStr))
-                            },
-                            isError = uiState.amountError != null,
-                            errorMessage = uiState.amountError,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Text(text = stringResource(R.string.date), style = MaterialTheme.typography.labelLarge)
-                        DateInputField(
-                            label = stringResource(R.string.date),
-                            selectedDate = uiState.date,
-                            onDateSelected = { date ->
-                                addTransactionViewModel.onEvent(
-                                    AddTransactionUiEvents.DateEntered(date ?: System.currentTimeMillis())
-                                )
-                            },
-                            initializeWithCurrentDate = true,
-                            isError = uiState.dateError != null,
-                            errorMessage = uiState.dateError,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Text(text = stringResource(R.string.due_date), style = MaterialTheme.typography.labelLarge)
-                        DateInputField(
-                            label = stringResource(R.string.due_date_optional),
-                            selectedDate = uiState.dueDate,
-                            onDateSelected = { date ->
-                                addTransactionViewModel.onEvent(AddTransactionUiEvents.DueDateEntered(date))
-                            },
-                            initializeWithCurrentDate = false,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        if (uiState.dueDate != null) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                TextButton(
-                                    onClick = {
-                                        addTransactionViewModel.onEvent(AddTransactionUiEvents.DueDateEntered(null))
-                                    }
-                                ) {
-                                    Text(stringResource(R.string.clear_due_date))
-                                }
-                            }
-                        }
-
-                        Text(text = stringResource(R.string.description), style = MaterialTheme.typography.labelLarge)
-                        MultiLineTextInputField(
-                            label = stringResource(R.string.description_optional),
-                            value = uiState.description ?: "",
-                            onValueChange = { description ->
-                                addTransactionViewModel.onEvent(AddTransactionUiEvents.DescriptionEntered(description))
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    if (uiState.isLoading) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                        }
-                    } else {
-                        if (isLandscape && onNavigateBack != null) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                QuickActionButton(
-                                    text = stringResource(R.string.save_transaction),
-                                    onClick = {
-                                        addTransactionViewModel.onEvent(AddTransactionUiEvents.Submit)
-                                    },
-                                    contentDescription = "Save Transaction Button",
-                                    buttonHeight = 64.dp,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                OutlinedButton(
-                                    onClick = { onNavigateBack() },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(64.dp),
-                                    enabled = !uiState.isLoading,
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                                ) {
-                                    Text(stringResource(R.string.cancel))
-                                }
-                            }
-                        } else {
-                            QuickActionButton(
-                                text = stringResource(R.string.save_transaction),
-                                onClick = {
-                                    addTransactionViewModel.onEvent(AddTransactionUiEvents.Submit)
-                                },
-                                contentDescription = "Save Transaction Button",
-                                buttonHeight = 64.dp,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp)
-                            )
-                            onNavigateBack?.let { navigateBack ->
-                                OutlinedButton(
-                                    onClick = {
-                                        if (!uiState.isLoading) navigateBack()
-                                    },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp),
-                                    enabled = !uiState.isLoading,
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                                ) {
-                                    Text(stringResource(R.string.cancel))
-                                }
-                            }
-                        }
-                    }
+                    Text(
+                        text = type,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 14.sp
+                    )
                 }
             }
         }
     }
 }
 
-private fun getContactFromUri(context: Context, contactUri: Uri): Contact? {
-    val projection = arrayOf(
-        ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
-        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-        ContactsContract.CommonDataKinds.Phone.NUMBER
-    )
+@Composable
+fun AmountInputSection(
+    amountInput: String,
+    onAmountChange: (String) -> Unit,
+    isError: Boolean
+) {
+    val context = LocalContext.current
+    val currency = AppPreferenceUtils.getCurrencyCode(context)
 
-    return try {
-        val cursor = context.contentResolver.query(contactUri, projection, null, null, null)
-        cursor?.use {
-            if (!it.moveToFirst()) return null
-
-            val contactId = it.getString(
-                it.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.CONTACT_ID)
-            )
-            val displayName = it.getString(
-                it.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-            ) ?: ""
-            val phoneNumber = it.getString(
-                it.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)
-            )?.trim()
-
-            if (displayName.isBlank() || phoneNumber.isNullOrBlank()) return null
-
-            Contact(
-                id = UUID.randomUUID().toString(),
-                name = displayName,
-                userId = null,
-                phone = listOf(phoneNumber),
-                contactId = contactId
-            )
-        }
-    } catch (_: SecurityException) {
-        null
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Amount ($currency)",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        TextField(
+            value = amountInput,
+            onValueChange = onAmountChange,
+            modifier = Modifier.widthIn(min = 120.dp, max = 240.dp),
+            textStyle = MaterialTheme.typography.displayMedium.copy(
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+            ),
+            placeholder = { 
+                Text(
+                    "0", 
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.displayMedium,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                ) 
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                errorContainerColor = Color.Transparent,
+                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                disabledIndicatorColor = Color.Transparent
+            ),
+            singleLine = true
+        )
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun AddTransactionPreview() {
-    AichoPaichoTheme {
-        AddTransactionScreen(onNavigateBack = {})
+fun ContactSelectionSection(
+    recentContacts: List<Contact>,
+    selectedContact: Contact?,
+    contactNameInput: String,
+    onContactSelected: (Contact) -> Unit,
+    onNameChange: (String) -> Unit,
+    onPickContact: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Who is this for?",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            TextButton(onClick = onPickContact) {
+                Icon(Icons.Default.Contacts, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Pick from contacts", fontSize = 12.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { onPickContact() }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
+                            .clip(CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("New", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+
+            items(recentContacts) { contact ->
+                val isSelected = selectedContact?.id == contact.id
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { onContactSelected(contact) }
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .border(
+                                width = if (isSelected) 2.dp else 0.dp,
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = CircleShape
+                            ),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = contact.name.take(1).uppercase(),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = contact.name.split(" ").firstOrNull() ?: "",
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.width(64.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = contactNameInput,
+            onValueChange = onNameChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            placeholder = { Text("Name or number") },
+            leadingIcon = { Icon(Icons.Default.Person, null) },
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true
+        )
+    }
+}
+
+@Composable
+fun DetailsSection(
+    date: Long?,
+    dueDate: Long?,
+    note: String,
+    onDateChange: (Long) -> Unit,
+    onDueDateChange: (Long?) -> Unit,
+    onNoteChange: (String) -> Unit
+) {
+    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "Details",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                DateInputField(
+                    label = "Date",
+                    selectedDate = date ?: System.currentTimeMillis(),
+                    onDateSelected = { it?.let(onDateChange) },
+                    initializeWithCurrentDate = true
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                DateInputField(
+                    label = "Due Date",
+                    selectedDate = dueDate,
+                    onDateSelected = onDueDateChange,
+                    initializeWithCurrentDate = false
+                )
+            }
+        }
+
+        OutlinedTextField(
+            value = note,
+            onValueChange = onNoteChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Note (Optional)") },
+            minLines = 3,
+            maxLines = 5,
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 }

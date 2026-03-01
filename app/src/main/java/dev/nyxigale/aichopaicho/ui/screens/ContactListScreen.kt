@@ -1,6 +1,5 @@
 package dev.nyxigale.aichopaicho.ui.screens
 
-// import androidx.compose.foundation.background // To be removed
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-// import androidx.compose.foundation.lazy.rememberLazyListState // For AlphabetSlider scroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,7 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card // Keep for AlphabetSlider if needed, or replace
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,36 +31,31 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold // Added
-import androidx.compose.material3.SnackbarHostState // Added
-import androidx.compose.material3.Surface // Added
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-// import androidx.compose.material3.TextFieldDefaults // For OutlinedTextField theming if needed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember // Added
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-// import androidx.compose.ui.graphics.Color // To be removed
-// import androidx.compose.ui.res.colorResource // To be removed
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import dev.nyxigale.aichopaicho.R
-// import androidx.compose.ui.unit.sp // Replaced by MaterialTheme.typography
-// import dev.nyxigale.aichopaicho.R // To be removed
 import dev.nyxigale.aichopaicho.data.entity.Contact
-import dev.nyxigale.aichopaicho.ui.component.SnackbarComponent // Added
+import dev.nyxigale.aichopaicho.ui.component.SnackbarComponent
 import dev.nyxigale.aichopaicho.ui.component.TypeConstants
-import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme // Added
+import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
 import dev.nyxigale.aichopaicho.viewmodel.ContactListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,7 +67,6 @@ fun ContactListScreen(
     contactListViewModel: ContactListViewModel = hiltViewModel()
 ) {
     val uiState by contactListViewModel.uiState.collectAsState()
-
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(type) {
@@ -113,13 +105,14 @@ fun ContactListScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
+        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Surface(
             modifier = Modifier
@@ -145,11 +138,11 @@ fun ContactListScreen(
                             }
                         }
                     },
-                    singleLine = true
-                    // Colors will adapt from MaterialTheme
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
                 )
 
-                Box(modifier = Modifier.weight(1f)) { // Make LazyColumn take remaining space
+                Box(modifier = Modifier.weight(1f)) {
                     if (uiState.isLoading) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -157,7 +150,7 @@ fun ContactListScreen(
                         ) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
-                    } else if (uiState.contacts.isEmpty()) { // Check the main contacts list from UiState
+                    } else if (uiState.contacts.isEmpty()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -176,10 +169,7 @@ fun ContactListScreen(
                                 )
                                 Text(
                                     text = if (uiState.searchQuery.isNotBlank())
-                                        stringResource(
-                                            R.string.no_contacts_found_for,
-                                            uiState.searchQuery
-                                        )
+                                        stringResource(R.string.no_contacts_found_for, uiState.searchQuery)
                                     else stringResource(R.string.no_contacts_available_for_this_category),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -191,8 +181,7 @@ fun ContactListScreen(
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                            // val listState = rememberLazyListState() // If scroll needed for AlphabetSlider
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(uiState.contacts, key = { it.id }) { contact ->
                                 ContactListItem(
@@ -203,7 +192,6 @@ fun ContactListScreen(
                         }
                     }
 
-                    // A-Z Slider (conditionally displayed)
                     if (uiState.availableLetters.isNotEmpty() && uiState.searchQuery.isBlank() && !uiState.isLoading && uiState.contacts.isNotEmpty()) {
                         AlphabetSlider(
                             letters = uiState.availableLetters,
@@ -213,7 +201,7 @@ fun ContactListScreen(
                             },
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
-                                .padding(end = 4.dp, top = 8.dp, bottom = 8.dp) // Adjusted padding
+                                .padding(end = 4.dp, top = 8.dp, bottom = 8.dp)
                         )
                     }
                 }
@@ -231,20 +219,21 @@ fun ContactListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), // Subtle elevation
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
-        )
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Row(
-            modifier = Modifier.padding(12.dp), // Slightly reduced padding
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp) // Adjusted size
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
@@ -252,28 +241,29 @@ fun ContactListItem(
                 Text(
                     text = contact.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = contact.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
                 contact.phone.firstOrNull()?.takeIf { it.isNotBlank() }?.let { phoneNumber ->
                     Text(
                         text = phoneNumber,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
-                contentDescription = "View contact details",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -282,20 +272,20 @@ fun ContactListItem(
 @Composable
 fun AlphabetSlider(
     letters: List<String>,
-    selectedLetter: String?, // Can be null if no letter is selected
+    selectedLetter: String?,
     onLetterSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface( // Using Surface instead of Card for a flatter, more integrated look
+    Surface(
         modifier = modifier.width(32.dp),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f), // Themed background
-        tonalElevation = 2.dp // Slight elevation
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+        tonalElevation = 2.dp
     ) {
         LazyColumn(
-            modifier = Modifier.padding(vertical = 8.dp), // Padding around the column
+            modifier = Modifier.padding(vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp) // Spacing between letters
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             items(letters) { letter ->
                 Text(
@@ -309,35 +299,10 @@ fun AlphabetSlider(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onLetterSelected(letter) }
-                        .padding(vertical = 4.dp, horizontal = 6.dp) // Padding for each letter
+                        .padding(vertical = 4.dp, horizontal = 6.dp),
+                    textAlign = TextAlign.Center
                 )
             }
         }
-    }
-}
-
-
-
-
-@Preview
-@Composable
-fun AlphabetSliderPreview() {
-    AichoPaichoTheme {
-        AlphabetSlider(
-            letters = ('A'..'Z').map { it.toString() },
-            selectedLetter = "C",
-            onLetterSelected = {}
-        )
-    }
-}
-
-@Preview
-@Composable
-fun ContactListItemPreview() {
-    AichoPaichoTheme {
-        ContactListItem(
-            contact = Contact(id = "1", name = "Zoe Zebra", phone = listOf("000-9999"), contactId = "c4", userId="u1"),
-            onClick = {}
-        )
     }
 }

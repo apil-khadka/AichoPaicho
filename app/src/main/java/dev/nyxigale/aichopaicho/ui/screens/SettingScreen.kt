@@ -104,14 +104,13 @@ fun SettingsScreen(
                 IconButton(
                     onClick = onNavigateBack,
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(8.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
                 ) {
                     Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
         )
 
         // Content
@@ -183,9 +182,9 @@ fun SettingsScreen(
                     )
                     Button(
                         onClick = onNavigateToSecuritySetup,
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("App Lock Settings")
+                        Text("App Lock Settings", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -194,7 +193,7 @@ fun SettingsScreen(
             if (uiState.user?.isOffline == false) {
                 SettingsCard(
                     title = stringResource(R.string.backup_sync),
-                    icon = Icons.Default.ThumbUp
+                    icon = Icons.Default.CloudQueue
                 ) {
                     BackupSyncSettings(
                         isBackupEnabled = uiState.isBackupEnabled,
@@ -216,14 +215,14 @@ fun SettingsScreen(
                         }
                     }
                     TextButton(onClick = onNavigateToSyncCenter) {
-                        Text(stringResource(R.string.open_sync_center))
+                        Text(stringResource(R.string.open_sync_center), fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
             SettingsCard(
                 title = stringResource(R.string.reminders),
-                icon = Icons.Default.ThumbUp
+                icon = Icons.Default.NotificationsNone
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     DueReminderSettings(
@@ -263,32 +262,8 @@ fun SettingsScreen(
             }
 
             SettingsCard(
-                title = stringResource(R.string.analytics),
-                icon = Icons.Default.Info
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(stringResource(R.string.enable_usage_analytics))
-                        Switch(
-                            checked = uiState.isAnalyticsEnabled,
-                            onCheckedChange = { settingsViewModel.toggleAnalyticsEnabled() }
-                        )
-                    }
-                    Text(
-                        text = stringResource(R.string.analytics_toggle_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            SettingsCard(
                 title = stringResource(R.string.amount_privacy),
-                icon = Icons.Default.Info
+                icon = Icons.Default.VisibilityOff
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(
@@ -296,7 +271,7 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(stringResource(R.string.hide_amounts))
+                        Text(stringResource(R.string.hide_amounts), fontWeight = FontWeight.Medium)
                         Switch(
                             checked = uiState.isHideAmountsEnabled,
                             onCheckedChange = { settingsViewModel.toggleHideAmountsEnabled() }
@@ -311,53 +286,8 @@ fun SettingsScreen(
             }
 
             SettingsCard(
-                title = stringResource(R.string.data_use_privacy),
-                icon = Icons.Default.Info
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = stringResource(R.string.data_use_intro),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.data_use_contacts_only),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.data_use_local_default),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.data_use_cloud_sync),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.data_use_manual_entry),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = {
-                            uriHandler.openUri(context.getString(R.string.privacy_policy_url))
-                        }) {
-                            Text(stringResource(R.string.read_privacy_policy))
-                        }
-                        TextButton(onClick = {
-                            uriHandler.openUri(context.getString(R.string.terms_of_service_url))
-                        }) {
-                            Text(stringResource(R.string.read_terms))
-                        }
-                    }
-                }
-            }
-
-            SettingsCard(
                 title = stringResource(R.string.data_portability),
-                icon = Icons.Outlined.AddCircle
+                icon = Icons.Default.ImportExport
             ) {
                 DataPortabilitySettings(
                     isBusy = uiState.isCsvOperationRunning,
@@ -381,12 +311,14 @@ fun SettingsScreen(
                         )
                         Button(
                             onClick = settingsViewModel::showDeleteAccountDialog,
+                            modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error,
                                 contentColor = MaterialTheme.colorScheme.onError
-                            )
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text(stringResource(R.string.delete_account))
+                            Text(stringResource(R.string.delete_account), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -406,10 +338,12 @@ fun SettingsScreen(
             // About Section
             SettingsCard(
                 title = stringResource(R.string.about),
-                icon = Icons.Default.Info
+                icon = Icons.Default.HelpOutline
             ) {
                 AboutSection()
             }
+            
+            Spacer(Modifier.height(40.dp))
         }
     }
 
@@ -425,15 +359,15 @@ fun SettingsScreen(
     if (uiState.showSignOutDialog) {
         AlertDialog(
             onDismissRequest = settingsViewModel::hideSignOutDialog,
-            title = { Text(stringResource(R.string.sign_out)) },
+            title = { Text(stringResource(R.string.sign_out), fontWeight = FontWeight.Bold) },
             text = {
                 Text(stringResource(R.string.sign_out_confirm))
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = settingsViewModel::signOut,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
                     Text(stringResource(R.string.sign_out))
@@ -443,22 +377,23 @@ fun SettingsScreen(
                 TextButton(onClick = settingsViewModel::hideSignOutDialog) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
+            },
+            shape = RoundedCornerShape(28.dp)
         )
     }
 
     if (uiState.showDeleteAccountDialog) {
         AlertDialog(
             onDismissRequest = settingsViewModel::hideDeleteAccountDialog,
-            title = { Text(stringResource(R.string.delete_account_title)) },
+            title = { Text(stringResource(R.string.delete_account_title), fontWeight = FontWeight.Bold) },
             text = {
                 Text(stringResource(R.string.delete_account_confirm_message))
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = settingsViewModel::deleteAccount,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
                     Text(stringResource(R.string.delete_account))
@@ -468,7 +403,8 @@ fun SettingsScreen(
                 TextButton(onClick = settingsViewModel::hideDeleteAccountDialog) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
+            },
+            shape = RoundedCornerShape(28.dp)
         )
     }
 

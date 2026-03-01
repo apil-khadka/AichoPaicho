@@ -89,13 +89,14 @@ fun ContactTransactionScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors( // Themed TopAppBar
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) }
+        snackbarHost = { SnackbarComponent(snackbarHostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Surface(
             modifier = Modifier
