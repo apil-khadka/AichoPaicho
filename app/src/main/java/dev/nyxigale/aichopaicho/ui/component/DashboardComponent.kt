@@ -1,11 +1,9 @@
 package dev.nyxigale.aichopaicho.ui.component
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,41 +11,39 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import coil3.request.error
-import coil3.request.placeholder
 import dev.nyxigale.aichopaicho.AppPreferenceUtils
 import dev.nyxigale.aichopaicho.R
-import dev.nyxigale.aichopaicho.data.entity.*
-import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
+import dev.nyxigale.aichopaicho.data.entity.UserRecordSummary
 import dev.nyxigale.aichopaicho.ui.util.formatCurrencyAmount
 import dev.nyxigale.aichopaicho.ui.util.formatSignedCurrencyAmount
 import dev.nyxigale.aichopaicho.ui.util.rememberHideAmountsEnabled
@@ -59,79 +55,43 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun UserProfileImage(
-    photoUrl: String?,
-    userName: String?,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center
+fun UserDashboardHeader(uiState: DashboardScreenUiState) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(photoUrl ?: R.drawable.placeholder_user_profile)
-                .crossfade(true)
-                .placeholder(R.drawable.placeholder_user_profile)
-                .error(R.drawable.placeholder_user_profile_error)
-                .build(),
-            contentDescription = stringResource(
-                R.string.profile_photo_of,
-                userName ?: stringResource(R.string.user)
-            ),
-            contentScale = ContentScale.Crop,
+        Box(
             modifier = Modifier
-                .fillMaxSize()
+                .size(64.dp)
                 .clip(CircleShape)
-        )
-    }
-}
-
-@Composable
-fun UserDashboardToast(uiState: DashboardScreenUiState) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
         ) {
-            UserProfileImage(
-                photoUrl = uiState.user?.photoUrl?.toString(),
-                userName = uiState.user?.name,
-                modifier = Modifier.size(56.dp)
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(uiState.user?.photoUrl ?: R.drawable.placeholder_user_profile)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = stringResource(R.string.welcome_back),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = uiState.user?.name ?: stringResource(R.string.user_uc),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                uiState.user?.email?.let { email ->
-                    Text(
-                        text = email,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(
+                text = "Hello,",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = uiState.user?.name ?: "User",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
@@ -139,162 +99,99 @@ fun UserDashboardToast(uiState: DashboardScreenUiState) {
 @Composable
 fun DashboardContent(
     uiState: DashboardScreenUiState,
-    onNavigateToAddTransaction: (() -> Unit)?,
-    onNavigateToViewTransactions: (() -> Unit)?,
-    onNavigateToSettings: (() -> Unit)?,
-    onNavigateToInsights: (() -> Unit)? = null,
+    onNavigateToAddTransaction: () -> Unit,
+    onNavigateToViewTransactions: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToInsights: () -> Unit,
 ) {
-    Column(
+    LazyColumn(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        UserDashboardToast(uiState)
-
-        if (uiState.user?.isOffline == true && uiState.isSignedIn == false) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(R.string.sign_in_to_backup_your_data_without_loss),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        textAlign = TextAlign.Center
-                    )
-                    onNavigateToSettings?.let { navigate ->
-                        TextButton(onClick = navigate) {
-                            Text(stringResource(R.string.go_to_settings_to_sign_in), style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
+        item { UserDashboardHeader(uiState) }
 
         uiState.recordSummary?.let { summary ->
-            NetBalanceCard(
-                summary = summary,
-                onNavigateToContactList = { /* handled by dashboard or other logic if needed */ },
-                onContactClick = { /* handled by dashboard or other logic if needed */ }
+            item {
+                NetBalanceCard(
+                    summary = summary,
+                    lentContacts = uiState.topLentContacts,
+                    borrowedContacts = uiState.topBorrowedContacts,
+                    onContactClick = { /* Can navigate to contact details if needed */ }
+                )
+            }
+        }
+
+        item {
+            InsightsGlimpseCard(onClick = onNavigateToInsights)
+        }
+
+        item {
+            Text(
+                text = "Quick Actions",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Insights Glimpse Card
-        InsightsGlimpseCard(onClick = onNavigateToInsights ?: {})
-
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = stringResource(R.string.quick_actions),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            onNavigateToAddTransaction?.let { navigate ->
-                QuickActionButton(
-                    text = stringResource(R.string.new_txn),
-                    onClick = navigate,
-                    contentDescription = stringResource(R.string.add_new_transaction),
-                    modifier = Modifier.weight(1f),
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            onNavigateToViewTransactions?.let { navigate ->
-                QuickActionButton(
-                    text = stringResource(R.string.view_txns),
-                    onClick = navigate,
-                    contentDescription = stringResource(R.string.view_transactions),
-                    modifier = Modifier.weight(1f),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        UpcomingDueCard(items = uiState.upcomingDue)
-        Spacer(modifier = Modifier.height(24.dp))
-    }
-}
-
-@Composable
-fun InsightsGlimpseCard(onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f))
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                contentAlignment = Alignment.Center
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ShowChart,
-                    contentDescription = null,
-                    tint = Color.White
+                QuickActionButton(
+                    text = "New Transaction",
+                    icon = Icons.Default.Add,
+                    onClick = onNavigateToAddTransaction,
+                    modifier = Modifier.weight(1f),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+                QuickActionButton(
+                    text = "History",
+                    icon = Icons.Default.History,
+                    onClick = onNavigateToViewTransactions,
+                    modifier = Modifier.weight(1f),
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.insights),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "See your lending & borrowing trends",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
+
+        item {
+            UpcomingDueCard(items = uiState.upcomingDue)
+        }
+        
+        item { Spacer(Modifier.height(40.dp)) }
     }
 }
 
 @Composable
 fun QuickActionButton(
     text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
-    contentDescription: String,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
+    containerColor: Color,
+    contentColor: Color
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.height(56.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.height(64.dp),
+        shape = RoundedCornerShape(20.dp),
         color = containerColor,
-        contentColor = contentColor,
-        tonalElevation = 2.dp
+        contentColor = contentColor
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(text = text, fontWeight = FontWeight.SemiBold)
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(text = text, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
         }
     }
 }
@@ -302,76 +199,59 @@ fun QuickActionButton(
 @Composable
 fun NetBalanceCard(
     summary: UserRecordSummary,
-    onNavigateToContactList: (String) -> Unit,
-    lentContacts: List<ContactPreview> = emptyList(),
-    borrowedContacts: List<ContactPreview> = emptyList(),
-    onContactClick: (String) -> Unit = { id -> onNavigateToContactList(id) }
+    lentContacts: List<ContactPreview>,
+    borrowedContacts: List<ContactPreview>,
+    onContactClick: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val hideAmounts = rememberHideAmountsEnabled()
-
-    val brush = Brush.verticalGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-            MaterialTheme.colorScheme.surface
-        )
-    )
+    val currency = AppPreferenceUtils.getCurrencySymbol(context)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .animateContentSize(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            ),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            .animateContentSize(),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(
-            modifier = Modifier.background(brush)
-        ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = "Net Balance",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = !expanded }
-                    .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
             ) {
-                Column {
-                    Text(
-                        stringResource(R.string.net_balance),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        formatCurrencyAmount(
-                            currency = AppPreferenceUtils.getCurrencySymbol(context),
-                            amount = summary.netTotal.toInt(),
-                            hideAmounts = hideAmounts
-                        ),
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = if (summary.netTotal >= 0) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        }
-                    )
-                }
-
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
-                        .padding(4.dp)
+                Text(
+                    text = formatCurrencyAmount(currency, summary.netTotal.toInt(), hideAmounts),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                
+                Surface(
+                    onClick = { expanded = !expanded },
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    contentColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Details", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        Icon(
+                            imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
 
             AnimatedVisibility(
@@ -379,31 +259,14 @@ fun NetBalanceCard(
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 10.dp)
-                ) {
+                Column {
+                    Spacer(modifier = Modifier.height(24.dp))
                     HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        BalanceItemSmall(
-                            label = stringResource(R.string.lent),
-                            amount = summary.totalLent,
-                            isPositive = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                        BalanceItemSmall(
-                            label = stringResource(R.string.borrowed),
-                            amount = summary.totalBorrowed,
-                            isPositive = false,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
+                    
+                    BalanceBreakdownRow("Lent", summary.totalLent, Color(0xFF10B981), lentContacts, onContactClick)
+                    Spacer(modifier = Modifier.height(20.dp))
+                    BalanceBreakdownRow("Borrowed", summary.totalBorrowed, Color(0xFFEF4444), borrowedContacts, onContactClick)
                 }
             }
         }
@@ -411,26 +274,112 @@ fun NetBalanceCard(
 }
 
 @Composable
-fun BalanceItemSmall(
+fun BalanceBreakdownRow(
     label: String,
     amount: Double,
-    isPositive: Boolean,
-    modifier: Modifier = Modifier
+    color: Color,
+    contacts: List<ContactPreview>,
+    onContactClick: (String) -> Unit
 ) {
     val context = LocalContext.current
     val hideAmounts = rememberHideAmountsEnabled()
-    Column(modifier = modifier) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            text = formatCurrencyAmount(
-                currency = AppPreferenceUtils.getCurrencySymbol(context),
-                amount = amount.toInt(),
-                hideAmounts = hideAmounts
-            ),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = if (isPositive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-        )
+    val currency = AppPreferenceUtils.getCurrencySymbol(context)
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            Text(
+                text = formatCurrencyAmount(currency, amount.toInt(), hideAmounts),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+        }
+        
+        if (contacts.isNotEmpty()) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(end = 16.dp)
+            ) {
+                items(contacts) { contact ->
+                    ContactMiniChip(contact, color, onContactClick)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ContactMiniChip(contact: ContactPreview, accentColor: Color, onClick: (String) -> Unit) {
+    Surface(
+        onClick = { onClick(contact.id) },
+        shape = RoundedCornerShape(12.dp),
+        color = accentColor.copy(alpha = 0.08f),
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, accentColor.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .background(accentColor, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = contact.name.take(1).uppercase(),
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = contact.name,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+fun InsightsGlimpseCard(onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ShowChart, null, tint = Color.White, modifier = Modifier.size(24.dp))
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text(text = "Insights", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Lending & borrowing trends",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
@@ -438,60 +387,76 @@ fun BalanceItemSmall(
 fun UpcomingDueCard(items: List<UpcomingDueItem>) {
     val context = LocalContext.current
     val hideAmounts = rememberHideAmountsEnabled()
+    val currency = AppPreferenceUtils.getCurrencySymbol(context)
     val dueFormatter = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
     val now = System.currentTimeMillis()
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.upcoming_due),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            if (items.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.no_upcoming_due),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                items.take(5).forEach { item ->
-                    val isOverdue = item.dueDate < now
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = "Upcoming Due",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        
+        if (items.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Box(Modifier.padding(24.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text("No upcoming dues", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        } else {
+            items.forEach { item ->
+                val isOverdue = item.dueDate < now
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(text = item.contactName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(
+                                    if (item.typeId == TypeConstants.LENT_ID) Color(0xFF10B981).copy(alpha = 0.1f)
+                                    else Color(0xFFEF4444).copy(alpha = 0.1f),
+                                    CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (item.typeId == TypeConstants.LENT_ID) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                                contentDescription = null,
+                                tint = if (item.typeId == TypeConstants.LENT_ID) Color(0xFF10B981) else Color(0xFFEF4444),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(text = item.contactName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                             Text(
-                                text = if (isOverdue) {
-                                    "${stringResource(R.string.overdue)} ${dueFormatter.format(Date(item.dueDate))}"
-                                } else {
-                                    "${stringResource(R.string.due)} ${dueFormatter.format(Date(item.dueDate))}"
-                                },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                                text = if (isOverdue) "Overdue • ${dueFormatter.format(Date(item.dueDate))}"
+                                else "Due • ${dueFormatter.format(Date(item.dueDate))}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (isOverdue) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Text(
                             text = formatSignedCurrencyAmount(
-                                sign = if (item.typeId == TypeConstants.LENT_ID) "+" else "-",
-                                currency = AppPreferenceUtils.getCurrencySymbol(context),
-                                amount = item.amount,
-                                hideAmounts = hideAmounts
+                                if (item.typeId == TypeConstants.LENT_ID) "+" else "-",
+                                currency,
+                                item.amount,
+                                hideAmounts
                             ),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (item.typeId == TypeConstants.LENT_ID) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
+                            color = if (item.typeId == TypeConstants.LENT_ID) Color(0xFF10B981) else Color(0xFFEF4444)
                         )
                     }
                 }

@@ -339,33 +339,6 @@ fun ContactChip(
     }
 }
 
-@Preview(showBackground = true, widthDp = 360)
-@Composable
-fun NetBalanceCardPreview() {
-    val summary = UserRecordSummary("0", 2323.0, 2222.0, 101.0, 3, 2)
-    val lent = listOf(
-        ContactPreview("c1", "Sita Sharma", 800.0),
-        ContactPreview("c2", "Ram Bahadur", 700.0),
-        ContactPreview("c3", "Gita Devi", 723.0)
-    )
-    val borrowed = listOf(
-        ContactPreview("b1", "Hari Krishna", 1200.0),
-        ContactPreview("b2", "Maya Thapa", 1022.0)
-    )
-
-    AichoPaichoTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            NetBalanceCard(
-                summary = summary,
-                onNavigateToContactList = { /* type -> navigate */ },
-                lentContacts = lent,
-                borrowedContacts = borrowed,
-                onContactClick = { /* id -> navigate */ }
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TransactionFilterSection(

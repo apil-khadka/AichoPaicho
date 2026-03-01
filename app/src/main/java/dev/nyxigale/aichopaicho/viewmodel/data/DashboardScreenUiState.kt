@@ -9,5 +9,7 @@ data class DashboardScreenUiState(
     val errorMessage: String? = null,
     val isSignedIn: Boolean = false,
     val recordSummary: UserRecordSummary? = null,
+    val topLentContacts: List<ContactPreview> = emptyList(),
+    val topBorrowedContacts: List<ContactPreview> = emptyList(),
     val upcomingDue: List<UpcomingDueItem> = emptyList(),
 )

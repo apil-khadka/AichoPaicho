@@ -11,6 +11,7 @@ import dev.nyxigale.aichopaicho.data.repository.UserRecordSummaryRepository
 import dev.nyxigale.aichopaicho.data.repository.UserRepository
 import dev.nyxigale.aichopaicho.viewmodel.data.DashboardScreenUiState
 import dev.nyxigale.aichopaicho.viewmodel.data.UpcomingDueItem
+import dev.nyxigale.aichopaicho.viewmodel.data.ContactPreview
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -70,6 +71,7 @@ class DashboardScreenViewModel @Inject constructor(
                         user = localUser
                     )
                     loadUpcomingDueRecords()
+                    loadTopContacts()
                     if (isSignedIn) {
                         loadRecordSummary()
                     } else {
@@ -124,6 +126,30 @@ class DashboardScreenViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(upcomingDue = upcoming)
         } catch (e: Exception) {
             Log.e("DashboardViewModel", "Error loading upcoming due records", e)
+        }
+    }
+
+    private suspend fun loadTopContacts() {
+        try {
+            val contacts = contactRepository.getAllContacts().first()
+            val records = recordRepository.getAllRecords().first()
+            
+            val contactSummaries = contacts.map { contact ->
+                val contactRecords = records.filter { it.contactId == contact.id && !it.isDeleted }
+                val totalLent = contactRecords.filter { it.typeId == dev.nyxigale.aichopaicho.ui.component.TypeConstants.LENT_ID }.sumOf { it.amount.toDouble() }
+                val totalBorrowed = contactRecords.filter { it.typeId == dev.nyxigale.aichopaicho.ui.component.TypeConstants.BORROWED_ID }.sumOf { it.amount.toDouble() }
+                ContactPreview(contact.id, contact.name, totalLent - totalBorrowed)
+            }
+
+            val topLent = contactSummaries.filter { it.amount > 0.0 }.sortedByDescending { it.amount }.take(3)
+            val topBorrowed = contactSummaries.filter { it.amount < 0.0 }.sortedBy { it.amount }.take(3)
+
+            _uiState.value = _uiState.value.copy(
+                topLentContacts = topLent,
+                topBorrowedContacts = topBorrowed
+            )
+        } catch (e: Exception) {
+            Log.e("DashboardViewModel", "Error loading top contacts", e)
         }
     }
 
