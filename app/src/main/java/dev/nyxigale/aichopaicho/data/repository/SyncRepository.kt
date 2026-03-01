@@ -15,6 +15,9 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 @Singleton
 class SyncRepository @Inject constructor(
@@ -298,6 +301,8 @@ class SyncRepository @Inject constructor(
                     .get()
                     .await()
 
+                val allRepaymentsToInsert = mutableListOf<dev.nyxigale.aichopaicho.data.entity.Repayment>()
+                val startRecordsTime = System.currentTimeMillis()
                 for (doc in recordsSnapshot.documents) {
                     try {
                         val firestoreId = doc.getString("id") ?: ""
@@ -349,15 +354,41 @@ class SyncRepository @Inject constructor(
                             syncSingleRecord(localRecord.id)
                         }
 
-                        val repaymentsSnapshot = firestore.collection("users")
-                            .document(user.id)
-                            .collection("records")
-                            .document(firestoreId)
-                            .collection("repayments")
-                            .get()
-                            .await()
 
-                        for (repaymentDoc in repaymentsSnapshot.documents) {
+                    } catch (error: Exception) {
+                        Log.e(TAG, "Error processing record document ${doc.id}", error)
+                    }
+                }
+                Log.d(TAG, "Processed all records in ${System.currentTimeMillis() - startRecordsTime} ms")
+
+                val startRepaymentsFetchTime = System.currentTimeMillis()
+
+                coroutineScope {
+                    val repaymentsDeferred = recordsSnapshot.documents.mapNotNull { doc ->
+                        val firestoreId = doc.getString("id") ?: ""
+                        if (firestoreId.isNotEmpty()) {
+                            async {
+                                try {
+                                    val repaymentsSnapshot = firestore.collection("users")
+                                        .document(user.id)
+                                        .collection("records")
+                                        .document(firestoreId)
+                                        .collection("repayments")
+                                        .get()
+                                        .await()
+                                    repaymentsSnapshot.documents
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error fetching repayments for record $firestoreId", e)
+                                    emptyList<com.google.firebase.firestore.DocumentSnapshot>()
+                                }
+                            }
+                        } else null
+                    }
+
+                    val allRepaymentDocsLists = repaymentsDeferred.awaitAll()
+
+                    for (repaymentsDocs in allRepaymentDocsLists) {
+                        for (repaymentDoc in repaymentsDocs) {
                             val firestoreRepaymentId = repaymentDoc.getString("id") ?: ""
                             if (firestoreRepaymentId.isEmpty()) {
                                 Log.w(TAG, "Parsed repayment with empty ID from Firestore doc=${repaymentDoc.id}, skipping")
@@ -365,7 +396,7 @@ class SyncRepository @Inject constructor(
                             }
 
                             val firestoreRepaymentObject =
-                                repaymentDoc.toObject(Repayment::class.java)
+                                repaymentDoc.toObject(dev.nyxigale.aichopaicho.data.entity.Repayment::class.java)
                             if (firestoreRepaymentObject == null) {
                                 Log.w(TAG, "Could not parse repayment ${repaymentDoc.id}, skipping")
                                 continue
@@ -381,17 +412,21 @@ class SyncRepository @Inject constructor(
                             val localRepayment =
                                 repaymentRepository.getRepaymentById(firestoreRepaymentId)
                             if (localRepayment == null) {
-                                repaymentRepository.insertRepayment(firestoreRepayment)
+                                allRepaymentsToInsert.add(firestoreRepayment)
                             } else if (firestoreRepayment.updatedAt > localRepayment.updatedAt) {
-                                repaymentRepository.insertRepayment(firestoreRepayment)
+                                allRepaymentsToInsert.add(firestoreRepayment)
                             } else if (localRepayment.updatedAt > firestoreRepayment.updatedAt) {
                                 syncSingleRepayment(localRepayment.id)
                             }
                         }
-                    } catch (error: Exception) {
-                        Log.e(TAG, "Error processing record document ${doc.id}", error)
                     }
                 }
+
+                if (allRepaymentsToInsert.isNotEmpty()) {
+                    repaymentRepository.insertRepayments(allRepaymentsToInsert)
+                    Log.d(TAG, "Batch inserted ${allRepaymentsToInsert.size} repayments")
+                }
+                Log.d(TAG, "Fetched and processed repayments in ${System.currentTimeMillis() - startRepaymentsFetchTime} ms")
             } catch (error: Exception) {
                 Log.e(TAG, "Error downloading records", error)
             }
