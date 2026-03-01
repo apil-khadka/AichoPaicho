@@ -44,6 +44,10 @@ android {
 }
 
 dependencies {
+    testImplementation("androidx.test:core-ktx:1.5.0")
+
+    testImplementation("org.robolectric:robolectric:4.11.1")
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -28,8 +28,14 @@ interface ContactDao {
     @Query("SELECT * FROM contacts WHERE id = :contactId AND isDeleted = 0")
     suspend fun getContactById(contactId: String): Contact?
 
+    @Query("SELECT * FROM contacts WHERE id IN (:contactIds)")
+    suspend fun getContactsByIds(contactIds: List<String>): List<Contact>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertContact(contact: Contact)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertContacts(contacts: List<Contact>)
 
     @Update
     suspend fun updateContact(contact: Contact)
