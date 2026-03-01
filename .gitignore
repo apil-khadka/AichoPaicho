@@ -15,3 +15,5 @@
 local.properties
 .idea
 app/src/google-services.json
+# Ignore dummy google-services.json created for tests
+app/google-services.json
