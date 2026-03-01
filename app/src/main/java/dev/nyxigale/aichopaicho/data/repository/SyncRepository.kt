@@ -250,6 +250,17 @@ class SyncRepository @Inject constructor(
                     .get()
                     .await()
 
+
+                val firestoreContactIds = contactsSnapshot.documents
+                    .mapNotNull { it.getString("id") }
+                    .filter { it.isNotEmpty() }
+
+                val localContactsMap = contactRepository.getContactsByIds(firestoreContactIds)
+                    .associateBy { it.id }
+
+                val contactsToInsertOrUpdate = mutableListOf<Contact>()
+                val contactsToUpload = mutableListOf<String>()
+
                 for (doc in contactsSnapshot.documents) {
                     try {
                         val firestoreId = doc.getString("id") ?: ""
@@ -280,20 +291,26 @@ class SyncRepository @Inject constructor(
                             updatedAt = firestoreUpdatedAt
                         )
 
-                        val localContact = contactRepository.getContactById(firestoreContact.id)
+                        val localContact = localContactsMap[firestoreContact.id]
                         if (localContact == null) {
-                            contactRepository.insertContact(firestoreContact)
+                            contactsToInsertOrUpdate.add(firestoreContact)
                             Log.d(TAG, "Inserted new contact from Firestore: ${firestoreContact.id}")
                         } else if (firestoreContact.updatedAt > localContact.updatedAt) {
-                            contactRepository.updateContact(firestoreContact)
+                            contactsToInsertOrUpdate.add(firestoreContact)
                             Log.d(TAG, "Updated local contact from Firestore: ${firestoreContact.id}")
                         } else if (localContact.updatedAt > firestoreContact.updatedAt) {
                             Log.d(TAG, "Local contact ${localContact.id} is newer. Re-uploading.")
-                            syncSingleContact(localContact.id)
+                            contactsToUpload.add(localContact.id)
                         }
                     } catch (error: Exception) {
                         Log.e(TAG, "Error processing contact document ${doc.id}", error)
                     }
+                }
+                if (contactsToInsertOrUpdate.isNotEmpty()) {
+                    contactRepository.insertContacts(contactsToInsertOrUpdate)
+                }
+                for (id in contactsToUpload) {
+                    syncSingleContact(id)
                 }
             } catch (error: Exception) {
                 Log.e(TAG, "Error downloading contacts", error)
