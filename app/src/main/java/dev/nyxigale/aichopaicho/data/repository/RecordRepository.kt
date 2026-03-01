@@ -44,6 +44,10 @@ class RecordRepository @Inject constructor(private val recordDao: RecordDao) {
         return recordDao.getRecordById(recordId)
     }
 
+    suspend fun getRecordsByIds(recordIds: List<String>): List<Record> {
+        return recordDao.getRecordsByIds(recordIds)
+    }
+
     // New method to get a single record with its repayments
     fun getRecordWithRepaymentsById(recordId: String): Flow<RecordWithRepayments?> {
         return recordDao.getRecordWithRepaymentsById(recordId)
@@ -53,12 +57,20 @@ class RecordRepository @Inject constructor(private val recordDao: RecordDao) {
         recordDao.updateRecord(record)
     }
 
+    suspend fun updateRecords(records: List<Record>) {
+        recordDao.updateRecords(records)
+    }
+
     suspend fun deleteRecord(recordId: String) {
         recordDao.deleteRecord(recordId)
     }
 
     suspend fun insertRecord(record: Record) {
         recordDao.insertRecord(record)
+    }
+
+    suspend fun insertRecords(records: List<Record>) {
+        recordDao.insertRecords(records)
     }
 
     suspend fun updateUserId(oldUserId: String, newUserId: String) {

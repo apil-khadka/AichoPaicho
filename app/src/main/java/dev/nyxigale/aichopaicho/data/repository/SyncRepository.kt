@@ -13,11 +13,13 @@ import dev.nyxigale.aichopaicho.data.sync.SyncFailureItem
 import dev.nyxigale.aichopaicho.data.sync.SyncReport
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 @Singleton
 class SyncRepository @Inject constructor(
@@ -231,25 +233,25 @@ class SyncRepository @Inject constructor(
         syncSingleRepaymentByIdReport(user.id, repaymentId)
     }
 
-    suspend fun downloadAndMergeData() {
+    suspend fun downloadAndMergeData() = withContext(Dispatchers.IO) {
         try {
             val user = userRepository.getUser()
             if (user.id.isBlank()) {
                 Log.d(TAG, "User ID is blank. Skipping download.")
-                return
+                return@withContext
             }
             if (firebaseAuth.currentUser?.uid != user.id) {
                 Log.d(TAG, "Current Firebase Auth user does not match local user. Skipping download.")
-                return
+                return@withContext
             }
 
+            // 1. Sync Contacts
             try {
                 val contactsSnapshot = firestore.collection("users")
                     .document(user.id)
                     .collection("contacts")
                     .get()
                     .await()
-
 
                 val firestoreContactIds = contactsSnapshot.documents
                     .mapNotNull { it.getString("id") }
@@ -262,60 +264,36 @@ class SyncRepository @Inject constructor(
                 val contactsToUpload = mutableListOf<String>()
 
                 for (doc in contactsSnapshot.documents) {
-                    try {
-                        val firestoreId = doc.getString("id") ?: ""
-                        val firestoreName = doc.getString("name") ?: ""
-                        val firestoreUserId = doc.getString("userId")
-                        @Suppress("UNCHECKED_CAST")
-                        val firestorePhone = doc.get("phone") as? List<String?> ?: emptyList()
-                        val firestoreContactId = doc.getString("contactId")
-                        val firestoreIsDeleted = doc.getBoolean("deleted") ?: false
-                        val firestoreCreatedAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
-                        val firestoreUpdatedAtTimestamp = doc.getTimestamp("updatedAt")
-                        val firestoreUpdatedAt =
-                            firestoreUpdatedAtTimestamp?.toDate()?.time ?: System.currentTimeMillis()
+                    val firestoreId = doc.getString("id") ?: ""
+                    if (firestoreId.isEmpty()) continue
 
-                        if (firestoreId.isEmpty()) {
-                            Log.w(TAG, "Parsed contact with empty ID from Firestore doc=${doc.id}, skipping")
-                            continue
-                        }
+                    val firestoreContact = Contact(
+                        id = firestoreId,
+                        name = doc.getString("name") ?: "",
+                        userId = doc.getString("userId"),
+                        phone = doc.get("phone") as? List<String?> ?: emptyList(),
+                        contactId = doc.getString("contactId"),
+                        isDeleted = doc.getBoolean("deleted") ?: false,
+                        createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis(),
+                        updatedAt = doc.getTimestamp("updatedAt")?.toDate()?.time ?: System.currentTimeMillis()
+                    )
 
-                        val firestoreContact = Contact(
-                            id = firestoreId,
-                            name = firestoreName,
-                            userId = firestoreUserId,
-                            phone = firestorePhone,
-                            contactId = firestoreContactId,
-                            isDeleted = firestoreIsDeleted,
-                            createdAt = firestoreCreatedAt,
-                            updatedAt = firestoreUpdatedAt
-                        )
-
-                        val localContact = localContactsMap[firestoreContact.id]
-                        if (localContact == null) {
-                            contactsToInsertOrUpdate.add(firestoreContact)
-                            Log.d(TAG, "Inserted new contact from Firestore: ${firestoreContact.id}")
-                        } else if (firestoreContact.updatedAt > localContact.updatedAt) {
-                            contactsToInsertOrUpdate.add(firestoreContact)
-                            Log.d(TAG, "Updated local contact from Firestore: ${firestoreContact.id}")
-                        } else if (localContact.updatedAt > firestoreContact.updatedAt) {
-                            Log.d(TAG, "Local contact ${localContact.id} is newer. Re-uploading.")
-                            contactsToUpload.add(localContact.id)
-                        }
-                    } catch (error: Exception) {
-                        Log.e(TAG, "Error processing contact document ${doc.id}", error)
+                    val localContact = localContactsMap[firestoreContact.id]
+                    if (localContact == null || firestoreContact.updatedAt > localContact.updatedAt) {
+                        contactsToInsertOrUpdate.add(firestoreContact)
+                    } else if (localContact.updatedAt > firestoreContact.updatedAt) {
+                        contactsToUpload.add(localContact.id)
                     }
                 }
                 if (contactsToInsertOrUpdate.isNotEmpty()) {
                     contactRepository.insertContacts(contactsToInsertOrUpdate)
                 }
-                for (id in contactsToUpload) {
-                    syncSingleContact(id)
-                }
+                for (id in contactsToUpload) syncSingleContact(id)
             } catch (error: Exception) {
                 Log.e(TAG, "Error downloading contacts", error)
             }
 
+            // 2. Sync Records and Repayments
             try {
                 val recordsSnapshot = firestore.collection("users")
                     .document(user.id)
@@ -323,134 +301,98 @@ class SyncRepository @Inject constructor(
                     .get()
                     .await()
 
-                val allRepaymentsToInsert = mutableListOf<dev.nyxigale.aichopaicho.data.entity.Repayment>()
-                val startRecordsTime = System.currentTimeMillis()
+                val firestoreRecords = mutableListOf<Record>()
+                val validRecordIds = mutableListOf<String>()
+                val allRepaymentsToInsert = mutableListOf<Repayment>()
+
                 for (doc in recordsSnapshot.documents) {
-                    try {
-                        val firestoreId = doc.getString("id") ?: ""
-                        val firestoreUserId = doc.getString("userId")
-                        val firestoreContactId = doc.getString("contactId")
-                        val firestoreTypeId = doc.getLong("typeId")?.toInt() ?: 0
-                        val firestoreAmount = doc.getLong("amount")?.toInt() ?: 0
-                        val firestoreDate = doc.getLong("date") ?: 0L
-                        val firestoreDueDate = doc.getLong("dueDate")
-                        val firestoreIsComplete = doc.getBoolean("complete") ?: false
-                        val firestoreIsDeleted = doc.getBoolean("deleted") ?: false
-                        val firestoreDescription = doc.getString("description")
-                        val firestoreRecurringTemplateId = doc.getString("recurringTemplateId")
-                        val firestoreCreatedAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
-                        val firestoreUpdatedAtTimestamp = doc.getTimestamp("updatedAt")
-                        val firestoreUpdatedAt =
-                            firestoreUpdatedAtTimestamp?.toDate()?.time ?: System.currentTimeMillis()
+                    val firestoreId = doc.getString("id") ?: ""
+                    if (firestoreId.isEmpty()) continue
 
-                        if (firestoreId.isEmpty()) {
-                            Log.w(TAG, "Parsed record with empty ID from Firestore doc=${doc.id}, skipping")
-                            continue
-                        }
+                    val firestoreRecord = Record(
+                        id = firestoreId,
+                        userId = doc.getString("userId"),
+                        contactId = doc.getString("contactId"),
+                        typeId = doc.getLong("typeId")?.toInt() ?: 0,
+                        amount = doc.getLong("amount")?.toInt() ?: 0,
+                        date = doc.getLong("date") ?: 0L,
+                        dueDate = doc.getLong("dueDate"),
+                        isComplete = doc.getBoolean("complete") ?: false,
+                        isDeleted = doc.getBoolean("deleted") ?: false,
+                        description = doc.getString("description"),
+                        recurringTemplateId = doc.getString("recurringTemplateId"),
+                        createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis(),
+                        updatedAt = doc.getTimestamp("updatedAt")?.toDate()?.time ?: System.currentTimeMillis()
+                    )
+                    firestoreRecords.add(firestoreRecord)
+                    validRecordIds.add(firestoreId)
+                }
 
-                        val firestoreRecord = Record(
-                            id = firestoreId,
-                            userId = firestoreUserId,
-                            contactId = firestoreContactId,
-                            typeId = firestoreTypeId,
-                            amount = firestoreAmount,
-                            date = firestoreDate,
-                            dueDate = firestoreDueDate,
-                            isComplete = firestoreIsComplete,
-                            isDeleted = firestoreIsDeleted,
-                            description = firestoreDescription,
-                            recurringTemplateId = firestoreRecurringTemplateId,
-                            createdAt = firestoreCreatedAt,
-                            updatedAt = firestoreUpdatedAt
-                        )
+                // Resolve Records
+                if (validRecordIds.isNotEmpty()) {
+                    val localRecords = recordRepository.getRecordsByIds(validRecordIds).associateBy { it.id }
+                    val recordsToInsert = mutableListOf<Record>()
+                    val recordsToUpdate = mutableListOf<Record>()
 
-                        val localRecord = recordRepository.getRecordById(firestoreRecord.id)
+                    for (firestoreRecord in firestoreRecords) {
+                        val localRecord = localRecords[firestoreRecord.id]
                         if (localRecord == null) {
-                            recordRepository.insertRecord(firestoreRecord)
-                            Log.d(TAG, "Inserted new record from Firestore: ${firestoreRecord.id}")
+                            recordsToInsert.add(firestoreRecord)
                         } else if (firestoreRecord.updatedAt > localRecord.updatedAt) {
-                            recordRepository.updateRecord(firestoreRecord)
-                            Log.d(TAG, "Updated local record from Firestore: ${firestoreRecord.id}")
+                            recordsToUpdate.add(firestoreRecord)
                         } else if (localRecord.updatedAt > firestoreRecord.updatedAt) {
-                            Log.d(TAG, "Local record ${localRecord.id} is newer. Re-uploading.")
                             syncSingleRecord(localRecord.id)
                         }
+                    }
 
-
-                    } catch (error: Exception) {
-                        Log.e(TAG, "Error processing record document ${doc.id}", error)
+                    if (recordsToInsert.isNotEmpty()) {
+                        recordRepository.insertRecords(recordsToInsert)
+                    }
+                    if (recordsToUpdate.isNotEmpty()) {
+                        recordRepository.updateRecords(recordsToUpdate)
                     }
                 }
-                Log.d(TAG, "Processed all records in ${System.currentTimeMillis() - startRecordsTime} ms")
 
-                val startRepaymentsFetchTime = System.currentTimeMillis()
-
+                // Resolve Repayments in parallel
                 coroutineScope {
-                    val repaymentsDeferred = recordsSnapshot.documents.mapNotNull { doc ->
-                        val firestoreId = doc.getString("id") ?: ""
-                        if (firestoreId.isNotEmpty()) {
-                            async {
-                                try {
-                                    val repaymentsSnapshot = firestore.collection("users")
-                                        .document(user.id)
-                                        .collection("records")
-                                        .document(firestoreId)
-                                        .collection("repayments")
-                                        .get()
-                                        .await()
-                                    repaymentsSnapshot.documents
-                                } catch (e: Exception) {
-                                    Log.e(TAG, "Error fetching repayments for record $firestoreId", e)
-                                    emptyList<com.google.firebase.firestore.DocumentSnapshot>()
-                                }
-                            }
-                        } else null
+                    val repaymentsDeferred = validRecordIds.map { recordId ->
+                        async {
+                            runCatching {
+                                firestore.collection("users")
+                                    .document(user.id)
+                                    .collection("records")
+                                    .document(recordId)
+                                    .collection("repayments")
+                                    .get()
+                                    .await()
+                                    .documents
+                            }.getOrElse { emptyList() }
+                        }
                     }
 
-                    val allRepaymentDocsLists = repaymentsDeferred.awaitAll()
+                    repaymentsDeferred.awaitAll().flatten().forEach { doc ->
+                        val firestoreRepaymentId = doc.getString("id") ?: ""
+                        if (firestoreRepaymentId.isEmpty()) return@forEach
 
-                    for (repaymentsDocs in allRepaymentDocsLists) {
-                        for (repaymentDoc in repaymentsDocs) {
-                            val firestoreRepaymentId = repaymentDoc.getString("id") ?: ""
-                            if (firestoreRepaymentId.isEmpty()) {
-                                Log.w(TAG, "Parsed repayment with empty ID from Firestore doc=${repaymentDoc.id}, skipping")
-                                continue
-                            }
+                        val firestoreRepaymentObject = doc.toObject(Repayment::class.java) ?: return@forEach
+                        val firestoreRepayment = firestoreRepaymentObject.copy(
+                            updatedAt = doc.getTimestamp("updatedAt")?.toDate()?.time ?: System.currentTimeMillis()
+                        )
 
-                            val firestoreRepaymentObject =
-                                repaymentDoc.toObject(dev.nyxigale.aichopaicho.data.entity.Repayment::class.java)
-                            if (firestoreRepaymentObject == null) {
-                                Log.w(TAG, "Could not parse repayment ${repaymentDoc.id}, skipping")
-                                continue
-                            }
-
-                            val firestoreRepayment = firestoreRepaymentObject.copy(
-                                updatedAt = repaymentDoc.getTimestamp("updatedAt")
-                                    ?.toDate()
-                                    ?.time
-                                    ?: System.currentTimeMillis()
-                            )
-
-                            val localRepayment =
-                                repaymentRepository.getRepaymentById(firestoreRepaymentId)
-                            if (localRepayment == null) {
-                                allRepaymentsToInsert.add(firestoreRepayment)
-                            } else if (firestoreRepayment.updatedAt > localRepayment.updatedAt) {
-                                allRepaymentsToInsert.add(firestoreRepayment)
-                            } else if (localRepayment.updatedAt > firestoreRepayment.updatedAt) {
-                                syncSingleRepayment(localRepayment.id)
-                            }
+                        val localRepayment = repaymentRepository.getRepaymentById(firestoreRepaymentId)
+                        if (localRepayment == null || firestoreRepayment.updatedAt > localRepayment.updatedAt) {
+                            allRepaymentsToInsert.add(firestoreRepayment)
+                        } else if (localRepayment.updatedAt > firestoreRepayment.updatedAt) {
+                            syncSingleRepayment(localRepayment.id)
                         }
                     }
                 }
 
                 if (allRepaymentsToInsert.isNotEmpty()) {
                     repaymentRepository.insertRepayments(allRepaymentsToInsert)
-                    Log.d(TAG, "Batch inserted ${allRepaymentsToInsert.size} repayments")
                 }
-                Log.d(TAG, "Fetched and processed repayments in ${System.currentTimeMillis() - startRepaymentsFetchTime} ms")
             } catch (error: Exception) {
-                Log.e(TAG, "Error downloading records", error)
+                Log.e(TAG, "Error downloading records or repayments", error)
             }
         } catch (error: Exception) {
             Log.e(TAG, "Error in downloadAndMergeData", error)
