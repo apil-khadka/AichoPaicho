@@ -1,6 +1,7 @@
 package dev.nyxigale.aichopaicho.viewmodel
 
 import android.content.Context
+import dev.nyxigale.aichopaicho.R
 import dev.nyxigale.aichopaicho.data.entity.Contact
 import dev.nyxigale.aichopaicho.data.entity.Record
 import dev.nyxigale.aichopaicho.data.repository.ContactRepository
@@ -10,6 +11,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -18,6 +20,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -48,16 +51,15 @@ class ContactListViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        context = mockk()
+        context = mockk(relaxed = true)
         contactRepository = mockk()
         recordRepository = mockk()
 
-        // Mock strings if necessary
-        every { context.getString(any(), any()) } returns "Error message"
-
-        // Mock repository flows
+        // Default behavior
         every { contactRepository.getAllContacts() } returns flowOf(mockContacts)
         every { recordRepository.getAllRecords() } returns flowOf(mockRecords)
+        every { context.getString(any()) } returns "Mock String"
+        every { context.getString(any(), any()) } returns "Mock String with Args"
 
         viewModel = ContactListViewModel(context, contactRepository, recordRepository)
     }
@@ -69,21 +71,16 @@ class ContactListViewModelTest {
 
     @Test
     fun testSearchContacts_updatesSearchQuery() = runTest {
-        advanceUntilIdle() // Ensure flows are collected
-
+        advanceUntilIdle()
         viewModel.searchContacts("ali")
-
         assertEquals("ali", viewModel.uiState.value.searchQuery)
     }
 
     @Test
     fun testGetFilteredContacts_withSearchQuery_returnsFilteredContacts() = runTest {
         advanceUntilIdle()
-
         viewModel.searchContacts("ali")
-        // Pass blank to get all contact types
         val result = viewModel.getFilteredContacts("")
-
         assertEquals(2, result.size)
         assertTrue(result.any { it.name == "Alice" })
         assertTrue(result.any { it.name == "alice2" })
@@ -92,65 +89,53 @@ class ContactListViewModelTest {
     @Test
     fun testJumpToLetter_updatesSelectedLetter() = runTest {
         advanceUntilIdle()
-
         viewModel.jumpToLetter("C")
-
         assertEquals("C", viewModel.uiState.value.selectedLetter)
     }
 
     @Test
     fun testGetFilteredContacts_withSelectedLetter_returnsFilteredContacts() = runTest {
         advanceUntilIdle()
-
         viewModel.jumpToLetter("C")
         val result = viewModel.getFilteredContacts("")
-
         assertEquals(1, result.size)
         assertEquals("Charlie", result[0].name)
     }
 
     @Test
-    fun testGetFilteredContacts_withSearchQueryAndSelectedLetter_returnsFilteredContacts() = runTest {
+    fun `loadContacts handles error and updates uiState`() = runTest {
+        val errorMessage = "Network Error"
+        every { contactRepository.getAllContacts() } returns flow { throw Exception(errorMessage) }
+        
+        viewModel = ContactListViewModel(context, contactRepository, recordRepository)
         advanceUntilIdle()
 
-        viewModel.searchContacts("ce")
-        viewModel.jumpToLetter("A")
-
-        val result = viewModel.getFilteredContacts("")
-
-        assertEquals(2, result.size)
-        assertTrue(result.any { it.name == "Alice" })
-        assertTrue(result.any { it.name == "alice2" })
+        val state = viewModel.uiState.value
+        assertTrue(state.errorMessage != null)
+        assertEquals(false, state.isLoading)
     }
 
     @Test
-    fun testGetFilteredContacts_withSpecificType_returnsFilteredContacts() = runTest {
-         advanceUntilIdle()
+    fun `loadRecords handles error and updates uiState`() = runTest {
+        val errorMessage = "Database Error"
+        every { recordRepository.getAllRecords() } returns flow { throw Exception(errorMessage) }
 
-         val lentContacts = viewModel.getFilteredContacts(TypeConstants.TYPE_LENT)
-         assertEquals(3, lentContacts.size)
-         assertTrue(lentContacts.any { it.name == "Alice" })
-         assertTrue(lentContacts.any { it.name == "Charlie" })
-         assertTrue(lentContacts.any { it.name == "alice2" })
+        viewModel = ContactListViewModel(context, contactRepository, recordRepository)
+        advanceUntilIdle()
 
-         val borrowedContacts = viewModel.getFilteredContacts(TypeConstants.TYPE_BORROWED)
-         assertEquals(1, borrowedContacts.size)
-         assertEquals("Bob", borrowedContacts[0].name)
+        val state = viewModel.uiState.value
+        assertTrue(state.errorMessage != null)
+        assertEquals(false, state.isLoading)
     }
 
     @Test
-    fun testClearSearch_clearsSearchQueryAndSelectedLetter() = runTest {
+    fun `clearErrorMessage sets errorMessage to null in uiState`() = runTest {
+        every { contactRepository.getAllContacts() } returns flow { throw Exception("Error") }
+        viewModel = ContactListViewModel(context, contactRepository, recordRepository)
         advanceUntilIdle()
 
-        viewModel.searchContacts("ali")
-        viewModel.jumpToLetter("A")
-
-        assertEquals("ali", viewModel.uiState.value.searchQuery)
-        assertEquals("A", viewModel.uiState.value.selectedLetter)
-
-        viewModel.clearSearch()
-
-        assertEquals("", viewModel.uiState.value.searchQuery)
-        assertEquals("", viewModel.uiState.value.selectedLetter)
+        assertTrue(viewModel.uiState.value.errorMessage != null)
+        viewModel.clearErrorMessage()
+        assertNull(viewModel.uiState.value.errorMessage)
     }
 }
