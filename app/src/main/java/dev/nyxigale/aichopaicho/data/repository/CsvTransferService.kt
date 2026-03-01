@@ -309,9 +309,16 @@ class CsvTransferService @Inject constructor(
     }
 
     private fun escapeCsv(raw: String): String {
-        val shouldQuote = raw.contains(',') || raw.contains('"') || raw.contains('\n')
-        if (!shouldQuote) return raw
-        return "\"" + raw.replace("\"", "\"\"") + "\""
+        var safe = raw
+        if (safe.isNotEmpty()) {
+            val firstChar = safe[0]
+            if (firstChar == '=' || firstChar == '+' || firstChar == '-' || firstChar == '@' || firstChar == '\t' || firstChar == '\r') {
+                safe = "'" + safe
+            }
+        }
+        val shouldQuote = safe.contains(',') || safe.contains('"') || safe.contains('\n')
+        if (!shouldQuote) return safe
+        return "\"" + safe.replace("\"", "\"\"") + "\""
     }
 
     private fun parseCsvLine(line: String): List<String> {
