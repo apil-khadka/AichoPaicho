@@ -1,6 +1,7 @@
 package dev.nyxigale.aichopaicho.viewmodel
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.nyxigale.aichopaicho.R
@@ -74,7 +75,8 @@ class InsightsViewModel @Inject constructor(
         }
     }
 
-    private fun calculateCurrentMonth(records: List<RecordWithRepayments>): MonthMetrics {
+    @VisibleForTesting
+    internal fun calculateCurrentMonth(records: List<RecordWithRepayments>): MonthMetrics {
         val monthStart = Calendar.getInstance().apply {
             set(Calendar.DAY_OF_MONTH, 1)
             set(Calendar.HOUR_OF_DAY, 0)
@@ -94,7 +96,8 @@ class InsightsViewModel @Inject constructor(
         return MonthMetrics(inflow = inflow, outflow = outflow)
     }
 
-    private fun calculateOverdueOutstanding(records: List<RecordWithRepayments>): Double {
+    @VisibleForTesting
+    internal fun calculateOverdueOutstanding(records: List<RecordWithRepayments>): Double {
         val now = System.currentTimeMillis()
         return records
             .filter { it.record.dueDate != null && it.record.dueDate < now && !it.isSettled }
@@ -184,7 +187,8 @@ class InsightsViewModel @Inject constructor(
         }
     }
 
-    private data class MonthMetrics(
+    @VisibleForTesting
+    internal data class MonthMetrics(
         val inflow: Double,
         val outflow: Double
     )
