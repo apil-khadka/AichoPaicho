@@ -35,10 +35,10 @@ class ContactListViewModelTest {
     private lateinit var context: Context
 
     private val mockContacts = listOf(
-        Contact(id = "1", name = "Alice", userId = null, phone = listOf(), contactId = "c1"),
-        Contact(id = "2", name = "Bob", userId = null, phone = listOf(), contactId = "c2"),
-        Contact(id = "3", name = "Charlie", userId = null, phone = listOf(), contactId = "c3"),
-        Contact(id = "4", name = "alice2", userId = null, phone = listOf(), contactId = "c4")
+        Contact(id = "1", name = "Alice", userId = "u1", phone = listOf(), contactId = "c1"),
+        Contact(id = "2", name = "Bob", userId = "u1", phone = listOf(), contactId = "c2"),
+        Contact(id = "3", name = "Charlie", userId = "u1", phone = listOf(), contactId = "c3"),
+        Contact(id = "4", name = "alice2", userId = "u1", phone = listOf(), contactId = "c4")
     )
 
     private val mockRecords = listOf(
@@ -55,7 +55,6 @@ class ContactListViewModelTest {
         contactRepository = mockk()
         recordRepository = mockk()
 
-        // Default behavior
         every { contactRepository.getAllContacts() } returns flowOf(mockContacts)
         every { recordRepository.getAllRecords() } returns flowOf(mockRecords)
         every { context.getString(any()) } returns "Mock String"
@@ -81,6 +80,7 @@ class ContactListViewModelTest {
         advanceUntilIdle()
         viewModel.searchContacts("ali")
         val result = viewModel.getFilteredContacts("")
+        // Alice and alice2
         assertEquals(2, result.size)
         assertTrue(result.any { it.name == "Alice" })
         assertTrue(result.any { it.name == "alice2" })
@@ -100,6 +100,31 @@ class ContactListViewModelTest {
         val result = viewModel.getFilteredContacts("")
         assertEquals(1, result.size)
         assertEquals("Charlie", result[0].name)
+    }
+
+    @Test
+    fun testGetContactsByType_returnsCorrectContacts() = runTest {
+        advanceUntilIdle()
+        
+        val lentContacts = viewModel.getContactsByType(TypeConstants.TYPE_LENT)
+        // Alice (1), Charlie (3), alice2 (4) all have LENT records
+        assertEquals(3, lentContacts.size)
+        
+        val borrowedContacts = viewModel.getContactsByType(TypeConstants.TYPE_BORROWED)
+        // Bob (2) has BORROWED record
+        assertEquals(1, borrowedContacts.size)
+        assertEquals("Bob", borrowedContacts[0].name)
+    }
+
+    @Test
+    fun testGetAvailableLetters_returnsDistinctSortedLetters() {
+        val contacts = listOf(
+            Contact(id = "1", name = "Zebra", userId = "u1", phone = listOf(), contactId = "c1"),
+            Contact(id = "2", name = "Apple", userId = "u1", phone = listOf(), contactId = "c2"),
+            Contact(id = "3", name = "Banana", userId = "u1", phone = listOf(), contactId = "c3")
+        )
+        val letters = viewModel.getAvailableLetters(contacts)
+        assertEquals(listOf("A", "B", "Z"), letters)
     }
 
     @Test
@@ -137,5 +162,17 @@ class ContactListViewModelTest {
         assertTrue(viewModel.uiState.value.errorMessage != null)
         viewModel.clearErrorMessage()
         assertNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun testClearSearch_clearsSearchQueryAndSelectedLetter() = runTest {
+        advanceUntilIdle()
+        viewModel.searchContacts("ali")
+        viewModel.jumpToLetter("A")
+        
+        viewModel.clearSearch()
+        
+        assertEquals("", viewModel.uiState.value.searchQuery)
+        assertEquals("", viewModel.uiState.value.selectedLetter)
     }
 }
