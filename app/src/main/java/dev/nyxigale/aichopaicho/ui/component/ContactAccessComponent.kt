@@ -369,11 +369,6 @@ fun ContactPickerFieldPreview() {
                 selectedContact = selectedContactPreview,
                 onContactSelected = { contact ->
                     selectedContactPreview = contact
-                    println("Selected contact: ${contact?.name ?: "None"}")
-                    val phones = contact?.phone
-                    if (!phones.isNullOrEmpty()) {
-                        println("Phone numbers: $phones")
-                    }
                 }
             )
             Text(
