@@ -2,54 +2,22 @@ package dev.nyxigale.aichopaicho.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.ProgressIndicatorDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,7 +27,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-
 @Composable
 fun UserProfileCard(
     user: User?,
@@ -67,30 +34,26 @@ fun UserProfileCard(
     onSignOutClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp), // space around the card
-        shape = RoundedCornerShape(12.dp)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center // optional, helps if card height is big
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Avatar
             Box(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 if (user?.name?.isNotEmpty() == true) {
                     Text(
                         text = user.name.first().uppercase(),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -98,72 +61,78 @@ fun UserProfileCard(
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(40.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (user?.isOffline == true) {
                 Text(
-                    text = stringResource(R.string.local_account),
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp
+                    text = "Local Account",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = stringResource(R.string.sign_in_to_backup),
-                    fontSize = 12.sp,
+                    text = "Sign in to backup your data",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Button(
                     onClick = onSignInClick,
-                    modifier = Modifier.align(Alignment.CenterHorizontally), // force center
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = colorResource(R.color.buttonColor)
-                    )
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD1D5DB))
                 ) {
                     Icon(
                         painterResource(R.drawable.logo_google),
-                        contentDescription = "",
+                        contentDescription = null,
                         modifier = Modifier.size(24.dp),
                         tint = Color.Unspecified
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text( stringResource(R.string.sign_in_google), color = Color.Black)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Sign in with Google", fontWeight = FontWeight.Bold)
                 }
             } else {
                 Text(
-                    text = user?.name ?: stringResource(R.string.unknown_user),
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp
+                    text = user?.name ?: "Unknown User",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = user?.email ?: "",
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 OutlinedButton(
                     onClick = onSignOutClick,
-                    modifier = Modifier.align(Alignment.CenterHorizontally), // center button
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
-                    )
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                 ) {
-                    Text(stringResource(R.string.sign_out))
+                    Icon(Icons.AutoMirrored.Filled.Logout, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Sign Out", fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 }
-
 
 @Composable
 fun SettingsCard(
@@ -173,25 +142,33 @@ fun SettingsCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(bottom = 16.dp)
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = title,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
             content()
@@ -207,25 +184,30 @@ fun LanguageDropDown(
     onToggleDropdown: () -> Unit,
     onLanguageSelected: (String) -> Unit
 ) {
-    val languageDisplayMap = remember { availableLanguages }
-
     Box {
-        OutlinedButton(
+        Surface(
             onClick = onToggleDropdown,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ) {
-            Text(languageDisplayMap[selectedLanguageCode] ?: selectedLanguageCode)
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = if (expanded) "Collapse language selection" else "Expand language selection"
-            )
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(availableLanguages[selectedLanguageCode] ?: selectedLanguageCode, fontWeight = FontWeight.Medium)
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
         }
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = onToggleDropdown,
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer)
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
         ) {
             availableLanguages.forEach { (code, name) ->
                 DropdownMenuItem(
@@ -240,92 +222,64 @@ fun LanguageDropDown(
     }
 }
 
-
 @Composable
 fun CurrencyDropdown(
     selectedCurrency: String,
-    allCurrencies: List<String>, // Rename for clarity
+    allCurrencies: List<String>,
     expanded: Boolean,
     onToggleDropdown: () -> Unit,
     onCurrencySelected: (String) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-
-    // Filter currencies based on search query
-    val filteredCurrencies = if (searchQuery.isEmpty()) {
-        allCurrencies
-    } else {
-        allCurrencies.filter {
-            it.lowercase(Locale.getDefault()).contains(searchQuery.lowercase(Locale.getDefault()))
-        }
-    }
+    val filteredCurrencies = if (searchQuery.isEmpty()) allCurrencies 
+    else allCurrencies.filter { it.contains(searchQuery, ignoreCase = true) }
 
     Box {
-        OutlinedButton(
-            onClick = {
-                onToggleDropdown()
-                if (!expanded) { // Reset search query when opening
-                    searchQuery = ""
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
+        Surface(
+            onClick = onToggleDropdown,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ) {
-            Text(stringResource(R.string.currency, selectedCurrency))
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = if (expanded) "Collapse currency selection" else "Expand currency selection"
-            )
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Currency: $selectedCurrency", fontWeight = FontWeight.Medium)
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
         }
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = onToggleDropdown,
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer) // Set a background for the dropdown
+            modifier = Modifier.fillMaxWidth(0.8f).background(MaterialTheme.colorScheme.surface)
         ) {
-            // Search TextField
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text(stringResource(R.string.search_currency)) },
+                modifier = Modifier.padding(8.dp).fillMaxWidth(),
+                placeholder = { Text("Search currency") },
                 singleLine = true,
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
-                        }
-                    }
-                }
+                shape = RoundedCornerShape(8.dp)
             )
-
-            Spacer(modifier = Modifier.height(8.dp)) // Add some space
-
-
-            if (filteredCurrencies.isEmpty()) {
+            
+            filteredCurrencies.forEach { currency ->
                 DropdownMenuItem(
-                    enabled = false,
-                    onClick = { },
-                    text = { Text(stringResource(R.string.no_matching_currencies)) }
+                    onClick = {
+                        onToggleDropdown()
+                        onCurrencySelected(currency)
+                    },
+                    text = { Text(currency) }
                 )
-            } else {
-                filteredCurrencies.forEach { currency ->
-                    DropdownMenuItem(
-                        onClick = {
-                            onToggleDropdown()
-                            onCurrencySelected(currency)
-                                  },
-                        text = { Text(currency) }
-                    )
-                }
             }
-
         }
     }
 }
-
 
 @Composable
 fun BackupSyncSettings(
@@ -339,59 +293,56 @@ fun BackupSyncSettings(
 ) {
     val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(stringResource(R.string.enable_backup))
+            Text("Enable Cloud Backup", fontWeight = FontWeight.Medium)
             Switch(
                 checked = isBackupEnabled,
-                onCheckedChange = { onToggleBackup() }
+                onCheckedChange = { onToggleBackup() },
+                colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary)
             )
         }
 
         if (isBackupEnabled) {
             if (isSyncing) {
-                Column {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     LinearProgressIndicator(
-                    progress = { syncProgress },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = ProgressIndicatorDefaults.linearColor,
-                    trackColor = ProgressIndicatorDefaults.linearTrackColor,
-                    strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
+                        progress = { syncProgress },
+                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape)
                     )
-                    Text(
-                        text = syncMessage,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(text = syncMessage, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 }
             } else {
-                Row(
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 ) {
-                    Column {
-                        Text(stringResource(R.string.manual_backup), fontSize = 14.sp)
-                        lastSyncTime?.let {
-                            Text(
-                                text = "Last: ${dateFormatter.format(Date(it))}",
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = onStartSync,
-                        enabled = !isSyncing
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.backup_now))
+                        Column {
+                            Text("Manual Sync", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            lastSyncTime?.let {
+                                Text(
+                                    text = "Last: ${dateFormatter.format(Date(it))}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = onStartSync,
+                            modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
+                        ) {
+                            Icon(Icons.Default.Refresh, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
                     }
                 }
             }
@@ -409,7 +360,7 @@ fun DueReminderSettings(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(stringResource(R.string.enable_due_reminders))
+        Text("Enable Reminders", fontWeight = FontWeight.Medium)
         Switch(
             checked = isEnabled,
             onCheckedChange = { onToggle() }
@@ -425,47 +376,33 @@ fun DataPortabilitySettings(
     onExportCsv: () -> Unit,
     onImportCsv: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
                 onClick = onExportCsv,
                 enabled = !isBusy,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
             ) {
-                Text(stringResource(R.string.choose_export_folder))
+                Text("Export CSV")
             }
             Button(
                 onClick = onImportCsv,
                 enabled = !isBusy,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).height(48.dp),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text(stringResource(R.string.choose_import_file))
+                Text("Import CSV")
             }
         }
 
         if (isBusy) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp))
-            }
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(2.dp))
         }
 
         statusMessage?.let {
-            Text(
-                text = it,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        statusLocation?.let {
-            Text(
-                text = it,
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(text = it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -476,51 +413,31 @@ fun AppInformation(
     buildNumber: String
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(stringResource(R.string.version))
-            Text(version, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(stringResource(R.string.build))
-            Text(buildNumber, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        InfoRow("Version", version)
+        InfoRow("Build", buildNumber)
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
 fun AboutSection() {
-    val uriHandler = LocalUriHandler.current
-    val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
-    val termsOfServiceUrl = stringResource(R.string.terms_of_service_url)
-    val supportWebsiteUrl = stringResource(R.string.support_website_url)
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = stringResource(R.string.privacy_policy),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { uriHandler.openUri(privacyPolicyUrl) }
-                .padding(vertical = 8.dp)
-        )
-        Text(
-            text = stringResource(R.string.terms_of_service),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { uriHandler.openUri(termsOfServiceUrl) }
-                .padding(vertical = 8.dp)
-        )
-        Text(
-            text = stringResource(R.string.contact_support),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { uriHandler.openUri(supportWebsiteUrl) }
-                .padding(vertical = 8.dp)
-        )
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        TextButton(onClick = { uriHandler.openUri("https://example.com/privacy") }) {
+            Text("Privacy Policy", color = MaterialTheme.colorScheme.primary)
+        }
+        TextButton(onClick = { uriHandler.openUri("https://example.com/terms") }) {
+            Text("Terms of Service", color = MaterialTheme.colorScheme.primary)
+        }
     }
 }

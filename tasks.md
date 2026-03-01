@@ -19,8 +19,14 @@
 - [x] Create security setup flow in Settings.
 - [x] Implement app-wide Lock Screen.
 
+## UI & UX Consistency
+- [x] Align `TransactionDetailScreen` with new professional theme (Inter font, Blue/Gray palette).
+- [x] Improve `SettingsScreen` light mode colors and card styling.
+- [x] Ensure consistent spacing and contrast across all screens.
+
 ## Verification
 - [x] Verify onboarding flow on clean install (Code implementation verified).
 - [x] Test call functionality (Intent logic and Manifest queries fixed).
 - [x] Test show/hide amounts toggle (Integrated into global preference).
 - [x] Test PIN and Biometric authentication (Comprehensive implementation with `androidx.biometric`).
+- [x] Verify UI consistency and professional styling across all major screens.

@@ -1,42 +1,20 @@
 package dev.nyxigale.aichopaicho.ui.component
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -46,13 +24,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.nyxigale.aichopaicho.AppPreferenceUtils
 import dev.nyxigale.aichopaicho.R
-import dev.nyxigale.aichopaicho.data.entity.Contact
-import dev.nyxigale.aichopaicho.data.entity.Record
-import dev.nyxigale.aichopaicho.data.entity.RecordWithRepayments
-import dev.nyxigale.aichopaicho.data.entity.Repayment
-import dev.nyxigale.aichopaicho.data.entity.Type
+import dev.nyxigale.aichopaicho.data.entity.*
 import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
 import dev.nyxigale.aichopaicho.ui.util.formatCurrencyAmount
 import dev.nyxigale.aichopaicho.ui.util.rememberHideAmountsEnabled
@@ -76,7 +51,7 @@ fun TransactionDetailsCard(
     onNavigateToContact: (String) -> Unit
 ) {
     val record = recordWithRepayments.record
-    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
     val timestampFormatter = remember { SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()) }
     val now = System.currentTimeMillis()
     val isOverdue = record.dueDate != null && record.dueDate < now && !recordWithRepayments.isSettled
@@ -101,150 +76,128 @@ fun TransactionDetailsCard(
         0f
     }
 
-    val heroContainerColor = Color(0xFFF0F2F5)
+    val heroContainerColor = MaterialTheme.colorScheme.surface
     val heroContentColor = MaterialTheme.colorScheme.onSurface
+    
     val statusLabel = when {
         recordWithRepayments.isSettled -> stringResource(R.string.completed)
         isOverdue -> stringResource(R.string.overdue)
         else -> stringResource(R.string.status_open)
     }
     val statusChipColor = when {
-        recordWithRepayments.isSettled -> Color(0xFF2E9C5E)
-        isOverdue -> Color(0xFFD07A44)
-        else -> Color(0xFF7A879A)
+        recordWithRepayments.isSettled -> Color(0xFF10B981)
+        isOverdue -> Color(0xFFEF4444)
+        else -> MaterialTheme.colorScheme.secondary
     }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Main Summary Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            shape = RoundedCornerShape(28.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             colors = CardDefaults.cardColors(
                 containerColor = heroContainerColor,
                 contentColor = heroContentColor
-            )
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        StatusChip(
-                            text = typeName,
-                            containerColor = Color(0x1FB94F83),
-                            contentColor = Color(0xFF8F3467)
-                        )
-                        StatusChip(
-                            text = statusLabel,
-                            containerColor = statusChipColor,
-                            contentColor = Color.White
-                        )
-                    }
+                    StatusChip(
+                        text = typeName,
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = recordWithRepayments.isSettled,
                             onCheckedChange = onToggleComplete,
                             colors = CheckboxDefaults.colors(
-                                checkedColor = Color(0xFFB94F83),
-                                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                checkmarkColor = Color.White
+                                checkedColor = Color(0xFF10B981)
                             )
                         )
                         Text(
-                            text = stringResource(R.string.completed),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = statusLabel,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = statusChipColor
                         )
                     }
                 }
 
-                Text(
-                    text = formatCurrencyAmount(
-                        currency = currencySymbol,
-                        amount = recordWithRepayments.remainingAmount,
-                        hideAmounts = hideAmounts
-                    ),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = stringResource(R.string.remaining_amount),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column {
+                    Text(
+                        text = formatCurrencyAmount(
+                            currency = currencySymbol,
+                            amount = recordWithRepayments.remainingAmount,
+                            hideAmounts = hideAmounts
+                        ),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.remaining_amount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 LinearProgressIndicator(
                     progress = { progress },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFFB94F83),
-                    trackColor = Color(0xFFDCE2EA)
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     AmountSummaryTile(
                         modifier = Modifier.weight(1f),
                         label = stringResource(R.string.original_amount),
-                        value = formatCurrencyAmount(currencySymbol, record.amount, hideAmounts),
-                        containerColor = Color.White,
-                        contentColor = MaterialTheme.colorScheme.onSurface
+                        value = formatCurrencyAmount(currencySymbol, record.amount, hideAmounts)
                     )
                     AmountSummaryTile(
                         modifier = Modifier.weight(1f),
                         label = stringResource(R.string.total_repaid),
-                        value = formatCurrencyAmount(currencySymbol, totalRepaid, hideAmounts),
-                        containerColor = Color.White,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    )
-                    AmountSummaryTile(
-                        modifier = Modifier.weight(1f),
-                        label = stringResource(R.string.remaining_amount),
-                        value = formatCurrencyAmount(
-                            currencySymbol,
-                            recordWithRepayments.remainingAmount,
-                            hideAmounts
-                        ),
-                        containerColor = Color.White,
-                        contentColor = MaterialTheme.colorScheme.onSurface
+                        value = formatCurrencyAmount(currencySymbol, totalRepaid, hideAmounts)
                     )
                 }
             }
         }
 
+        // Details Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            )
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 ContactDisplayRow(
                     contact = contact,
                     onNavigateToContact = onNavigateToContact
                 )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
-                DetailRow(label = stringResource(R.string.type), value = typeName)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+                
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
                 if (isEditing) {
                     OutlinedTextField(
@@ -256,7 +209,8 @@ fun TransactionDetailsCard(
                         label = { Text(stringResource(R.string.amount)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        prefix = { Text(currencySymbol) }
+                        prefix = { Text(currencySymbol) },
+                        shape = RoundedCornerShape(12.dp)
                     )
                     DateInputField(
                         label = stringResource(R.string.date),
@@ -274,7 +228,7 @@ fun TransactionDetailsCard(
                     )
                     if (record.dueDate != null) {
                         TextButton(onClick = { onDueDateChange(null) }) {
-                            Text(stringResource(R.string.clear_due_date))
+                            Text(stringResource(R.string.clear_due_date), color = MaterialTheme.colorScheme.error)
                         }
                     }
                     OutlinedTextField(
@@ -286,36 +240,36 @@ fun TransactionDetailsCard(
                         label = { Text(stringResource(R.string.description_optional)) },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 3,
-                        maxLines = 5
+                        maxLines = 5,
+                        shape = RoundedCornerShape(12.dp)
                     )
                 } else {
                     DetailRow(
                         label = stringResource(R.string.date),
                         value = dateFormatter.format(Date(record.date))
                     )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                     DetailRow(
                         label = stringResource(R.string.due_date),
                         value = record.dueDate?.let { due ->
                             if (isOverdue) {
-                                "${stringResource(R.string.overdue)} | ${dateFormatter.format(Date(due))}"
+                                "${stringResource(R.string.overdue)} • ${dateFormatter.format(Date(due))}"
                             } else {
                                 dateFormatter.format(Date(due))
                             }
                         } ?: stringResource(R.string.none),
                         valueColor = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                     )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                     DetailRow(
                         label = stringResource(R.string.description),
                         value = record.description ?: stringResource(R.string.no_description)
                     )
                 }
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.End,
+                    horizontalAlignment = Alignment.Start,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
@@ -347,14 +301,15 @@ private fun StatusChip(
     contentColor: Color
 ) {
     Surface(
-        shape = RoundedCornerShape(999.dp),
+        shape = RoundedCornerShape(12.dp),
         color = containerColor,
         contentColor = contentColor
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
         )
     }
 }
@@ -363,34 +318,30 @@ private fun StatusChip(
 private fun AmountSummaryTile(
     modifier: Modifier = Modifier,
     label: String,
-    value: String,
-    containerColor: Color,
-    contentColor: Color
+    value: String
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = containerColor,
-        contentColor = contentColor
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -400,23 +351,17 @@ private fun DetailRow(
     value: String,
     valueColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.Top
-    ) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.35f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyLarge,
             color = valueColor,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(0.65f)
+            fontWeight = FontWeight.Medium
         )
     }
 }
@@ -433,103 +378,90 @@ fun ContactDisplayRow(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(R.string.contact),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(0.35f)
-            )
-            Row(
-                modifier = Modifier
-                    .weight(0.65f)
-                    .clickable { contact?.id?.let { onNavigateToContact(it) } },
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer
             ) {
-                Surface(
-                    modifier = Modifier.size(30.dp),
-                    shape = CircleShape,
-                    color = Color(0x1FFF5EA1)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = avatarInitial(contactName),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFB94F83)
-                        )
-                    }
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = avatarInitial(contactName),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 }
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = contactName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.End,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 8.dp)
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                if (!primaryPhoneNumber.isNullOrBlank()) {
+                    Text(
+                        text = primaryPhoneNumber,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            IconButton(
+                onClick = { contact?.id?.let { onNavigateToContact(it) } },
+                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null)
             }
         }
 
         if (!primaryPhoneNumber.isNullOrBlank()) {
             Row(
-                modifier = Modifier.align(Alignment.End),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
                     onClick = {
                         val opened = IntentUtils.openDialer(context = context, phoneNumber = primaryPhoneNumber)
                         if (!opened) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.unable_to_open_phone_app),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(context, R.string.unable_to_open_phone_app, Toast.LENGTH_SHORT).show()
                         }
                     },
-                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF1E5EE),
-                        contentColor = Color(0xFF7F285A)
-                    ),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 9.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.call),
-                        style = MaterialTheme.typography.labelLarge
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
+                ) {
+                    Icon(Icons.Default.Call, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.call))
                 }
-                Button(
+                
+                OutlinedButton(
                     onClick = {
                         val opened = IntentUtils.openContactDetails(context = context, contact = contact)
                         if (!opened) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.person_not_found_in_contacts),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(context, R.string.person_not_found_in_contacts, Toast.LENGTH_SHORT).show()
                         }
                     },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFD45994),
-                        contentColor = Color.White
-                    ),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 9.dp)
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.view_details),
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                    Icon(Icons.Default.Person, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(text = "System Contact")
                 }
             }
         }
@@ -550,80 +482,54 @@ fun AddRepaymentCard(
     val hideAmounts = rememberHideAmountsEnabled()
     val safeRemainingAmount = remainingAmount.coerceAtLeast(0)
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
+    Column(
+        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Column {
             Text(
                 text = stringResource(R.string.add_repayment),
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
             )
             Text(
-                text = "${stringResource(R.string.remaining_amount)}: ${
-                    formatCurrencyAmount(
-                        currency = AppPreferenceUtils.getCurrencySymbol(context),
-                        amount = safeRemainingAmount,
-                        hideAmounts = hideAmounts
-                    )
-                }",
-                style = MaterialTheme.typography.bodySmall,
+                text = "Remaining: ${formatCurrencyAmount(AppPreferenceUtils.getCurrencySymbol(context), safeRemainingAmount, hideAmounts)}",
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+        }
 
-            OutlinedTextField(
-                value = repaymentAmount,
-                onValueChange = onRepaymentAmountChange,
-                label = { Text(stringResource(R.string.amount)) },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                prefix = { Text(AppPreferenceUtils.getCurrencySymbol(context)) },
-                isError = repaymentAmount.toIntOrNull() ?: 0 > safeRemainingAmount && safeRemainingAmount > 0
-            )
-            if (repaymentAmount.toIntOrNull() ?: 0 > safeRemainingAmount && safeRemainingAmount > 0) {
-                Text(
-                    text = stringResource(R.string.repayment_amount_exceeds_remaining),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(start = 12.dp)
-                )
-            }
+        OutlinedTextField(
+            value = repaymentAmount,
+            onValueChange = onRepaymentAmountChange,
+            label = { Text(stringResource(R.string.amount)) },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            prefix = { Text(AppPreferenceUtils.getCurrencySymbol(context)) },
+            isError = repaymentAmount.toIntOrNull() ?: 0 > safeRemainingAmount && safeRemainingAmount > 0,
+            shape = RoundedCornerShape(12.dp)
+        )
 
-            OutlinedTextField(
-                value = repaymentDescription,
-                onValueChange = onRepaymentDescriptionChange,
-                label = { Text(stringResource(R.string.description_optional)) },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2,
-                maxLines = 3
-            )
+        OutlinedTextField(
+            value = repaymentDescription,
+            onValueChange = onRepaymentDescriptionChange,
+            label = { Text(stringResource(R.string.description_optional)) },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 2,
+            maxLines = 3,
+            shape = RoundedCornerShape(12.dp)
+        )
 
-            Button(
-                onClick = onSaveRepayment,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading &&
-                    (repaymentAmount.toIntOrNull() ?: 0 > 0) &&
-                    (repaymentAmount.toIntOrNull() ?: 0 <= safeRemainingAmount),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFD45994),
-                    contentColor = Color.White
-                )
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                } else {
-                    Text(stringResource(R.string.save_repayment))
-                }
+        Button(
+            onClick = onSaveRepayment,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            enabled = !isLoading && (repaymentAmount.toIntOrNull() ?: 0 > 0) && (repaymentAmount.toIntOrNull() ?: 0 <= safeRemainingAmount),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+            } else {
+                Text(stringResource(R.string.save_repayment), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -646,17 +552,11 @@ fun RepaymentHistoryCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -664,85 +564,49 @@ fun RepaymentHistoryCard(
             ) {
                 Text(
                     text = stringResource(R.string.repayment_history),
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
                 if (canExpand) {
                     TextButton(onClick = { showAll = !showAll }) {
-                        Text(
-                            text = if (showAll) {
-                                stringResource(R.string.show_less)
-                            } else {
-                                stringResource(R.string.see_all)
-                            }
-                        )
+                        Text(if (showAll) stringResource(R.string.show_less) else stringResource(R.string.see_all))
                     }
                 }
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+            
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
             visibleRepayments.forEachIndexed { index, repayment ->
-                Surface(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFFF3F4F7)
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(36.dp),
-                            shape = CircleShape,
-                            color = Color(0x1FFF5EA1)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "R",
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFB94F83)
-                                )
-                            }
-                        }
-
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Text(
-                                text = formatCurrencyAmount(
-                                    currency = AppPreferenceUtils.getCurrencySymbol(context),
-                                    amount = repayment.amount,
-                                    hideAmounts = hideAmounts
-                                ),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2F9D57)
-                            )
-                            repayment.description?.takeIf { it.isNotBlank() }?.let {
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-
+                    Box(
+                        modifier = Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF10B981))
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = dateFormatter.format(Date(repayment.date)),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.End
+                            text = formatCurrencyAmount(AppPreferenceUtils.getCurrencySymbol(context), repayment.amount, hideAmounts),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
                         )
+                        if (!repayment.description.isNullOrBlank()) {
+                            Text(
+                                text = repayment.description,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
+                    Text(
+                        text = dateFormatter.format(Date(repayment.date)),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 if (index != visibleRepayments.lastIndex) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }
@@ -763,20 +627,14 @@ fun TransactionDetailsCardPreview() {
             amount = 12550,
             date = System.currentTimeMillis() - 86400000L * 5,
             dueDate = System.currentTimeMillis() + 86400000L * 3,
-            description = "Lunch with client. Discussed project milestones and future collaboration opportunities.",
+            description = "Lunch with client. Discussed project milestones and future collaboration.",
             isComplete = false,
             createdAt = System.currentTimeMillis() - 86400000L * 10,
             updatedAt = System.currentTimeMillis() - 86400000L * 2,
             isDeleted = false
         )
         val sampleRecordWithRepayments = RecordWithRepayments(sampleRecord, emptyList())
-        val sampleContact = Contact(
-            id = "contact1",
-            name = "Alex Johnson",
-            phone = listOf("555-0101"),
-            contactId = "101",
-            userId = "user1"
-        )
+        val sampleContact = Contact(id = "c1", name = "Alex Johnson", phone = listOf("555-0101"), contactId = "101", userId = "u1")
         val sampleType = Type(id = TypeConstants.LENT_ID, name = "Lent")
 
         TransactionDetailsCard(
@@ -784,52 +642,6 @@ fun TransactionDetailsCardPreview() {
             contact = sampleContact,
             type = sampleType,
             isEditing = false,
-            onAmountChange = {},
-            onDescriptionChange = {},
-            onDateChange = {},
-            onDueDateChange = {},
-            onToggleComplete = {},
-            onNavigateToContact = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "TransactionDetailsCard - Edit Mode")
-@Composable
-fun TransactionDetailsCardEditingPreview() {
-    AichoPaichoTheme {
-        val sampleRecord = Record(
-            id = "2", userId = "user1", contactId = "contact2", typeId = TypeConstants.BORROWED_ID,
-            amount = 7500,
-            date = System.currentTimeMillis() - 86400000L * 3,
-            dueDate = System.currentTimeMillis() - 86400000L,
-            description = "Shared expenses for team outing.",
-            isComplete = true,
-            createdAt = System.currentTimeMillis() - 86400000L * 7,
-            updatedAt = System.currentTimeMillis() - 86400000L * 1,
-            isDeleted = false
-        )
-        val sampleRepayment = Repayment(
-            recordId = "2",
-            amount = 2500,
-            date = System.currentTimeMillis() - 86400000L,
-            description = "Partial repayment"
-        )
-        val sampleRecordWithRepayments = RecordWithRepayments(sampleRecord, listOf(sampleRepayment))
-        val sampleContact = Contact(
-            id = "contact2",
-            name = "Maria Garcia",
-            phone = listOf("555-0202"),
-            contactId = "102",
-            userId = "user1"
-        )
-        val sampleType = Type(id = TypeConstants.BORROWED_ID, name = "Borrowed")
-
-        TransactionDetailsCard(
-            recordWithRepayments = sampleRecordWithRepayments,
-            contact = sampleContact,
-            type = sampleType,
-            isEditing = true,
             onAmountChange = {},
             onDescriptionChange = {},
             onDateChange = {},
