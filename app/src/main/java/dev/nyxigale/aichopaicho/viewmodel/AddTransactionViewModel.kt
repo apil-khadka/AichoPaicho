@@ -159,13 +159,14 @@ class AddTransactionViewModel @Inject constructor(
                     contactPhoneInput = "",
                     amountInput = "",
                     amount = null,
+                    date = null,
                     description = null,
                     dueDate = null,
                     contactNameError = null,
                     contactPhoneError = null,
                     amountError = null,
-                    dateError = null
-                    // Note: We keep type and date as they might want to add similar transactions
+                    dateError = null,
+                    type = dev.nyxigale.aichopaicho.ui.component.TypeConstants.TYPE_LENT // Reset to default
                 )
             }
 
@@ -287,13 +288,7 @@ class AddTransactionViewModel @Inject constructor(
         } else {
             null
         }
-        val contactPhoneError = when {
-            !usingPickedContact && state.contactPhoneInput.isBlank() ->
-                context.getString(R.string.error_enter_contact_number)
-            !usingPickedContact && !isPhoneNumberValid(state.contactPhoneInput) ->
-                context.getString(R.string.error_enter_valid_contact_number)
-            else -> null
-        }
+        val contactPhoneError = null // Phone is optional now
 
         val amountError = when {
             state.amountInput.isBlank() -> context.getString(R.string.error_enter_amount)
@@ -340,12 +335,12 @@ class AddTransactionViewModel @Inject constructor(
     private fun isContactValid(contact: Contact?): Boolean {
         return contact != null &&
             contact.name.isNotBlank() &&
-            contact.phone.any { isPhoneNumberValid(it) }
+            (contact.phone.isEmpty() || contact.phone.any { isPhoneNumberValid(it) })
     }
 
     private fun isPhoneNumberValid(phone: String?): Boolean {
         val value = phone?.trim().orEmpty()
-        if (value.isBlank()) return false
+        if (value.isBlank()) return true // Optional
         if (value.any { !it.isDigit() && it !in setOf('+', '-', ' ', '(', ')') }) return false
         val digitCount = value.count(Char::isDigit)
         return digitCount >= 5

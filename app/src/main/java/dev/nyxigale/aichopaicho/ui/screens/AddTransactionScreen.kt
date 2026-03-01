@@ -202,7 +202,9 @@ fun AddTransactionScreen(
                 onContactSelected = { viewModel.onEvent(AddTransactionUiEvents.ContactSelected(it)) },
                 onNameChange = { viewModel.onEvent(AddTransactionUiEvents.ContactNameEntered(it)) },
                 onPhoneChange = { viewModel.onEvent(AddTransactionUiEvents.ContactPhoneEntered(it)) },
-                onPickContact = { contactPickerLauncher.launch(null) }
+                onPickContact = { contactPickerLauncher.launch(null) },
+                isNameError = uiState.contactNameError != null,
+                isPhoneError = uiState.contactPhoneError != null
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -214,7 +216,8 @@ fun AddTransactionScreen(
                 note = uiState.description ?: "",
                 onDateChange = { viewModel.onEvent(AddTransactionUiEvents.DateEntered(it)) },
                 onDueDateChange = { viewModel.onEvent(AddTransactionUiEvents.DueDateEntered(it)) },
-                onNoteChange = { viewModel.onEvent(AddTransactionUiEvents.DescriptionEntered(it)) }
+                onNoteChange = { viewModel.onEvent(AddTransactionUiEvents.DescriptionEntered(it)) },
+                isDateError = uiState.dateError != null
             )
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -277,7 +280,7 @@ fun AmountInputSection(
         Text(
             text = "Amount ($currency)",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         TextField(
@@ -305,10 +308,12 @@ fun AmountInputSection(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
                 errorContainerColor = Color.Transparent,
-                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                disabledIndicatorColor = Color.Transparent
+                focusedIndicatorColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                unfocusedIndicatorColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                disabledIndicatorColor = Color.Transparent,
+                errorIndicatorColor = MaterialTheme.colorScheme.error
             ),
+            isError = isError,
             singleLine = true
         )
     }
@@ -323,7 +328,9 @@ fun ContactSelectionSection(
     onContactSelected: (Contact) -> Unit,
     onNameChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
-    onPickContact: () -> Unit
+    onPickContact: () -> Unit,
+    isNameError: Boolean,
+    isPhoneError: Boolean
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -347,69 +354,51 @@ fun ContactSelectionSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { onPickContact() }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
-                            .clip(CircleShape),
-                        contentAlignment = Alignment.Center
+        if (recentContacts.isNotEmpty()) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(recentContacts) { contact ->
+                    val isSelected = selectedContact?.id == contact.id
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable { onContactSelected(contact) }
                     ) {
-                        Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text("New", style = MaterialTheme.typography.labelSmall)
-                }
-            }
-
-            items(recentContacts) { contact ->
-                val isSelected = selectedContact?.id == contact.id
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { onContactSelected(contact) }
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .border(
-                                width = if (isSelected) 2.dp else 0.dp,
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = CircleShape
-                            ),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = contact.name.take(1).uppercase(),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                        Surface(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .border(
+                                    width = if (isSelected) 2.dp else 0.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                ),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = contact.name.take(1).uppercase(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = contact.name.split(" ").firstOrNull() ?: "",
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.width(64.dp),
+                            textAlign = TextAlign.Center
+                        )
                     }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = contact.name.split(" ").firstOrNull() ?: "",
-                        style = MaterialTheme.typography.labelSmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.width(64.dp),
-                        textAlign = TextAlign.Center
-                    )
                 }
             }
+            Spacer(modifier = Modifier.height(20.dp))
         }
-
-        Spacer(modifier = Modifier.height(20.dp))
 
         Column(
             modifier = Modifier.padding(horizontal = 24.dp),
@@ -422,7 +411,8 @@ fun ContactSelectionSection(
                 placeholder = { Text("Name") },
                 leadingIcon = { Icon(Icons.Default.Person, null) },
                 shape = RoundedCornerShape(16.dp),
-                singleLine = true
+                singleLine = true,
+                isError = isNameError
             )
             
             OutlinedTextField(
@@ -433,7 +423,8 @@ fun ContactSelectionSection(
                 leadingIcon = { Icon(Icons.Default.Phone, null) },
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                isError = isPhoneError
             )
         }
     }
@@ -446,7 +437,8 @@ fun DetailsSection(
     note: String,
     onDateChange: (Long) -> Unit,
     onDueDateChange: (Long?) -> Unit,
-    onNoteChange: (String) -> Unit
+    onNoteChange: (String) -> Unit,
+    isDateError: Boolean
 ) {
     Column(
         modifier = Modifier
@@ -469,7 +461,8 @@ fun DetailsSection(
                     label = "Date",
                     selectedDate = date ?: System.currentTimeMillis(),
                     onDateSelected = { it?.let(onDateChange) },
-                    initializeWithCurrentDate = true
+                    initializeWithCurrentDate = true,
+                    isError = isDateError
                 )
             }
             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
