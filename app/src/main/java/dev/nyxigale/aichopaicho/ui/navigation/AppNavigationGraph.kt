@@ -77,24 +77,34 @@ fun AppNavigationGraph(
             navController = navController,
             startDestination = startDestination!!
         ) {
-            composable(Routes.ONBOARDING_SCREEN) {
-                OnboardingScreen(
-                    onOnboardingFinished = {
+            composable(Routes.WELCOME_SCREEN) {
+                WelcomeScreen(
+                    onNavigateToDashboard = {
                         scope.launch {
-                            appNavigationViewModel.screenViewRepository.markScreenAsShown(Routes.ONBOARDING_SCREEN)
-                            navController.navSafe(Routes.WELCOME_SCREEN) {
-                                popUpTo(Routes.ONBOARDING_SCREEN) { inclusive = true }
+                            appNavigationViewModel.screenViewRepository.markScreenAsShown(Routes.WELCOME_SCREEN)
+                            val onboardingCompleted = appNavigationViewModel.screenViewRepository.getScreenView(Routes.ONBOARDING_SCREEN) == true
+                            if (onboardingCompleted) {
+                                navController.navSafe(Routes.DASHBOARD_SCREEN) {
+                                    popUpTo(Routes.WELCOME_SCREEN) { inclusive = true }
+                                }
+                            } else {
+                                navController.navSafe(Routes.ONBOARDING_SCREEN) {
+                                    popUpTo(Routes.WELCOME_SCREEN) { inclusive = true }
+                                }
                             }
                         }
                     }
                 )
             }
 
-            composable(Routes.WELCOME_SCREEN) {
-                WelcomeScreen(
-                    onNavigateToDashboard = {
-                        navController.navSafe(Routes.DASHBOARD_SCREEN) {
-                            launchSingleTop = true
+            composable(Routes.ONBOARDING_SCREEN) {
+                OnboardingScreen(
+                    onOnboardingFinished = {
+                        scope.launch {
+                            appNavigationViewModel.screenViewRepository.markScreenAsShown(Routes.ONBOARDING_SCREEN)
+                            navController.navSafe(Routes.DASHBOARD_SCREEN) {
+                                popUpTo(Routes.ONBOARDING_SCREEN) { inclusive = true }
+                            }
                         }
                     }
                 )
@@ -120,6 +130,11 @@ fun AppNavigationGraph(
                     },
                     onNavigateToSettings = {
                         navController.navSafe(Routes.SETTING_SCREEN){
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateToInsights = {
+                        navController.navSafe(Routes.INSIGHTS_SCREEN) {
                             launchSingleTop = true
                         }
                     },

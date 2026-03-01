@@ -287,15 +287,6 @@ fun SettingsScreen(
             }
 
             SettingsCard(
-                title = stringResource(R.string.insights),
-                icon = Icons.Default.Info
-            ) {
-                TextButton(onClick = onNavigateToInsights) {
-                    Text(stringResource(R.string.open_insights))
-                }
-            }
-
-            SettingsCard(
                 title = stringResource(R.string.amount_privacy),
                 icon = Icons.Default.Info
             ) {

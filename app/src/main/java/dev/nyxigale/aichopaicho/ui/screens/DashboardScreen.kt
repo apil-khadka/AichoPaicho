@@ -56,6 +56,7 @@ fun DashboardScreen(
     onNavigateToAddTransaction: (() -> Unit)? = null,
     onNavigateToViewTransactions: (() -> Unit)? = null,
     onNavigateToSettings: (() -> Unit)? = null,
+    onNavigateToInsights: (() -> Unit)? = null,
     onNavigateToContactList: (String) -> Unit,
     dashboardScreenViewModel: DashboardScreenViewModel = hiltViewModel()
 ) {
@@ -136,7 +137,8 @@ fun DashboardScreen(
                     uiState = uiState,
                     onNavigateToAddTransaction = onNavigateToAddTransaction ?: {},
                     onNavigateToViewTransactions = onNavigateToViewTransactions ?: {},
-                    onNavigateToSettings = onNavigateToSettings ?: {}
+                    onNavigateToSettings = onNavigateToSettings ?: {},
+                    onNavigateToInsights = onNavigateToInsights ?: {}
                 )
             }
         }
@@ -152,6 +154,7 @@ fun DashboardScreenPreview() {
             onNavigateToAddTransaction = {},
             onNavigateToViewTransactions = {},
             onNavigateToSettings = {},
+            onNavigateToInsights = {},
             onNavigateToContactList = {}
         )
     }

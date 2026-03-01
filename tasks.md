@@ -10,6 +10,8 @@
 - [x] Fix Call Button logic in `TransactionDetailScreen`.
 - [x] Add "Show/Hide Amount" toggle on transaction screens (Dashboard & View Transactions).
 - [x] Add direct navigation to contact from `TransactionDetailScreen`.
+- [x] Promote Insights from Settings to Dashboard glimpse.
+- [x] Implement modern visual charts (Trend & Summary) in Insights.
 
 ## Security
 - [x] Implement PIN lock authentication.

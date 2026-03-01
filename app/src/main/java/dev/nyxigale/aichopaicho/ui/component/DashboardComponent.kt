@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
@@ -140,6 +142,7 @@ fun DashboardContent(
     onNavigateToAddTransaction: (() -> Unit)?,
     onNavigateToViewTransactions: (() -> Unit)?,
     onNavigateToSettings: (() -> Unit)?,
+    onNavigateToInsights: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -182,6 +185,11 @@ fun DashboardContent(
             )
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Insights Glimpse Card
+        InsightsGlimpseCard(onClick = onNavigateToInsights ?: {})
+
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = stringResource(R.string.quick_actions),
@@ -219,6 +227,52 @@ fun DashboardContent(
         Spacer(modifier = Modifier.height(24.dp))
         UpcomingDueCard(items = uiState.upcomingDue)
         Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun InsightsGlimpseCard(onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ShowChart,
+                    contentDescription = null,
+                    tint = Color.White
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.insights),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "See your lending & borrowing trends",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
