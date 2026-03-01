@@ -1,6 +1,7 @@
 package dev.nyxigale.aichopaicho.ui.component
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,6 +56,7 @@ import dev.nyxigale.aichopaicho.data.entity.Type
 import dev.nyxigale.aichopaicho.ui.theme.AichoPaichoTheme
 import dev.nyxigale.aichopaicho.ui.util.formatCurrencyAmount
 import dev.nyxigale.aichopaicho.ui.util.rememberHideAmountsEnabled
+import dev.nyxigale.aichopaicho.ui.util.IntentUtils
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,7 +72,8 @@ fun TransactionDetailsCard(
     onDescriptionChange: (String) -> Unit,
     onDateChange: (Long) -> Unit,
     onDueDateChange: (Long?) -> Unit,
-    onToggleComplete: (Boolean) -> Unit
+    onToggleComplete: (Boolean) -> Unit,
+    onNavigateToContact: (String) -> Unit
 ) {
     val record = recordWithRepayments.record
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
@@ -235,7 +238,10 @@ fun TransactionDetailsCard(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                ContactDisplayRow(contact = contact)
+                ContactDisplayRow(
+                    contact = contact,
+                    onNavigateToContact = onNavigateToContact
+                )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                 DetailRow(label = stringResource(R.string.type), value = typeName)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
@@ -417,7 +423,8 @@ private fun DetailRow(
 
 @Composable
 fun ContactDisplayRow(
-    contact: Contact?
+    contact: Contact?,
+    onNavigateToContact: (String) -> Unit
 ) {
     val context = LocalContext.current
     val primaryPhoneNumber = contact?.phone?.firstOrNull()
@@ -440,7 +447,9 @@ fun ContactDisplayRow(
                 modifier = Modifier.weight(0.35f)
             )
             Row(
-                modifier = Modifier.weight(0.65f),
+                modifier = Modifier
+                    .weight(0.65f)
+                    .clickable { contact?.id?.let { onNavigateToContact(it) } },
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -478,7 +487,7 @@ fun ContactDisplayRow(
             ) {
                 Button(
                     onClick = {
-                        val opened = openDialer(context = context, phoneNumber = primaryPhoneNumber)
+                        val opened = IntentUtils.openDialer(context = context, phoneNumber = primaryPhoneNumber)
                         if (!opened) {
                             Toast.makeText(
                                 context,
@@ -501,7 +510,7 @@ fun ContactDisplayRow(
                 }
                 Button(
                     onClick = {
-                        val opened = openContactDetails(context = context, contact = contact)
+                        val opened = IntentUtils.openContactDetails(context = context, contact = contact)
                         if (!opened) {
                             Toast.makeText(
                                 context,
@@ -779,7 +788,8 @@ fun TransactionDetailsCardPreview() {
             onDescriptionChange = {},
             onDateChange = {},
             onDueDateChange = {},
-            onToggleComplete = {}
+            onToggleComplete = {},
+            onNavigateToContact = {}
         )
     }
 }
@@ -824,7 +834,8 @@ fun TransactionDetailsCardEditingPreview() {
             onDescriptionChange = {},
             onDateChange = {},
             onDueDateChange = {},
-            onToggleComplete = {}
+            onToggleComplete = {},
+            onNavigateToContact = {}
         )
     }
 }

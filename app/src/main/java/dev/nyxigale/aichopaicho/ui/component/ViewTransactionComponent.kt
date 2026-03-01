@@ -19,6 +19,8 @@ import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,7 +53,6 @@ import dev.nyxigale.aichopaicho.viewmodel.data.TransactionStatusFilter
 import java.text.SimpleDateFormat
 import java.util.*
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionTopBar(
@@ -61,6 +62,8 @@ fun TransactionTopBar(
     onContactsNavigation: () -> Unit // New callback for contacts
 ) {
     val dateFormatter = remember { SimpleDateFormat("dd MMM yy", Locale.getDefault()) }
+    val context = LocalContext.current
+    val hideAmounts = rememberHideAmountsEnabled()
 
     // Display text: Show "All Time" or specific dates
     val startDateText = if (dateRange.first == Long.MIN_VALUE) stringResource(R.string.start) else dateFormatter.format(Date(dateRange.first))
@@ -138,6 +141,16 @@ fun TransactionTopBar(
             }
         },
         actions = {
+            IconButton(onClick = {
+                AppPreferenceUtils.setHideAmountsEnabled(context, !hideAmounts)
+            }) {
+                Icon(
+                    imageVector = if (hideAmounts) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    contentDescription = if (hideAmounts) "Show Amounts" else "Hide Amounts",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             TextButton(onClick = {
                 onDateRangeSelected(Long.MIN_VALUE, Long.MAX_VALUE)
             }) {
@@ -153,20 +166,20 @@ fun TransactionTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent, // Your existing preference
+            containerColor = Color.Transparent,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
             navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-            actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant // Customize as needed
+            actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     )
 
     if (showDatePickerDialog) {
         val dialogColors = DatePickerDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceDim, // Example: slightly dimmer surface
+            containerColor = MaterialTheme.colorScheme.surfaceDim,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
             headlineContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             weekdayContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            dayContentColor = MaterialTheme.colorScheme.onSurface, // Color for dates
+            dayContentColor = MaterialTheme.colorScheme.onSurface,
             disabledDayContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
             selectedDayContentColor = MaterialTheme.colorScheme.onPrimary,
             disabledSelectedDayContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
@@ -175,7 +188,7 @@ fun TransactionTopBar(
             todayContentColor = MaterialTheme.colorScheme.primary,
             todayDateBorderColor = MaterialTheme.colorScheme.primary,
             dayInSelectionRangeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            dayInSelectionRangeContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f) // More subtle highlight
+            dayInSelectionRangeContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
         )
 
         DatePickerDialog(
@@ -184,17 +197,11 @@ fun TransactionTopBar(
                 TextButton(
                     onClick = {
                         showDatePickerDialog = false
-                        // If picker's selection is null, use MIN_VALUE, else use selected value
                         val selectedStart = dateRangePickerState.selectedStartDateMillis ?: Long.MIN_VALUE
-                        // If picker's selection is null, use MAX_VALUE, else use selected value
                         val selectedEnd = dateRangePickerState.selectedEndDateMillis ?: Long.MAX_VALUE
 
-                        // Ensure start is before end if both are actual dates (not MIN/MAX)
                         if (selectedStart != Long.MIN_VALUE && selectedEnd != Long.MAX_VALUE && selectedStart > selectedEnd) {
-                            // Option 1: Swap them (common UX)
                             onDateRangeSelected(selectedEnd, selectedStart)
-                            // Option 2: Or call with original selection and let ViewModel handle/show error
-                            // onDateRangeSelected(selectedStart, selectedEnd)
                         } else {
                             onDateRangeSelected(selectedStart, selectedEnd)
                         }
@@ -213,7 +220,7 @@ fun TransactionTopBar(
                 }
             },
 
-            colors = dialogColors // Apply custom dialog colors
+            colors = dialogColors
         ) {
             DateRangePicker(
                 state = dateRangePickerState,
@@ -224,7 +231,7 @@ fun TransactionTopBar(
                         style = MaterialTheme.typography.titleMedium
                     )
                 },
-                headline = { // Displays the selected range within the picker
+                headline = {
                     Text(
                         text = formatDatePickerHeadline(
                             dateRangePickerState.selectedStartDateMillis,
@@ -238,11 +245,12 @@ fun TransactionTopBar(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
-                showModeToggle = true // Allow switching between calendar and input mode
+                showModeToggle = true
             )
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 private fun formatDatePickerHeadline(
     startMillis: Long?,
@@ -267,42 +275,41 @@ TransactionTopBar(
 )
 }
 
-
 @Composable
 fun ContactChip(
     contact: ContactPreview,
     onClick: () -> Unit,
-    baseColor: Color = MaterialTheme.colorScheme.primary, // Generic base for amount text
-    onBaseColor: Color = MaterialTheme.colorScheme.onPrimary, // Text on baseColor (not used here)
-    containerColor: Color = MaterialTheme.colorScheme.primaryContainer, // Container for avatar
-    onContainerColor: Color = MaterialTheme.colorScheme.onPrimaryContainer // Text in avatar
+    baseColor: Color = MaterialTheme.colorScheme.primary,
+    onBaseColor: Color = MaterialTheme.colorScheme.onPrimary,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    onContainerColor: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
     val context = LocalContext.current
     val hideAmounts = rememberHideAmountsEnabled()
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer, // Overall chip container
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer, // Text on chip container
-        tonalElevation = 1.dp, // Subtle elevation
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        tonalElevation = 1.dp,
         modifier = Modifier.wrapContentWidth()
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), // Adjusted padding
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface( // Avatar
+            Surface(
                 shape = CircleShape,
-                color = containerColor, // Use tertiaryContainer for avatar background
-                modifier = Modifier.size(30.dp) // Adjusted size
+                color = containerColor,
+                modifier = Modifier.size(30.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = contact.name.take(1).uppercase(),
-                        style = MaterialTheme.typography.labelSmall.copy( // Smaller for avatar
+                        style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold
                         ),
-                        color = onContainerColor // Use onTertiaryContainer for avatar text
+                        color = onContainerColor
                     )
                 }
             }
@@ -315,7 +322,6 @@ fun ContactChip(
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.Medium
                     ),
-                    // color will be MaterialTheme.colorScheme.onSecondaryContainer (inherited)
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -326,16 +332,12 @@ fun ContactChip(
                         hideAmounts = hideAmounts
                     ),
                     style = MaterialTheme.typography.labelSmall,
-                    color = baseColor // Use tertiary for amount text to match avatar theme
+                    color = baseColor
                 )
             }
         }
     }
 }
-
-
-/* ----- Data Classes and Preview ----- */
-
 
 @Preview(showBackground = true, widthDp = 360)
 @Composable
@@ -351,8 +353,8 @@ fun NetBalanceCardPreview() {
         ContactPreview("b2", "Maya Thapa", 1022.0)
     )
 
-    AichoPaichoTheme { // Wrapped in theme
-        Surface(color = MaterialTheme.colorScheme.background) { // Added Surface for better preview context
+    AichoPaichoTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
             NetBalanceCard(
                 summary = summary,
                 onNavigateToContactList = { /* type -> navigate */ },
@@ -363,6 +365,7 @@ fun NetBalanceCardPreview() {
         }
     }
 }
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TransactionFilterSection(
@@ -600,7 +603,6 @@ fun TransactionFilterSection(
     }
 }
 
-// ---------- Transaction Card (aligned & compact) ----------
 @Composable
 fun TransactionCard(
     recordWithRepayments: RecordWithRepayments,
@@ -635,7 +637,6 @@ fun TransactionCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Arrow icon (direction)
             Icon(
                 painter = painterResource(
                     if (isLent) dev.nyxigale.aichopaicho.R.drawable.arrow_up
@@ -648,7 +649,6 @@ fun TransactionCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Circle avatar (clickable) - uses contact safely
             Surface(
                 modifier = Modifier
                     .size(40.dp)
@@ -671,7 +671,6 @@ fun TransactionCard(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Details
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = contact?.name ?: stringResource(R.string.unknown),
@@ -748,7 +747,6 @@ fun TransactionCard(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Completion checkbox: small and read-only
                     Checkbox(
                         checked = recordWithRepayments.isSettled,
                         onCheckedChange = { checked -> onToggleComplete(checked) }
@@ -757,7 +755,7 @@ fun TransactionCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(onClick = onDeleteRecord) {
                         Icon(
-                            imageVector = Icons.Filled.Delete,
+                            imageVector = Icons.Default.Delete,
                             contentDescription = stringResource(R.string.delete),
                             tint = MaterialTheme.colorScheme.error
                         )

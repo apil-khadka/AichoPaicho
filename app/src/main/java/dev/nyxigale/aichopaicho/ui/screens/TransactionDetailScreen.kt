@@ -63,7 +63,8 @@ import dev.nyxigale.aichopaicho.viewmodel.TransactionDetailViewModel
 fun TransactionDetailScreen(
     transactionId: String,
     transactionDetailViewModel: TransactionDetailViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToContact: (String) -> Unit
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -261,7 +262,8 @@ fun TransactionDetailScreen(
                                         onDescriptionChange = transactionDetailViewModel::updateDescription,
                                         onDateChange = transactionDetailViewModel::updateDate,
                                         onDueDateChange = transactionDetailViewModel::updateDueDate,
-                                        onToggleComplete = transactionDetailViewModel::toggleRecordCompletion
+                                        onToggleComplete = transactionDetailViewModel::toggleRecordCompletion,
+                                        onNavigateToContact = onNavigateToContact
                                     )
                                 }
 
@@ -303,7 +305,8 @@ fun TransactionDetailScreen(
                                     onDescriptionChange = transactionDetailViewModel::updateDescription,
                                     onDateChange = transactionDetailViewModel::updateDate,
                                     onDueDateChange = transactionDetailViewModel::updateDueDate,
-                                    onToggleComplete = transactionDetailViewModel::toggleRecordCompletion
+                                    onToggleComplete = transactionDetailViewModel::toggleRecordCompletion,
+                                    onNavigateToContact = onNavigateToContact
                                 )
 
                                 if (!recordWithRepayments.isSettled && !isEditing) {
@@ -344,8 +347,8 @@ fun TransactionDetailScreenPreview_ViewMode() {
     AichoPaichoTheme {
         TransactionDetailScreen(
             transactionId = "previewIdView",
-            onNavigateBack = {}
-
+            onNavigateBack = {},
+            onNavigateToContact = {}
         )
     }
 }

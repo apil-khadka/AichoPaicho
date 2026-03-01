@@ -12,18 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,20 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -104,69 +82,7 @@ fun UserProfileImage(
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
-                .clip(CircleShape),
-            onState = { state ->
-                when (state) {
-                    is AsyncImagePainter.State.Loading -> Log.d("UserProfileImage", "Loading image: $photoUrl")
-                    is AsyncImagePainter.State.Error -> Log.e("UserProfileImage", "Error loading image: $photoUrl", state.result.throwable)
-                    is AsyncImagePainter.State.Success -> Log.d("UserProfileImage", "Successfully loaded image: $photoUrl")
-                    else -> Log.i("UserProfileImage", "Image state: $state for url: $photoUrl")
-                }
-            }
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun UserProfileImagePreview() {
-    AichoPaichoTheme {
-        UserProfileImage(
-            photoUrl = null,
-            userName = "Goodness",
-            modifier = Modifier.size(64.dp)
-        )
-    }
-}
-
-@Composable
-fun ErrorContent(
-    errorMessage: String,
-    onRetry: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            TextComponent(
-                value = stringResource(R.string.error_detail, errorMessage),
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            ButtonComponent(
-                vectorLogo = Icons.Default.Refresh,
-                text = stringResource(R.string.retry),
-                onClick = onRetry,
-                modifier = Modifier.fillMaxWidth(0.6f)
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ErrorContentPreview() {
-    AichoPaichoTheme {
-        ErrorContent(
-            errorMessage = "A network error occurred.",
-            onRetry = {}
+                .clip(CircleShape)
         )
     }
 }
@@ -218,23 +134,6 @@ fun UserDashboardToast(uiState: DashboardScreenUiState) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun UserDashboardToastPreview() {
-    AichoPaichoTheme {
-        UserDashboardToast(
-            uiState = DashboardScreenUiState(
-                user = User(
-                    id = "user1",
-                    name = "Alex Doe",
-                    email = "alex.doe@example.com",
-                    photoUrl = null
-                )
-            )
-        )
-    }
-}
-
 @Composable
 fun DashboardContent(
     uiState: DashboardScreenUiState,
@@ -243,97 +142,108 @@ fun DashboardContent(
     onNavigateToSettings: (() -> Unit)?,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
     ) {
         UserDashboardToast(uiState)
 
-        // NEW SECTION FOR OFFLINE USER MESSAGE
         if (uiState.user?.isOffline == true && uiState.isSignedIn == false) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
             ) {
-                Text(
-                    text = stringResource(R.string.sign_in_to_backup_your_data_without_loss),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                onNavigateToSettings?.let { navigate ->
-                    TextButton(onClick = navigate) {
-                        Text(stringResource(R.string.go_to_settings_to_sign_in))
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.sign_in_to_backup_your_data_without_loss),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center
+                    )
+                    onNavigateToSettings?.let { navigate ->
+                        TextButton(onClick = navigate) {
+                            Text(stringResource(R.string.go_to_settings_to_sign_in), style = MaterialTheme.typography.labelMedium)
+                        }
                     }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
-        // END NEW SECTION
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = stringResource(R.string.quick_actions),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 16.dp, start = 4.dp)
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            onNavigateToAddTransaction?.let { navigate ->
-                Box(modifier = Modifier.weight(1f)) {
-                    QuickActionButton(
-                        text = stringResource(R.string.new_txn),
-                        onClick = navigate,
-                        contentDescription = stringResource(R.string.add_new_transaction),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-            onNavigateToViewTransactions?.let { navigate ->
-                 Box(modifier = Modifier.weight(1f)) {
-                     QuickActionButton(
-                         text = stringResource(R.string.view_txns),
-                         onClick = navigate,
-                         contentDescription = stringResource(R.string.view_transactions),
-                         modifier = Modifier.fillMaxWidth()
-                     )
-                 }
-            }
-            onNavigateToSettings?.let { navigate ->
-                 Box(modifier = Modifier.weight(1f)) {
-                     QuickActionButton(
-                         text = stringResource(R.string.settings),
-                         onClick = navigate,
-                         contentDescription = stringResource(R.string.open_settings),
-                         modifier = Modifier.fillMaxWidth()
-                     )
-                 }
-            }
-        }
-        uiState.errorMessage?.let { error ->
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+        uiState.recordSummary?.let { summary ->
+            NetBalanceCard(
+                summary = summary,
+                onNavigateToContactList = { /* handled by dashboard or other logic if needed */ },
+                onContactClick = { /* handled by dashboard or other logic if needed */ }
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(R.string.quick_actions),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            onNavigateToAddTransaction?.let { navigate ->
+                QuickActionButton(
+                    text = stringResource(R.string.new_txn),
+                    onClick = navigate,
+                    contentDescription = stringResource(R.string.add_new_transaction),
+                    modifier = Modifier.weight(1f),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            onNavigateToViewTransactions?.let { navigate ->
+                QuickActionButton(
+                    text = stringResource(R.string.view_txns),
+                    onClick = navigate,
+                    contentDescription = stringResource(R.string.view_transactions),
+                    modifier = Modifier.weight(1f),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
         UpcomingDueCard(items = uiState.upcomingDue)
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
-
+@Composable
+fun QuickActionButton(
+    text: String,
+    onClick: () -> Unit,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(56.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = containerColor,
+        contentColor = contentColor,
+        tonalElevation = 2.dp
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(text = text, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
 
 @Composable
 fun NetBalanceCard(
@@ -347,10 +257,9 @@ fun NetBalanceCard(
     val context = LocalContext.current
     val hideAmounts = rememberHideAmountsEnabled()
 
-    // Gradient Background
     val brush = Brush.verticalGradient(
         colors = listOf(
-            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
             MaterialTheme.colorScheme.surface
         )
     )
@@ -358,7 +267,6 @@ fun NetBalanceCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
             .animateContentSize(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -366,7 +274,7 @@ fun NetBalanceCard(
                 )
             ),
         shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
             modifier = Modifier.background(brush)
@@ -382,17 +290,17 @@ fun NetBalanceCard(
                 Column {
                     Text(
                         stringResource(R.string.net_balance),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         formatCurrencyAmount(
-                            currency = AppPreferenceUtils.getCurrencyCode(context),
+                            currency = AppPreferenceUtils.getCurrencySymbol(context),
                             amount = summary.netTotal.toInt(),
                             hideAmounts = hideAmounts
                         ),
-                        style = MaterialTheme.typography.displaySmall, // Larger, more prominent
+                        style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = if (summary.netTotal >= 0) {
                             MaterialTheme.colorScheme.primary
@@ -402,72 +310,46 @@ fun NetBalanceCard(
                     )
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (expanded) "Collapse" else "Expand",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.5f), CircleShape)
-                            .padding(4.dp)
-                    )
-                }
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
+                        .padding(4.dp)
+                )
             }
 
             AnimatedVisibility(
                 visible = expanded,
-                enter = expandVertically(
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-                    expandFrom = Alignment.Top
-                ) + fadeIn(animationSpec = tween(300)),
-                exit = shrinkVertically(
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-                    shrinkTowards = Alignment.Top
-                ) + fadeOut(animationSpec = tween(200))
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(bottom = 16.dp),
-                        thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
-
+                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        BalanceItemExtended(
+                        BalanceItemSmall(
                             label = stringResource(R.string.lent),
                             amount = summary.totalLent,
                             isPositive = true,
-                            count = summary.lentContactsCount,
-                            contacts = lentContacts,
-                            onNavigateToContactList = { onNavigateToContactList(TypeConstants.TYPE_LENT) },
-                            onContactClick = onContactClick,
                             modifier = Modifier.weight(1f)
                         )
-
-                        Spacer(modifier = Modifier.width(24.dp))
-
-                        BalanceItemExtended(
+                        BalanceItemSmall(
                             label = stringResource(R.string.borrowed),
                             amount = summary.totalBorrowed,
                             isPositive = false,
-                            count = summary.borrowedContactsCount,
-                            contacts = borrowedContacts,
-                            onNavigateToContactList = { onNavigateToContactList(TypeConstants.TYPE_BORROWED) },
-                            onContactClick = onContactClick,
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
@@ -475,100 +357,26 @@ fun NetBalanceCard(
 }
 
 @Composable
-fun BalanceItemExtended(
+fun BalanceItemSmall(
     label: String,
     amount: Double,
     isPositive: Boolean,
-    count: Int,
-    contacts: List<ContactPreview> = emptyList(),
-    onNavigateToContactList: () -> Unit,
-    onContactClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val amountColor = if (isPositive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-    val buttonContainerColor = if (isPositive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
-    val buttonContentColor = if (isPositive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
     val context = LocalContext.current
     val hideAmounts = rememberHideAmountsEnabled()
-
-    Column(
-        horizontalAlignment = Alignment.Start,
-        modifier = modifier
-    ) {
-        Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = 1.sp
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
+    Column(modifier = modifier) {
+        Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
             text = formatCurrencyAmount(
-                currency = AppPreferenceUtils.getCurrencyCode(context),
+                currency = AppPreferenceUtils.getCurrencySymbol(context),
                 amount = amount.toInt(),
                 hideAmounts = hideAmounts
             ),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = amountColor
+            color = if (isPositive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
         )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FilledTonalButton(
-            onClick = onNavigateToContactList,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .height(48.dp)
-                .fillMaxWidth(),
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = buttonContainerColor,
-                contentColor = buttonContentColor
-            )
-        ) {
-            Text(
-                text = if (isPositive) {
-                    stringResource(
-                        R.string.lent_to_n_person,
-                        count,
-                        if (count == 1) stringResource(R.string.person)
-                        else stringResource(R.string.people)
-                    )
-                } else {
-                    stringResource(
-                        R.string.borrowed_from_n_person,
-                        count,
-                        if (count == 1) stringResource(R.string.person)
-                        else  stringResource(R.string.people)
-                    )
-                },
-                style = MaterialTheme.typography.labelMedium
-            )
-        }
-
-        if (contacts.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(12.dp))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(contacts.size) { idx ->
-                    val c = contacts[idx]
-                    ContactChip(
-                        contact = c,
-                        onClick = { onContactClick(c.id) },
-                        baseColor = MaterialTheme.colorScheme.tertiary,
-                        onBaseColor = MaterialTheme.colorScheme.onTertiary,
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        onContainerColor = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -582,11 +390,7 @@ fun UpcomingDueCard(items: List<UpcomingDueItem>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -594,56 +398,46 @@ fun UpcomingDueCard(items: List<UpcomingDueItem>) {
         ) {
             Text(
                 text = stringResource(R.string.upcoming_due),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
             )
 
             if (items.isEmpty()) {
                 Text(
                     text = stringResource(R.string.no_upcoming_due),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                items.forEach { item ->
+                items.take(5).forEach { item ->
                     val isOverdue = item.dueDate < now
-                    val amountPrefix = if (item.typeId == TypeConstants.LENT_ID) "+" else "-"
-                    val amountColor = if (item.typeId == TypeConstants.LENT_ID) {
-                        Color(0xFF2E7D32)
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = item.contactName,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
+                            Text(text = item.contactName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                             Text(
                                 text = if (isOverdue) {
                                     "${stringResource(R.string.overdue)} ${dueFormatter.format(Date(item.dueDate))}"
                                 } else {
                                     "${stringResource(R.string.due)} ${dueFormatter.format(Date(item.dueDate))}"
                                 },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Text(
                             text = formatSignedCurrencyAmount(
-                                sign = amountPrefix,
+                                sign = if (item.typeId == TypeConstants.LENT_ID) "+" else "-",
                                 currency = AppPreferenceUtils.getCurrencySymbol(context),
                                 amount = item.amount,
                                 hideAmounts = hideAmounts
                             ),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = amountColor
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (item.typeId == TypeConstants.LENT_ID) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
                         )
                     }
                 }

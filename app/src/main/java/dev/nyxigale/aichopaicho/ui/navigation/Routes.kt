@@ -7,6 +7,7 @@ object Routes {
 
     const val CONTACT_LIST_TYPE = "contactListType"
 
+    const val ONBOARDING_SCREEN = "onboarding_screen"
     const val SETTING_SCREEN = "setting_screen"
     const val CONTACT_LIST_SCREEN = "contact_list_screen"
 
@@ -26,5 +27,8 @@ object Routes {
     const val CONTACT_TRANSACTION_SCREEN = "contact_transaction_screen"
     const val SYNC_CENTER_SCREEN = "sync_center_screen"
     const val INSIGHTS_SCREEN = "insights_screen"
+
+    const val SECURITY_SETUP_SCREEN = "security_setup_screen"
+    const val LOCK_SCREEN = "lock_screen"
 
 }

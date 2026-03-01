@@ -29,7 +29,10 @@ class AppNavigationViewModel @Inject constructor(
 
     private fun determineStartDestination() {
         viewModelScope.launch {
-            if (screenViewRepository.getScreenView(Routes.WELCOME_SCREEN) == true) {
+            val onboardingCompleted = screenViewRepository.getScreenView(Routes.ONBOARDING_SCREEN) == true
+            if (!onboardingCompleted) {
+                _startDestination.value = Routes.ONBOARDING_SCREEN
+            } else if (screenViewRepository.getScreenView(Routes.WELCOME_SCREEN) == true) {
                 _startDestination.value = Routes.DASHBOARD_SCREEN
             } else {
                 _startDestination.value = Routes.WELCOME_SCREEN

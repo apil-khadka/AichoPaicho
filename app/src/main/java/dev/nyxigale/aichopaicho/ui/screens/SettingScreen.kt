@@ -9,44 +9,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.AddCircle
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,15 +35,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.nyxigale.aichopaicho.R
-import dev.nyxigale.aichopaicho.ui.component.AboutSection
-import dev.nyxigale.aichopaicho.ui.component.AppInformation
-import dev.nyxigale.aichopaicho.ui.component.BackupSyncSettings
-import dev.nyxigale.aichopaicho.ui.component.CurrencyDropdown
-import dev.nyxigale.aichopaicho.ui.component.DataPortabilitySettings
-import dev.nyxigale.aichopaicho.ui.component.DueReminderSettings
-import dev.nyxigale.aichopaicho.ui.component.LanguageDropDown
-import dev.nyxigale.aichopaicho.ui.component.SettingsCard
-import dev.nyxigale.aichopaicho.ui.component.UserProfileCard
+import dev.nyxigale.aichopaicho.ui.component.*
 import dev.nyxigale.aichopaicho.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
@@ -80,6 +45,7 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSyncCenter: () -> Unit,
     onNavigateToInsights: () -> Unit,
+    onNavigateToSecuritySetup: () -> Unit,
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
@@ -202,6 +168,26 @@ fun SettingsScreen(
                     }
                 )
 
+            }
+
+            // Security Settings
+            SettingsCard(
+                title = "Security",
+                icon = Icons.Default.Lock
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Protect your app with PIN or Biometric lock.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = onNavigateToSecuritySetup,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("App Lock Settings")
+                    }
+                }
             }
 
             // Backup & Sync Settings
@@ -522,4 +508,3 @@ private fun openNotificationSettings(context: android.content.Context) {
     }
     context.startActivity(intent)
 }
-

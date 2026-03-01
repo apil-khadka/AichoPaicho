@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -22,12 +23,15 @@ import dev.nyxigale.aichopaicho.ui.screens.ContactListScreen
 import dev.nyxigale.aichopaicho.ui.screens.ContactTransactionScreen
 import dev.nyxigale.aichopaicho.ui.screens.DashboardScreen
 import dev.nyxigale.aichopaicho.ui.screens.InsightsScreen
+import dev.nyxigale.aichopaicho.ui.screens.OnboardingScreen
 import dev.nyxigale.aichopaicho.ui.screens.SettingsScreen
 import dev.nyxigale.aichopaicho.ui.screens.SyncCenterScreen
 import dev.nyxigale.aichopaicho.ui.screens.TransactionDetailScreen
 import dev.nyxigale.aichopaicho.ui.screens.ViewTransactionScreen
 import dev.nyxigale.aichopaicho.ui.screens.WelcomeScreen
+import dev.nyxigale.aichopaicho.ui.screens.SecuritySetupScreen
 import dev.nyxigale.aichopaicho.viewmodel.AppNavigationViewModel
+import kotlinx.coroutines.launch
 
 private var lastNavigationTime = 0L
 private const val NAVIGATION_DEBOUNCE = 1000L
@@ -59,6 +63,7 @@ fun AppNavigationGraph(
 ) {
     val navController = rememberNavController()
     val startDestination by appNavigationViewModel.startDestination.collectAsState()
+    val scope = rememberCoroutineScope()
 
     if (startDestination == null) {
         Box(
@@ -72,6 +77,19 @@ fun AppNavigationGraph(
             navController = navController,
             startDestination = startDestination!!
         ) {
+            composable(Routes.ONBOARDING_SCREEN) {
+                OnboardingScreen(
+                    onOnboardingFinished = {
+                        scope.launch {
+                            appNavigationViewModel.screenViewRepository.markScreenAsShown(Routes.ONBOARDING_SCREEN)
+                            navController.navSafe(Routes.WELCOME_SCREEN) {
+                                popUpTo(Routes.ONBOARDING_SCREEN) { inclusive = true }
+                            }
+                        }
+                    }
+                )
+            }
+
             composable(Routes.WELCOME_SCREEN) {
                 WelcomeScreen(
                     onNavigateToDashboard = {
@@ -155,6 +173,11 @@ fun AppNavigationGraph(
                     transactionId = transactionId!!,
                     onNavigateBack = {
                         navController.popSafe()
+                    },
+                    onNavigateToContact = { contactId ->
+                        navController.navSafe("${Routes.CONTACT_TRANSACTION_SCREEN}/$contactId") {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -212,6 +235,11 @@ fun AppNavigationGraph(
                         navController.navSafe(Routes.INSIGHTS_SCREEN) {
                             launchSingleTop = true
                         }
+                    },
+                    onNavigateToSecuritySetup = {
+                        navController.navSafe(Routes.SECURITY_SETUP_SCREEN) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -226,6 +254,14 @@ fun AppNavigationGraph(
 
             composable(Routes.INSIGHTS_SCREEN) {
                 InsightsScreen(
+                    onNavigateBack = {
+                        navController.popSafe()
+                    }
+                )
+            }
+
+            composable(Routes.SECURITY_SETUP_SCREEN) {
+                SecuritySetupScreen(
                     onNavigateBack = {
                         navController.popSafe()
                     }
