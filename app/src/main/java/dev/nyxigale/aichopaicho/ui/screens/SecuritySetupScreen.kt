@@ -16,10 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import dev.nyxigale.aichopaicho.viewmodel.SecuritySetupStep
 import dev.nyxigale.aichopaicho.viewmodel.SecurityViewModel
@@ -31,6 +33,8 @@ fun SecuritySetupScreen(
     viewModel: SecurityViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val activity = context as? FragmentActivity
 
     Scaffold(
         topBar = {
@@ -64,8 +68,12 @@ fun SecuritySetupScreen(
                         isBiometricEnabled = uiState.isBiometricEnabled,
                         canUseBiometric = viewModel.canUseBiometric(),
                         onEnablePin = { viewModel.startSetup() },
-                        onToggleBiometric = { viewModel.toggleBiometric(it) },
-                        onDisableSecurity = { viewModel.disableSecurity() }
+                        onToggleBiometric = { 
+                            if (activity != null) viewModel.toggleBiometric(activity, it)
+                        },
+                        onDisableSecurity = { viewModel.disableSecurity() },
+                        error = uiState.error,
+                        onClearError = { viewModel.clearError() }
                     )
                 }
                 SecuritySetupStep.ENTER_NEW_PIN -> {
@@ -103,7 +111,9 @@ fun SecurityOverviewPage(
     canUseBiometric: Boolean,
     onEnablePin: () -> Unit,
     onToggleBiometric: (Boolean) -> Unit,
-    onDisableSecurity: () -> Unit
+    onDisableSecurity: () -> Unit,
+    error: String?,
+    onClearError: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(
@@ -125,6 +135,23 @@ fun SecurityOverviewPage(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+        
+        if (error != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                shape = RoundedCornerShape(8.dp),
+                onClick = onClearError
+            ) {
+                Text(
+                    text = error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(48.dp))
 
         if (!isSecurityEnabled) {

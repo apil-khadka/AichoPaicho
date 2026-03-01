@@ -84,7 +84,7 @@ class SecurityViewModel @Inject constructor(
     }
 
     fun startSetup() {
-        _uiState.update { it.copy(setupStep = SecuritySetupStep.ENTER_NEW_PIN, enteredPin = "") }
+        _uiState.update { it.copy(setupStep = SecuritySetupStep.ENTER_NEW_PIN, enteredPin = "", error = null) }
     }
 
     fun onSetupPinInput(digit: String) {
@@ -123,9 +123,24 @@ class SecurityViewModel @Inject constructor(
         }
     }
 
-    fun toggleBiometric(enabled: Boolean) {
-        AppPreferenceUtils.setBiometricEnabled(context, enabled)
-        refreshState()
+    fun toggleBiometric(activity: FragmentActivity, enabled: Boolean) {
+        if (enabled) {
+            // Verify before enabling
+            authenticateWithBiometric(
+                activity = activity,
+                title = "Confirm Biometric",
+                subtitle = "Please authenticate to enable biometric unlock",
+                onResult = { success ->
+                    if (success) {
+                        AppPreferenceUtils.setBiometricEnabled(context, true)
+                        refreshState()
+                    }
+                }
+            )
+        } else {
+            AppPreferenceUtils.setBiometricEnabled(context, false)
+            refreshState()
+        }
     }
 
     fun disableSecurity() {
@@ -135,19 +150,23 @@ class SecurityViewModel @Inject constructor(
         refreshState()
     }
 
-    fun authenticateWithBiometric(activity: FragmentActivity, onResult: (Boolean) -> Unit) {
+    fun authenticateWithBiometric(
+        activity: FragmentActivity, 
+        title: String = "Biometric Login",
+        subtitle: String = "Unlock using your fingerprint or face",
+        onResult: (Boolean) -> Unit
+    ) {
         val executor = ContextCompat.getMainExecutor(context)
         val biometricPrompt = BiometricPrompt(activity, executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    _uiState.update { it.copy(isAuthenticated = true) }
+                    _uiState.update { it.copy(isAuthenticated = true, error = null) }
                     onResult(true)
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    // Don't show error for user cancellation
                     if (errorCode != BiometricPrompt.ERROR_USER_CANCELED && 
                         errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
                         _uiState.update { it.copy(error = errString.toString()) }
@@ -163,22 +182,27 @@ class SecurityViewModel @Inject constructor(
             })
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Biometric Login")
-            .setSubtitle("Use your fingerprint or face to unlock")
-            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+            .setTitle(title)
+            .setSubtitle(subtitle)
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            .setNegativeButtonText("Use PIN")
             .build()
 
         try {
             biometricPrompt.authenticate(promptInfo)
         } catch (e: Exception) {
             Log.e("SecurityViewModel", "Biometric auth failed to start", e)
+            _uiState.update { it.copy(error = "Biometric authentication unavailable") }
             onResult(false)
         }
     }
     
     fun canUseBiometric(): Boolean {
         val biometricManager = BiometricManager.from(context)
-        val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
-        return biometricManager.canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS
+        return biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
     }
 }
