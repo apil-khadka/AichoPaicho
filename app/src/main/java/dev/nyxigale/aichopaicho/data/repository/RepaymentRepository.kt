@@ -12,6 +12,10 @@ class RepaymentRepository @Inject constructor(private val repaymentDao: Repaymen
         repaymentDao.insertRepayment(repayment)
     }
 
+    suspend fun insertRepayments(repayments: List<Repayment>) {
+        repaymentDao.insertRepayments(repayments)
+    }
+
     fun getRepaymentsForRecord(recordId: String): Flow<List<Repayment>> {
         return repaymentDao.getRepaymentsForRecord(recordId)
     }

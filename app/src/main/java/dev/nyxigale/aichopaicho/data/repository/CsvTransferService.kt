@@ -241,13 +241,12 @@ class CsvTransferService @Inject constructor(
     }
 
     private suspend fun importRepaymentsRows(rows: List<List<String>>): Int {
-        var imported = 0
-        rows.forEach { columns ->
-            if (columns.size < 7) return@forEach
+        val repayments = rows.mapNotNull { columns ->
+            if (columns.size < 7) return@mapNotNull null
             val id = columns[0]
-            if (id.isBlank()) return@forEach
+            if (id.isBlank()) return@mapNotNull null
 
-            val repayment = Repayment(
+            Repayment(
                 id = id,
                 recordId = columns[1],
                 amount = columns[2].toIntOrNull() ?: 0,
@@ -256,10 +255,11 @@ class CsvTransferService @Inject constructor(
                 createdAt = columns[5].toLongOrNull() ?: System.currentTimeMillis(),
                 updatedAt = columns[6].toLongOrNull() ?: System.currentTimeMillis()
             )
-            repaymentRepository.insertRepayment(repayment)
-            imported++
         }
-        return imported
+        if (repayments.isNotEmpty()) {
+            repaymentRepository.insertRepayments(repayments)
+        }
+        return repayments.size
     }
 
     private fun writeCsvDocument(
