@@ -15,6 +15,9 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 @Singleton
 class SyncRepository @Inject constructor(
@@ -66,8 +69,13 @@ class SyncRepository @Inject constructor(
             }
 
         var report = SyncReport.EMPTY
-        contacts.forEach { contact ->
-            report += syncSingleContactReport(user.id, contact)
+        coroutineScope {
+            val jobs = contacts.map { contact ->
+                async {
+                    syncSingleContactReport(user.id, contact)
+                }
+            }
+            jobs.awaitAll().forEach { report += it }
         }
         return report
     }
