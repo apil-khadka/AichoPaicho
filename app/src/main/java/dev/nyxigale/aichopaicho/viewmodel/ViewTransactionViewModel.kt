@@ -215,8 +215,6 @@ class ViewTransactionViewModel @Inject constructor(
         }
     }
 
-    // This is now obsolete as completion is derived
-    // fun toggleRecordCompletion(recordId: String) { ... }
 
     fun deleteRecord(recordId: String) {
         viewModelScope.launch {
