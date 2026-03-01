@@ -18,6 +18,10 @@ class RecordRepository @Inject constructor(private val recordDao: RecordDao) {
         recordDao.upsert(record)
     }
 
+    suspend fun upsertAll(records: List<Record>) {
+        recordDao.upsertAll(records)
+    }
+
      fun getRecordsByContactId(contactId: String): Flow<List<Record>>{
         return recordDao.getRecordsByContactId(contactId)
     }

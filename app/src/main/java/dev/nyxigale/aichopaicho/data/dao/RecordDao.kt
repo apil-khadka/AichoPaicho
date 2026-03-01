@@ -15,7 +15,10 @@ import kotlinx.coroutines.flow.Flow
 interface RecordDao {
     @Upsert
     suspend fun upsert(record: Record)
-    
+
+    @Upsert
+    suspend fun upsertAll(records: List<Record>)
+
     @Query("SELECT SUM(amount) FROM records WHERE typeId = :typeId AND isDeleted = 0")
     suspend fun getTotalByType(typeId: Int): Int
 

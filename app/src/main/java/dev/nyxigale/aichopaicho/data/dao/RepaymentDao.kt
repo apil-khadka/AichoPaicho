@@ -12,6 +12,9 @@ interface RepaymentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRepayment(repayment: Repayment)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRepayments(repayments: List<Repayment>)
+
     @Query("SELECT * FROM repayments WHERE recordId = :recordId ORDER BY date DESC")
     fun getRepaymentsForRecord(recordId: String): Flow<List<Repayment>>
 
