@@ -23,8 +23,6 @@ interface ContactDao {
     @Query("SELECT * FROM contacts WHERE phone LIKE '%' || :phoneNumber || '%' LIMIT 1")
     suspend fun findByPhoneNumber(phoneNumber: String): Contact?
 
-
-
     @Query("SELECT * FROM contacts WHERE id = :contactId AND isDeleted = 0")
     suspend fun getContactById(contactId: String): Contact?
 

@@ -2,6 +2,7 @@ package dev.nyxigale.aichopaicho.data.repository
 
 import android.content.Context
 import android.net.Uri
+import androidx.annotation.VisibleForTesting
 import androidx.documentfile.provider.DocumentFile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.nyxigale.aichopaicho.data.entity.Contact
@@ -180,14 +181,14 @@ class CsvTransferService @Inject constructor(
         }
     }
 
-    private suspend fun importContactsRows(rows: List<List<String>>): Int {
-        val contactsToInsert = mutableListOf<Contact>()
-        rows.forEach { columns ->
-            if (columns.size < 8) return@forEach
+    @VisibleForTesting
+    internal suspend fun importContactsRows(rows: List<List<String>>): Int {
+        val contacts = rows.mapNotNull { columns ->
+            if (columns.size < 8) return@mapNotNull null
             val id = columns[0]
-            if (id.isBlank()) return@forEach
+            if (id.isBlank()) return@mapNotNull null
 
-            val contact = Contact(
+            Contact(
                 id = id,
                 name = columns[1],
                 userId = columns[2].ifBlank { null },
@@ -197,20 +198,19 @@ class CsvTransferService @Inject constructor(
                 createdAt = columns[6].toLongOrNull() ?: System.currentTimeMillis(),
                 updatedAt = columns[7].toLongOrNull() ?: System.currentTimeMillis()
             )
-            contactsToInsert.add(contact)
         }
-        if (contactsToInsert.isNotEmpty()) {
-            contactRepository.insertContacts(contactsToInsert)
+        if (contacts.isNotEmpty()) {
+            contactRepository.insertContacts(contacts)
         }
-        return contactsToInsert.size
+        return contacts.size
     }
 
-    private suspend fun importRecordsRows(rows: List<List<String>>): Int {
-        val recordsToUpsert = mutableListOf<Record>()
-        rows.forEach { columns ->
-            if (columns.size < 12) return@forEach
+    @VisibleForTesting
+    internal suspend fun importRecordsRows(rows: List<List<String>>): Int {
+        val recordsToUpsert = rows.mapNotNull { columns ->
+            if (columns.size < 12) return@mapNotNull null
             val id = columns[0]
-            if (id.isBlank()) return@forEach
+            if (id.isBlank()) return@mapNotNull null
 
             val hasRecurringTemplateIdColumn = columns.size >= 13
             val recurringTemplateId = if (hasRecurringTemplateIdColumn) {
@@ -221,7 +221,7 @@ class CsvTransferService @Inject constructor(
             val createdAtIndex = if (hasRecurringTemplateIdColumn) 11 else 10
             val updatedAtIndex = if (hasRecurringTemplateIdColumn) 12 else 11
 
-            val record = Record(
+            Record(
                 id = id,
                 userId = columns[1].ifBlank { null },
                 contactId = columns[2].ifBlank { null },
@@ -236,7 +236,6 @@ class CsvTransferService @Inject constructor(
                 createdAt = columns[createdAtIndex].toLongOrNull() ?: System.currentTimeMillis(),
                 updatedAt = columns[updatedAtIndex].toLongOrNull() ?: System.currentTimeMillis()
             )
-            recordsToUpsert.add(record)
         }
 
         if (recordsToUpsert.isNotEmpty()) {
@@ -245,7 +244,8 @@ class CsvTransferService @Inject constructor(
         return recordsToUpsert.size
     }
 
-    private suspend fun importRepaymentsRows(rows: List<List<String>>): Int {
+    @VisibleForTesting
+    internal suspend fun importRepaymentsRows(rows: List<List<String>>): Int {
         val repayments = rows.mapNotNull { columns ->
             if (columns.size < 7) return@mapNotNull null
             val id = columns[0]
