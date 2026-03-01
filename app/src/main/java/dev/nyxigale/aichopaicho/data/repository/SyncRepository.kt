@@ -298,6 +298,9 @@ class SyncRepository @Inject constructor(
                     .get()
                     .await()
 
+                val firestoreRecords = mutableListOf<Record>()
+                val validRecordIds = mutableListOf<String>()
+
                 for (doc in recordsSnapshot.documents) {
                     try {
                         val firestoreId = doc.getString("id") ?: ""
@@ -337,18 +340,10 @@ class SyncRepository @Inject constructor(
                             updatedAt = firestoreUpdatedAt
                         )
 
-                        val localRecord = recordRepository.getRecordById(firestoreRecord.id)
-                        if (localRecord == null) {
-                            recordRepository.insertRecord(firestoreRecord)
-                            Log.d(TAG, "Inserted new record from Firestore: ${firestoreRecord.id}")
-                        } else if (firestoreRecord.updatedAt > localRecord.updatedAt) {
-                            recordRepository.updateRecord(firestoreRecord)
-                            Log.d(TAG, "Updated local record from Firestore: ${firestoreRecord.id}")
-                        } else if (localRecord.updatedAt > firestoreRecord.updatedAt) {
-                            Log.d(TAG, "Local record ${localRecord.id} is newer. Re-uploading.")
-                            syncSingleRecord(localRecord.id)
-                        }
+                        firestoreRecords.add(firestoreRecord)
+                        validRecordIds.add(firestoreRecord.id)
 
+                        // Keep the repayment logic intact but run it asynchronously later or here
                         val repaymentsSnapshot = firestore.collection("users")
                             .document(user.id)
                             .collection("records")
@@ -390,6 +385,36 @@ class SyncRepository @Inject constructor(
                         }
                     } catch (error: Exception) {
                         Log.e(TAG, "Error processing record document ${doc.id}", error)
+                    }
+                }
+
+                if (validRecordIds.isNotEmpty()) {
+                    // Fetch all local records matching the parsed Firestore record IDs in one go
+                    val localRecords = recordRepository.getRecordsByIds(validRecordIds).associateBy { it.id }
+
+                    val recordsToInsert = mutableListOf<Record>()
+                    val recordsToUpdate = mutableListOf<Record>()
+
+                    for (firestoreRecord in firestoreRecords) {
+                        val localRecord = localRecords[firestoreRecord.id]
+                        if (localRecord == null) {
+                            recordsToInsert.add(firestoreRecord)
+                        } else if (firestoreRecord.updatedAt > localRecord.updatedAt) {
+                            recordsToUpdate.add(firestoreRecord)
+                        } else if (localRecord.updatedAt > firestoreRecord.updatedAt) {
+                            Log.d(TAG, "Local record ${localRecord.id} is newer. Re-uploading.")
+                            syncSingleRecord(localRecord.id)
+                        }
+                    }
+
+                    if (recordsToInsert.isNotEmpty()) {
+                        recordRepository.insertRecords(recordsToInsert)
+                        Log.d(TAG, "Batch inserted ${recordsToInsert.size} records from Firestore")
+                    }
+
+                    if (recordsToUpdate.isNotEmpty()) {
+                        recordRepository.updateRecords(recordsToUpdate)
+                        Log.d(TAG, "Batch updated ${recordsToUpdate.size} records from Firestore")
                     }
                 }
             } catch (error: Exception) {
