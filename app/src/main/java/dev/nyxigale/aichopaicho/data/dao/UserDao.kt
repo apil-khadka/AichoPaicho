@@ -11,8 +11,6 @@ interface UserDao {
     @Upsert
     suspend fun upsert(user: User)
 
-//    @Query("SELECT * FROM users WHERE username = :username")
-//    suspend fun getUserByUsername(username: String): User?
 
 
     @Query("UPDATE users SET isDeleted = 1, updatedAt = :updatedAt WHERE id = :id")
