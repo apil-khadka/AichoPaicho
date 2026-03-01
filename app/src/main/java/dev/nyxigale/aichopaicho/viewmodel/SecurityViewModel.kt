@@ -199,7 +199,9 @@ class SecurityViewModel @Inject constructor(
     
     fun canUseBiometric(): Boolean {
         val biometricManager = BiometricManager.from(context)
-        return biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+        val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK
+        val result = biometricManager.canAuthenticate(authenticators)
+        return result == BiometricManager.BIOMETRIC_SUCCESS || result == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
     }
 
     fun clearError() {

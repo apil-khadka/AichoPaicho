@@ -69,11 +69,16 @@ fun SecuritySetupScreen(
                         canUseBiometric = viewModel.canUseBiometric(),
                         onEnablePin = { viewModel.startSetup() },
                         onToggleBiometric = { 
+                            if (!uiState.hasPin) {
+                                // Logic to handle enabling biometric without PIN
+                                // We could start PIN setup or show error
+                            }
                             if (activity != null) viewModel.toggleBiometric(activity, it)
                         },
                         onDisableSecurity = { viewModel.disableSecurity() },
                         error = uiState.error,
-                        onClearError = { viewModel.clearError() }
+                        onClearError = { viewModel.clearError() },
+                        hasPin = uiState.hasPin
                     )
                 }
                 SecuritySetupStep.ENTER_NEW_PIN -> {
@@ -113,7 +118,8 @@ fun SecurityOverviewPage(
     onToggleBiometric: (Boolean) -> Unit,
     onDisableSecurity: () -> Unit,
     error: String?,
-    onClearError: () -> Unit
+    onClearError: () -> Unit,
+    hasPin: Boolean
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(
@@ -154,7 +160,39 @@ fun SecurityOverviewPage(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        if (!isSecurityEnabled) {
+        // Always show Biometric toggle if supported by hardware
+        if (canUseBiometric) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Fingerprint, null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Use Biometric", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = if (hasPin) "Unlock using fingerprint or face" else "PIN setup required first",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (hasPin) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
+                        )
+                    }
+                    Switch(
+                        checked = isBiometricEnabled,
+                        onCheckedChange = onToggleBiometric,
+                        enabled = hasPin // Disable toggle if no PIN is set as fallback
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        if (!hasPin) {
             Button(
                 onClick = onEnablePin,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -163,37 +201,6 @@ fun SecurityOverviewPage(
                 Text("Setup PIN Lock", fontWeight = FontWeight.Bold)
             }
         } else {
-            // Biometric Toggle
-            if (canUseBiometric) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Fingerprint, null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Use Biometric", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            Text(
-                                "Unlock using fingerprint or face",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = isBiometricEnabled,
-                            onCheckedChange = onToggleBiometric
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
             OutlinedButton(
                 onClick = onDisableSecurity,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
