@@ -34,6 +34,8 @@ class RecurringTemplateWorker @AssistedInject constructor(
             val intervalMillis = TimeUnit.DAYS.toMillis(template.intervalDays.toLong())
             if (intervalMillis <= 0L) continue
 
+            val recordsToInsert = mutableListOf<Record>()
+
             while (nextRunAt <= now) {
                 val dueDate = if (template.dueOffsetDays > 0) {
                     nextRunAt + TimeUnit.DAYS.toMillis(template.dueOffsetDays.toLong())
@@ -52,10 +54,13 @@ class RecurringTemplateWorker @AssistedInject constructor(
                     description = template.description,
                     recurringTemplateId = template.id
                 )
-                recordRepository.insertRecord(record)
+                recordsToInsert.add(record)
                 nextRunAt += intervalMillis
             }
 
+            if (recordsToInsert.isNotEmpty()) {
+                recordRepository.insertRecords(recordsToInsert)
+            }
             recurringTemplateRepository.updateNextRun(template.id, nextRunAt)
         }
 

@@ -53,6 +53,10 @@ class RecordRepository @Inject constructor(private val recordDao: RecordDao) {
         recordDao.deleteRecord(recordId)
     }
 
+    suspend fun insertRecords(records: List<Record>) {
+        recordDao.insertRecords(records)
+    }
+
     suspend fun insertRecord(record: Record) {
         recordDao.insertRecord(record)
     }
