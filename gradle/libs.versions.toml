@@ -28,6 +28,7 @@ clarity = "3.8.1"
 documentfile = "1.0.1"
 mockk = "1.13.10"
 coroutinesTest = "1.9.0"
+coreTesting = "2.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -70,6 +71,7 @@ microsoft-clarity-compose = { module = "com.microsoft.clarity:clarity-compose", 
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
+androidx-core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "coreTesting" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
