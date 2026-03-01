@@ -217,9 +217,6 @@ class ContactTransactionViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(selectedTab = tabIndex)
     }
 
-    // This function is now obsolete, as completion is derived from repayments.
-    // Manual toggling is no longer supported in this ViewModel.
-    // fun toggleRecordCompletion(recordId: String) { ... }
 
     fun deleteRecord(recordId: String) {
         viewModelScope.launch {
